@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0" />
+<title>Capsule: Journaling and Cognitive Engagement</title>
+<link rel="icon" id="favicon" href="" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- Entry disclaimer, shown until acknowledged -->
+<div id="disclaimer-overlay" class="overlay" hidden>
+  <div class="glass-panel disclaimer-panel">
+    <div class="disclaimer-logo" id="disclaimer-logo" aria-hidden="true"></div>
+    <h1>Welcome to Capsule</h1>
+    <p class="disclaimer-text">
+      Capsule is a journaling and cognitive-engagement tool. It is <strong>not a medical device</strong>
+      and does <strong>not diagnose</strong> any condition.
+    </p>
+    <p class="disclaimer-subtext">
+      Capsule notices changes in your own speech and memory patterns over time, compared only to
+      your own past entries, never to anyone else. If something in your report seems worth discussing,
+      consider sharing it with a doctor.
+    </p>
+    <label class="ack-row">
+      <input type="checkbox" id="ack-checkbox" />
+      <span>I understand this is a journaling tool, not a diagnostic or medical device.</span>
+    </label>
+    <button id="ack-continue" class="btn btn-primary btn-large" disabled>Continue to Capsule</button>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" id="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Capsule</span>
+    </div>
+    <button id="disclaimer-reopen" class="btn-icon" title="About Capsule / disclaimer" aria-label="About Capsule">?</button>
+  </header>
+
+  <main id="view-root" class="view-root"></main>
+
+  <nav class="tab-bar" id="tab-bar">
+    <button class="tab-btn" data-view="journal" data-icon="pencil" aria-label="Today">
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">Today</span>
+    </button>
+    <button class="tab-btn" data-view="recall" data-icon="clock" aria-label="Recall">
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">Recall</span>
+    </button>
+    <button class="tab-btn" data-view="activities" data-icon="star" aria-label="Activities">
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">Activities</span>
+    </button>
+    <button class="tab-btn" data-view="trends" data-icon="trend" aria-label="Trends">
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">Trends</span>
+    </button>
+    <button class="tab-btn" data-view="history" data-icon="book" aria-label="History">
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">History</span>
+    </button>
+    <button class="tab-btn" data-view="account" data-icon="user" aria-label="Account">
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">Account</span>
+    </button>
+  </nav>
+</div>
+
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+<!-- Vendor -->
+<script src="https://cdn.jsdelivr.net/npm/compromise@14.14.3/builds/compromise.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<!-- App -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
