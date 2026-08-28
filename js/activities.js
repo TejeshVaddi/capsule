@@ -1,136 +1,242 @@
 // Tailored cognitive-engagement activities. These are supportive engagement,
-// NOT treatment, nothing here claims to improve or slow anything.
+// NOT treatment, and nothing here claims to improve or slow anything.
+//
+// Tailoring compares the person's latest entry to their OWN recent average,
+// never to any external benchmark. When nothing stands out, activities are
+// offered on merit rather than invented urgency.
 
 import { db, newId } from "./data.js";
+import {
+  NAMING_SETS,
+  FLUENCY_CATEGORIES,
+  WORD_LISTS,
+  DESCRIPTION_PROMPTS,
+  PHOTO_PROMPTS,
+  MUSIC_ERAS,
+  OPEN_PROMPTS,
+  pickFresh,
+} from "./activities-content.js";
+import { daySeed, dateKey } from "./daily.js";
+import { detectSignals, scoreForSignals } from "./signals.js";
 
-const NAMING_SETS = [
-  { theme: "Kitchen", items: ["kettle", "spoon", "oven", "plate", "cup", "pan"] },
-  { theme: "Garden", items: ["rose", "shovel", "soil", "seed", "leaf", "fence"] },
-  { theme: "Weather", items: ["rain", "cloud", "wind", "snow", "sunshine", "storm"] },
-  { theme: "Family occasions", items: ["birthday", "wedding", "picnic", "holiday", "dinner", "visit"] },
-  { theme: "Around town", items: ["library", "market", "church", "park", "bakery", "station"] },
-];
-
-const DESCRIPTION_PROMPTS = [
-  "Describe your favorite room in the house you grew up in.",
-  "Describe a meal you love to cook or eat. What goes in it?",
-  "Describe a place you've been on holiday. What did it look like?",
-  "Describe your oldest friend. How did you meet?",
-  "Describe what you can see out of your window right now.",
-  "Describe a job you had, and what a normal day was like.",
-];
-
-const WORD_RECALL_LISTS = [
-  ["apple", "table", "penny", "river", "candle"],
-  ["garden", "mirror", "letter", "orange", "bridge"],
-  ["window", "basket", "silver", "meadow", "button"],
-  ["blanket", "lantern", "cherry", "harbor", "pillow"],
-];
-
-function pick(arr, seed) {
-  return arr[Math.abs(seed) % arr.length];
+/** Recent activity keys, so the same content is not served twice running. */
+async function recentKeys(limit = 14) {
+  try {
+    const log = await db.allActivityLog();
+    return log.slice(0, limit).map((r) => r.detail?.contentKey).filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
-/**
- * Suggests activities tailored to the person's own recent patterns.
- * Tailoring compares their latest entry to their own recent average, never
- * to any external benchmark.
- */
-export function suggestActivities(latestMetrics, recentEntries) {
+export async function suggestActivities(latestMetrics, recentEntries) {
+  const seen = await recentKeys();
+  // Seeded by the calendar day, so today's set is the same every time it is
+  // opened and genuinely changes at midnight rather than on every render.
+  const seed = daySeed() * 60000;
   const suggestions = [];
-  const seed = Date.now() >> 16;
 
-  const priorJournal = recentEntries.filter((e) => e.type === "journal" && e.metrics);
-  const avg = (key) => {
-    const vals = priorJournal.slice(-10, -1).map((e) => e.metrics[key]).filter((v) => typeof v === "number");
-    if (!vals.length) return null;
-    return vals.reduce((a, b) => a + b, 0) / vals.length;
-  };
+  // What has already been finished today, so it can be shown as done.
+  const today = dateKey();
+  const doneToday = new Set(
+    (await db.allActivityLog().catch(() => []))
+      .filter((r) => dateKey(new Date(r.date)) === today)
+      .map((r) => r.detail?.contentKey)
+      .filter(Boolean)
+  );
 
-  const reasons = [];
+  // Which of the person's own patterns have shifted, measured over windows
+  // rather than off a single entry. Empty is the normal result, and until
+  // there is enough history nothing is claimed at all.
+  const { ready, signals } = detectSignals(recentEntries);
 
-  const avgNoun = avg("nounRate");
-  if (latestMetrics && avgNoun !== null && latestMetrics.nounRate < avgNoun * 0.85) {
-    reasons.push("naming");
+  // Bridge to the older reason names still used in a few copy strings.
+  const reasons = new Set();
+  for (const s of signals) {
+    if (s.key === "wordFinding" || s.key === "specificity") reasons.add("naming");
+    if (s.key === "variety" || s.key === "repetition") reasons.add("variety");
+    if (s.key === "elaboration") reasons.add("detail");
   }
-  const avgVocab = avg("vocabRichness");
-  if (latestMetrics && avgVocab !== null && latestMetrics.vocabRichness < avgVocab * 0.85) {
-    reasons.push("variety");
-  }
-  const avgWords = avg("wordCount");
-  if (latestMetrics && avgWords !== null && latestMetrics.wordCount < avgWords * 0.7) {
-    reasons.push("detail");
-  }
 
-  // Naming exercise, prioritized when noun rate dipped vs. their own average
-  const namingSet = pick(NAMING_SETS, seed);
+  /* --- Naming family --- */
+
+  const namingSet = pickFresh(NAMING_SETS, seen, (s) => `naming:${s.theme}`, seed);
   suggestions.push({
     id: "naming",
     kind: "naming",
     title: `Naming game: ${namingSet.theme}`,
-    tag: reasons.includes("naming") ? "Picked for you" : "Word practice",
-    tailored: reasons.includes("naming"),
-    why: reasons.includes("naming")
-      ? "Your last entry used fewer specific object words than your recent entries. This is a gentle way to reach for exact words."
-      : "A relaxed exercise in finding exact words.",
+    tag: reasons.has("naming") ? "Picked for you" : "Word finding",
+    tailored: reasons.has("naming"),
+    why: reasons.has("naming")
+      ? "Your last entry used fewer specific naming words than your recent ones. This is a gentle way to reach for exact words."
+      : "A relaxed exercise in finding exact words from a description.",
+    contentKey: `naming:${namingSet.theme}`,
     data: namingSet,
     real: true,
   });
 
-  // Word recall game
-  const recallList = pick(WORD_RECALL_LISTS, seed + 1);
+  const fluency = pickFresh(FLUENCY_CATEGORIES, seen, (f) => `fluency:${f.category}`, seed + 1);
+  suggestions.push({
+    id: "fluency",
+    kind: "fluency",
+    title: `How many can you name: ${fluency.category}`,
+    tag: reasons.has("variety") ? "Picked for you" : "Word finding",
+    tailored: reasons.has("variety"),
+    why: reasons.has("variety")
+      ? "Your recent entries have drawn on a narrower set of words than usual for you. This one opens the tap wide."
+      : "One minute, one category, as many as come to mind. No target to hit.",
+    contentKey: `fluency:${fluency.category}`,
+    data: fluency,
+    real: true,
+  });
+
+  /* --- Memory family --- */
+
+  const list = pickFresh(WORD_LISTS, seen, (l) => `words:${l.words[0]}`, seed + 2);
   suggestions.push({
     id: "word-recall",
     kind: "word-recall",
     title: "Five-word memory game",
-    tag: "Memory practice",
+    tag: "Memory",
     tailored: false,
-    why: "Read five words, let them settle, then see how many come back to you.",
-    data: { words: recallList },
+    why: "Read five words, let something else fill the gap, then see what comes back.",
+    contentKey: `words:${list.words[0]}`,
+    data: list,
     real: true,
   });
 
-  // Description prompt, prioritized when entries are getting shorter or vocabulary narrower
-  const prompt = pick(DESCRIPTION_PROMPTS, seed + 2);
+  /* --- Description family --- */
+
+  const prompt = pickFresh(DESCRIPTION_PROMPTS, seen, (p) => `desc:${p.prompt}`, seed + 3);
+  const descTailored = reasons.has("detail") || reasons.has("variety");
   suggestions.push({
     id: "description",
     kind: "description",
-    title: "Description prompt",
-    tag: reasons.includes("detail") || reasons.includes("variety") ? "Picked for you" : "Storytelling",
-    tailored: reasons.includes("detail") || reasons.includes("variety"),
-    why: reasons.includes("detail")
+    title: prompt.kind === "procedural" ? "Step by step" : prompt.kind === "reminiscence" ? "Looking back" : "Describe the scene",
+    tag: descTailored ? "Picked for you" : prompt.kind === "reminiscence" ? "Memories" : "Storytelling",
+    tailored: descTailored,
+    why: reasons.has("detail")
       ? "Your recent entries have been shorter than usual for you. This prompt invites a longer, detail-rich description."
-      : reasons.includes("variety")
-        ? "This prompt invites a wide range of words: colors, textures, places, feelings."
-        : "An open prompt to describe something you know well.",
-    data: { prompt },
+      : reasons.has("variety")
+        ? "This prompt invites a wide range of words: colours, textures, places, feelings."
+        : prompt.kind === "procedural"
+          ? "Describing a familiar routine in order, one step at a time."
+          : prompt.kind === "reminiscence"
+            ? "An invitation to talk about something from your own life."
+            : "An open prompt to describe something in front of you.",
+    contentKey: `desc:${prompt.prompt}`,
+    data: { prompt: prompt.prompt, kind: prompt.kind },
     real: true,
   });
 
-  // Well-designed placeholders (clearly marked as coming soon)
-  suggestions.push({
-    id: "photo-story",
-    kind: "placeholder",
-    title: "Photo story",
-    tag: "Coming soon",
-    tailored: false,
-    why: "Pick one of your own photos and tell the story behind it: who was there, what happened before and after.",
-    real: false,
-  });
+  /* --- Photo story: only offered when they actually have a photo --- */
 
+  const photoEntry = await findEntryWithPhoto(recentEntries);
+  if (photoEntry) {
+    const photoPrompt = PHOTO_PROMPTS[Math.abs(Math.floor(seed / 60000)) % PHOTO_PROMPTS.length];
+    suggestions.push({
+      id: "photo-story",
+      kind: "photo-story",
+      title: "Photo story",
+      tag: "Memories",
+      tailored: false,
+      why: "A picture from your own journal, and the story behind it.",
+      contentKey: `photo:${photoEntry.id}`,
+      data: { entry: photoEntry, prompt: photoPrompt },
+      real: true,
+    });
+  }
+
+  /* --- Music moments --- */
+
+  const era = pickFresh(MUSIC_ERAS, seen, (e) => `music:${e.era}`, seed + 4);
   suggestions.push({
     id: "music-moments",
-    kind: "placeholder",
-    title: "Music moments",
-    tag: "Coming soon",
+    kind: "music",
+    title: `Music moments: ${era.era}`,
+    tag: "Memories",
     tailored: false,
-    why: "Listen to a song from a decade you choose and describe where it takes you.",
-    real: false,
+    why: "Pick a tune or a place you remember, and say where it takes you.",
+    contentKey: `music:${era.era}`,
+    data: era,
+    real: true,
   });
 
-  // Tailored ones first
-  suggestions.sort((a, b) => (b.tailored ? 1 : 0) - (a.tailored ? 1 : 0));
+  /* --- An open question, with no right answer --- */
+
+  const open = pickFresh(OPEN_PROMPTS, seen, (p) => `open:${p.prompt}`, seed + 5);
+  suggestions.push({
+    id: "open",
+    kind: "description",
+    title: "A question for you",
+    tag: "Just talking",
+    tailored: false,
+    why: "No right answer to this one. Say as much or as little as you like.",
+    contentKey: `open:${open.prompt}`,
+    data: { prompt: open.prompt, kind: "open" },
+    real: true,
+  });
+
+  // Score every activity against the detected shifts. An activity that
+  // addresses the strongest shift rises to the top and carries the reason it
+  // was chosen, stated as a change in the person's own patterns.
+  for (const s of suggestions) {
+    s.doneToday = doneToday.has(s.contentKey);
+    if (!ready || !signals.length || !s.real) {
+      s.matchScore = 0;
+      continue;
+    }
+    const { score, reason } = scoreForSignals(s.kind, signals);
+    s.matchScore = score;
+    s.pendingReason = score > 0 ? reason : null;
+  }
+
+  // Only the best-matched few are marked as chosen for a reason. Tagging most
+  // of the list "Picked for you" would drain the label of meaning and, worse,
+  // would surround the person with a wall of things that have changed about
+  // them. The rest simply stay ordinary activities.
+  const MAX_TAILORED = 2;
+  const seenReasons = new Set();
+  suggestions
+    .filter((s) => s.pendingReason && !s.doneToday)
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .forEach((s) => {
+      // One activity per reason, so the same sentence is not repeated twice.
+      if (seenReasons.size >= MAX_TAILORED || seenReasons.has(s.pendingReason.key)) return;
+      seenReasons.add(s.pendingReason.key);
+      s.tailored = true;
+      s.tag = "Picked for you";
+      s.why = s.pendingReason.invite;
+      s.because = s.pendingReason.because;
+      s.signalKey = s.pendingReason.key;
+    });
+
+  suggestions.sort((a, b) => {
+    if (a.doneToday !== b.doneToday) return a.doneToday ? 1 : -1;
+    if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+    return (b.tailored ? 1 : 0) - (a.tailored ? 1 : 0);
+  });
   return suggestions;
+}
+
+/** How many entries are still needed before tailoring can begin. */
+export async function tailoringStatus(entries) {
+  const { ready, entriesNeeded, signals } = detectSignals(entries);
+  return { ready, entriesNeeded, signalCount: signals.length };
+}
+
+/** Finds a past entry that actually has a photo attached. */
+async function findEntryWithPhoto(entries) {
+  const candidates = [...entries].filter((e) => e.type === "journal").reverse();
+  for (const entry of candidates.slice(0, 25)) {
+    try {
+      const photos = await db.getPhotosForEntry(entry.id);
+      if (photos && photos.length) return { ...entry, photos };
+    } catch {
+      /* storage unavailable; skip */
+    }
+  }
+  return null;
 }
 
 export async function logActivityCompletion(kind, detail) {

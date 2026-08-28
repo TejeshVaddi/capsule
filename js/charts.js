@@ -5,12 +5,16 @@
 //  - Notes state what changed, factually, whatever the direction.
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
+import { VOCAB_POOL_SIZE, pooledVocabSeries } from "./analysis.js";
+
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },
   { key: "nounRate", label: "Noun share of content words", researchBacked: true, format: (v) => `${(v * 100).toFixed(0)}%` },
   { key: "pronounRate", label: "Pronoun share of content words", researchBacked: true, format: (v) => `${(v * 100).toFixed(0)}%` },
   { key: "adverbRate", label: "Adverb share of content words", researchBacked: true, format: (v) => `${(v * 100).toFixed(0)}%` },
-  { key: "vocabRichness", label: "Vocabulary variety (unique/total)", researchBacked: true, format: (v) => `${(v * 100).toFixed(0)}%` },
+  { key: "vocabRichness", label: "Vocabulary variety", researchBacked: true, pooled: true,
+    format: (v) => `${(v * 100).toFixed(0)}%`,
+    note: `Measured across your last ${VOCAB_POOL_SIZE} entries together, not one at a time. A single short entry does not contain enough words to judge variety fairly, so this line begins once you have ${VOCAB_POOL_SIZE} entries.` },
   { key: "graphDensity", label: "Word-graph connectedness", researchBacked: true, format: (v) => v.toFixed(3) },
   { key: "graphRepetition", label: "Word-graph repetition (mean edge weight)", researchBacked: true, format: (v) => v.toFixed(2) },
   { key: "graphHub", label: "Word-graph hub strength (max in-degree)", researchBacked: true, format: (v) => Math.round(v) },
@@ -18,6 +22,10 @@ export const METRIC_DEFS = [
 ];
 
 export function metricSeriesFromEntries(entries, key) {
+  // Vocabulary variety is pooled across entries, because a single one is too
+  // short to measure. See pooledVocabSeries for why.
+  if (key === "vocabRichness") return pooledVocabSeries(entries);
+
   return entries
     .filter((e) => e.metrics)
     .map((e) => {

@@ -22,7 +22,10 @@ export async function renderRecallView(root, { navigate }) {
     return;
   }
 
-  const photos = await db.getPhotosForEntry(target.id);
+  // Only ever that day's own photos. If the day has none, no picture element
+  // appears at all: a stand-in image would be worse than nothing, because it
+  // would be offered as a memory cue for a day it has nothing to do with.
+  const photos = await db.getPhotosForEntry(target.id).catch(() => []) || [];
   const age = daysBetween(target.date, new Date().toISOString());
 
   const panel = el(`
@@ -35,10 +38,10 @@ export async function renderRecallView(root, { navigate }) {
         <p style="font-size:1.15rem; font-weight:600; color: var(--purple);">
           ${escapeHtml(formatFriendlyDate(target.date))}
         </p>
-        <div class="photo-strip" data-slot="photos"></div>
+        ${photos.length ? `<p class="recall-hint-label">${icon("camera")} A picture from that day, to help</p>` : ""}
+        <div class="recall-hint-strip" data-slot="photos"></div>
         <p class="muted" style="margin-top:14px;">
           Take a moment. What do you remember from this day? Who was there, what happened, how did it feel?
-          ${photos.length ? "The photos above are from that day." : ""}
         </p>
         <div data-slot="composer"></div>
         <button class="btn btn-primary btn-large" data-slot="save">I've said what I remember</button>
@@ -50,7 +53,7 @@ export async function renderRecallView(root, { navigate }) {
 
   const strip = panel.querySelector('[data-slot="photos"]');
   for (const p of photos) {
-    const img = el(`<img class="photo-thumb" style="width:130px;height:130px;" alt="Photo from that day" />`);
+    const img = el(`<img class="recall-hint-photo" alt="Photo from that day" />`);
     img.src = photoUrl(p.blob);
     strip.appendChild(img);
   }

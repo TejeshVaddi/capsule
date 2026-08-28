@@ -81,3 +81,22 @@ create table if not exists public.deletion_audit (
 alter table public.deletion_audit enable row level security;
 
 create index if not exists deletion_audit_hash on public.deletion_audit (user_hash);
+
+-- Evening reminder preferences.
+-- Opt-in only. Stores the address to send to and the last day a reminder
+-- went out, so nobody is emailed twice in a day.
+create table if not exists public.reminder_prefs (
+  user_id uuid primary key references auth.users (id) on delete cascade default auth.uid(),
+  email text not null,
+  enabled boolean not null default false,
+  send_hour_local integer not null default 19,
+  last_reminded_on date,
+  created_at timestamptz not null default now()
+);
+
+alter table public.reminder_prefs enable row level security;
+
+create policy "users manage own reminder prefs"
+  on public.reminder_prefs for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

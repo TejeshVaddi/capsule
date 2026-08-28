@@ -3,16 +3,25 @@ import { onAuthChange } from "./cloud.js";
 import { cloudConfigured } from "./config.js";
 import { revokePhotoUrls } from "./ui.js";
 import { ICONS, LOGO_SVG, LOGO_DATA_URI } from "./icons.js";
+import { renderHomeView } from "./views/home.js";
 import { renderJournalView } from "./views/journal.js";
+import { playIntro } from "./intro.js";
+import { getStreak } from "./daily.js";
 import { renderRecallView } from "./views/recall.js";
 import { renderActivitiesView } from "./views/activities.js";
 import { renderTrendsView } from "./views/trends.js";
 import { renderHistoryView } from "./views/history.js";
-import { renderAccountView } from "./views/account.js";
+import { renderAccountView, openDeleteFlow } from "./views/account.js";
+import { renderFooter } from "./footer.js";
+import { isCloudMode } from "./data.js";
 import { destroyCharts } from "./charts.js";
 import { shouldShowWalkthrough, startWalkthrough } from "./walkthrough.js";
+import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js";
+import { openTerms, TERMS_VERSION } from "./terms.js";
+import { migrateMetrics } from "./migrate.js";
 
 const VIEWS = {
+  home: renderHomeView,
   journal: renderJournalView,
   recall: renderRecallView,
   activities: renderActivitiesView,
@@ -35,7 +44,7 @@ for (const btn of tabBar.querySelectorAll(".tab-btn")) {
 }
 
 async function navigate(viewName) {
-  if (!VIEWS[viewName]) viewName = "journal";
+  if (!VIEWS[viewName]) viewName = "home";
   currentView = viewName;
 
   destroyCharts();
@@ -60,6 +69,15 @@ async function navigate(viewName) {
         <p>That page hit a snag. Your saved entries are safe. Try another tab.</p>
       </div>`;
   }
+
+  // The legal footer sits on every screen, including the error state above,
+  // so these links are never more than a scroll away.
+  viewRoot.appendChild(renderFooter({ navigate, onDeleteData: openDeleteFromFooter }));
+}
+
+/** Footer "Delete your data" opens the flow that matches the current mode. */
+function openDeleteFromFooter(nav) {
+  openDeleteFlow({ mode: isCloudMode() ? "cloud" : "local", navigate: nav });
 }
 
 tabBar.addEventListener("click", (e) => {
@@ -78,12 +96,29 @@ ackCheckbox.addEventListener("change", () => {
   ackContinue.disabled = !ackCheckbox.checked;
 });
 
+// A summary of the policy sits on the opening screen itself, with the full
+// text one tap away, so nobody has to hunt for it or leave the app to read it.
+document.getElementById("policy-preview").innerHTML = `
+  <p class="policy-preview-title">How Capsule handles your information</p>
+  <ul>
+    <li>Your entries, photos, and speech measurements are visible to <strong>you only</strong>. This is enforced at the database level.</li>
+    <li>We never sell your information, show ads, or use it to diagnose anything.</li>
+    <li>Your email is used only to send a sign-in code. There is no password.</li>
+    <li>You can delete your account and everything in it at any time, and deletion happens straight away.</li>
+    <li>Without an account, everything stays on this device and is never sent anywhere.</li>
+  </ul>`;
+
+document.getElementById("policy-open").addEventListener("click", () => openPrivacyPolicy());
+document.getElementById("terms-open").addEventListener("click", () => openTerms());
+
 ackContinue.addEventListener("click", async () => {
-  await db.setMeta("disclaimerAcknowledged", new Date().toISOString());
+  const at = new Date().toISOString();
+  await db.setMeta("disclaimerAcknowledged", at);
+  await db.setMeta("legalRead", { privacyVersion: POLICY_VERSION, termsVersion: TERMS_VERSION, at });
   overlay.hidden = true;
   app.hidden = false;
   // On a fresh cloud-enabled install, start at sign-in; otherwise the journal.
-  await navigate(cloudConfigured() ? "account" : "journal");
+  await navigate(cloudConfigured() ? "account" : "home");
   await maybeRunWalkthrough();
 });
 
@@ -132,6 +167,15 @@ async function boot() {
 
   await refreshDataMode();
 
+  // Recompute anything saved under an older metric definition, so trend
+  // lines never mix two definitions of the same measurement.
+  try {
+    const { migrated } = await migrateMetrics();
+    if (migrated) console.info(`Recomputed metrics for ${migrated} entr${migrated === 1 ? "y" : "ies"}.`);
+  } catch (err) {
+    console.error("Metric migration failed:", err);
+  }
+
   let lastUserId = null;
   onAuthChange(async (session) => {
     await refreshDataMode();
@@ -146,7 +190,10 @@ async function boot() {
 
   if (acknowledged) {
     app.hidden = false;
-    await navigate("journal");
+    // The opening sequence plays before the first paint of the home screen.
+    const streak = await getStreak().catch(() => ({ count: 0 }));
+    await playIntro({ streak: streak.count || 0, atRisk: streak.atRisk });
+    await navigate("home");
     await maybeRunWalkthrough();
   } else {
     overlay.hidden = false;

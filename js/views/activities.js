@@ -1,8 +1,10 @@
-import { db } from "../data.js";
+import { db, newId } from "../data.js";
 import { suggestActivities, logActivityCompletion } from "../activities.js";
 import { analyzeText } from "../analysis.js";
 import { SpeechInput, speechSupported } from "../speech.js";
-import { toast, escapeHtml, el, createSpeechComposer } from "../ui.js";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl } from "../ui.js";
+import { icon, ICONS } from "../icons.js";
 
 export async function renderActivitiesView(root) {
   root.innerHTML = "";
@@ -10,7 +12,7 @@ export async function renderActivitiesView(root) {
   const all = await db.allEntries();
   const journals = all.filter((e) => e.type === "journal");
   const latest = journals.length ? journals[journals.length - 1].metrics : null;
-  const suggestions = suggestActivities(latest, all);
+  const suggestions = await suggestActivities(latest, all);
 
   const panel = el(`
     <div class="stack">
@@ -20,6 +22,7 @@ export async function renderActivitiesView(root) {
       </div>
       <div class="stack" data-slot="list"></div>
       <div data-slot="stage"></div>
+      <div data-slot="history"></div>
     </div>
   `);
   root.appendChild(panel);
@@ -29,11 +32,14 @@ export async function renderActivitiesView(root) {
 
   for (const s of suggestions) {
     const card = el(`
-      <div class="glass-card activity-card">
-        <span class="pill ${s.tailored ? "pill-yellow" : s.real ? "pill-blue" : ""} activity-tag">${escapeHtml(s.tag)}</span>
+      <div class="glass-card activity-card${s.doneToday ? " activity-done" : ""}">
+        <span class="pill ${s.doneToday ? "" : s.tailored ? "pill-yellow" : s.real ? "pill-blue" : ""} activity-tag">
+          ${s.doneToday ? "Done today" : escapeHtml(s.tag)}
+        </span>
         <strong style="font-size:1.15rem;">${escapeHtml(s.title)}</strong>
+        ${s.because && !s.doneToday ? `<span class="activity-because">${escapeHtml(s.because)}</span>` : ""}
         <span class="muted">${escapeHtml(s.why)}</span>
-        ${s.real ? `<button class="btn btn-accent" style="align-self:flex-start;">Start</button>` : ``}
+        ${s.real ? `<button class="btn ${s.doneToday ? "btn-secondary" : "btn-accent"}" style="align-self:flex-start;">${s.doneToday ? "Do it again" : "Start"}</button>` : ``}
       </div>
     `);
     if (s.real) {
@@ -44,53 +50,53 @@ export async function renderActivitiesView(root) {
     }
     list.appendChild(card);
   }
+
+  renderHistory(panel.querySelector('[data-slot="history"]'));
 }
 
-function startActivity(stage, suggestion) {
-  if (suggestion.kind === "naming") return namingGame(stage, suggestion);
-  if (suggestion.kind === "word-recall") return wordRecallGame(stage, suggestion);
-  if (suggestion.kind === "description") return descriptionActivity(stage, suggestion);
+function startActivity(stage, s) {
+  if (s.kind === "naming") return namingGame(stage, s);
+  if (s.kind === "fluency") return fluencyGame(stage, s);
+  if (s.kind === "word-recall") return wordRecallGame(stage, s);
+  if (s.kind === "description") return descriptionActivity(stage, s);
+  if (s.kind === "photo-story") return photoStoryActivity(stage, s);
+  if (s.kind === "music") return musicMomentsActivity(stage, s);
+}
+
+/* ---------- Shared: a small speech button that fills a text input ---------- */
+
+function attachMicToInput(container, input, { onText } = {}) {
+  if (!speechSupported) return null;
+  const btn = el(`<button class="mic-inline" type="button" aria-label="Speak your answer">${ICONS.mic}</button>`);
+  container.appendChild(btn);
+
+  const speech = new SpeechInput({
+    onFinal: (text) => {
+      input.value = text.trim();
+      if (onText) onText(input.value);
+    },
+    onStart: () => btn.classList.add("recording"),
+    onEnd: () => btn.classList.remove("recording"),
+    onError: () => {
+      btn.classList.remove("recording");
+      toast("Speech didn't work that time. You can type instead.");
+    },
+  });
+
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("recording")) speech.stop();
+    else speech.start();
+  });
+  return speech;
 }
 
 /* ---------- Naming game ---------- */
-
-const NAMING_CLUES = {
-  kettle: "You boil water in it for tea.",
-  spoon: "You stir your tea with it.",
-  oven: "You bake bread or roast dinner in it.",
-  plate: "You serve food on it.",
-  cup: "You drink tea or coffee from it.",
-  pan: "You fry eggs in it.",
-  rose: "A classic red flower with thorns.",
-  shovel: "You dig holes in the garden with it.",
-  soil: "Plants grow in this dark, crumbly stuff.",
-  seed: "You plant this tiny thing and it grows.",
-  leaf: "It's green and grows on branches.",
-  fence: "It marks the edge of a garden or yard.",
-  rain: "Water falling from the sky.",
-  cloud: "White or gray, floating in the sky.",
-  wind: "You can't see it, but it moves the trees.",
-  snow: "Cold, white, and falls in winter.",
-  sunshine: "Warm light on a clear day.",
-  storm: "Thunder, lightning, and heavy rain together.",
-  birthday: "A yearly celebration with cake and candles.",
-  wedding: "Two people getting married.",
-  picnic: "Eating a packed meal outdoors on a blanket.",
-  holiday: "Time away from routine, often traveling.",
-  dinner: "The main evening meal.",
-  visit: "When someone comes to see you.",
-  library: "A quiet building full of books to borrow.",
-  market: "Stalls selling fruit, vegetables, and goods.",
-  church: "A building with a steeple where people worship.",
-  park: "Green public space with benches and paths.",
-  bakery: "The shop that sells fresh bread and cakes.",
-  station: "Where you catch a train.",
-};
 
 function namingGame(stage, suggestion) {
   const items = [...suggestion.data.items].sort(() => Math.random() - 0.5);
   let index = 0;
   let gotten = 0;
+  let activeSpeech = null;
 
   stage.innerHTML = "";
   const card = el(`
@@ -100,7 +106,9 @@ function namingGame(stage, suggestion) {
         <span class="pill" data-slot="progress"></span>
       </div>
       <p style="font-size:1.25rem; font-weight:600;" data-slot="clue"></p>
-      <input type="text" data-slot="answer" placeholder="Type the word..." autocomplete="off" />
+      <div class="answer-row">
+        <input type="text" data-slot="answer" placeholder="Say or type the word..." autocomplete="off" />
+      </div>
       <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
         <button class="btn btn-primary" data-slot="check">Check</button>
         <button class="btn btn-secondary" data-slot="reveal">Show me</button>
@@ -114,18 +122,28 @@ function namingGame(stage, suggestion) {
   const answer = card.querySelector('[data-slot="answer"]');
   const feedback = card.querySelector('[data-slot="feedback"]');
   const progress = card.querySelector('[data-slot="progress"]');
+  const row = card.querySelector(".answer-row");
+
+  activeSpeech = attachMicToInput(row, answer, {
+    onText: () => card.querySelector('[data-slot="check"]').click(),
+  });
 
   function show() {
     if (index >= items.length) {
+      if (activeSpeech) activeSpeech.stop();
       card.innerHTML = `
-        <h3>Lovely work</h3>
-        <p style="font-size:1.15rem;">You found ${gotten} of ${items.length} words. Thanks for playing. Every bit of word-reaching counts.</p>
+        <h3>That's the set finished</h3>
+        <p style="font-size:1.15rem;">You found ${gotten} of ${items.length} without help.</p>
+        <p class="muted">Reaching for a word and not finding it is an ordinary part of how memory works. Doing the reaching is the point.</p>
       `;
-      logActivityCompletion("naming", { theme: suggestion.data.theme, gotten, total: items.length });
+      logActivityCompletion("naming", {
+        contentKey: suggestion.contentKey, theme: suggestion.data.theme,
+        gotten, total: items.length,
+      });
       return;
     }
     progress.textContent = `${index + 1} of ${items.length}`;
-    clue.textContent = NAMING_CLUES[items[index]] || `Something to do with ${suggestion.data.theme.toLowerCase()}.`;
+    clue.textContent = items[index].clue;
     answer.value = "";
     feedback.textContent = "";
     answer.focus();
@@ -140,8 +158,9 @@ function namingGame(stage, suggestion) {
   card.querySelector('[data-slot="check"]').addEventListener("click", () => {
     const guess = answer.value.trim().toLowerCase();
     if (!guess) return;
-    if (guess === items[index] || guess.includes(items[index])) {
-      feedback.textContent = "Yes! That's it.";
+    const target = items[index].word.toLowerCase();
+    if (guess === target || guess.includes(target) || target.includes(guess)) {
+      feedback.textContent = "Yes, that's it.";
       feedback.style.color = "#2e6b3f";
       advance(true);
     } else {
@@ -153,7 +172,7 @@ function namingGame(stage, suggestion) {
     if (e.key === "Enter") card.querySelector('[data-slot="check"]').click();
   });
   card.querySelector('[data-slot="reveal"]').addEventListener("click", () => {
-    feedback.textContent = `It was "${items[index]}".`;
+    feedback.textContent = `It was "${items[index].word}".`;
     feedback.style.color = "var(--purple)";
     advance(false);
   });
@@ -161,50 +180,202 @@ function namingGame(stage, suggestion) {
   show();
 }
 
-/* ---------- Word recall game ---------- */
+/* ---------- Category fluency ---------- */
 
-function wordRecallGame(stage, suggestion) {
-  const words = suggestion.data.words;
+function fluencyGame(stage, suggestion) {
+  const DURATION = 60;
+  let remaining = DURATION;
+  let timer = null;
+  const said = new Set();
+
   stage.innerHTML = "";
-
   const card = el(`
     <div class="glass-panel">
-      <h3>Five-word memory game</h3>
-      <p class="muted">Read these five words slowly. When you're ready, hide them and see how many come back.</p>
-      <div data-slot="words" style="display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;">
-        ${words.map((w) => `<span class="pill pill-yellow" style="font-size:1.15rem; padding:10px 20px;">${escapeHtml(w)}</span>`).join("")}
+      <h3>${escapeHtml(suggestion.data.prompt)}</h3>
+      <p class="muted">You have a minute. There is no target, and stopping early is completely fine.</p>
+      <div data-slot="pre">
+        <button class="btn btn-primary btn-large" data-slot="begin">Begin</button>
       </div>
-      <button class="btn btn-primary" data-slot="hide">I've read them. Hide the words</button>
-      <div data-slot="recall-area" hidden>
-        <p style="font-weight:600; margin-top:16px;">Type every word you can remember, separated by spaces or commas:</p>
-        <input type="text" data-slot="answer" placeholder="e.g. apple, river..." autocomplete="off" />
-        <button class="btn btn-primary" style="margin-top:12px;" data-slot="check">See how I did</button>
+      <div data-slot="live" hidden>
+        <div class="fluency-timer" data-slot="timer">1:00</div>
+        <div class="answer-row">
+          <input type="text" data-slot="entry" placeholder="Say or type one, then add another..." autocomplete="off" />
+        </div>
+        <button class="btn btn-secondary" style="margin-top:12px;" data-slot="add">Add it</button>
+        <button class="btn btn-secondary" style="margin-top:12px;" data-slot="stop">I'm finished</button>
+        <div class="fluency-list" data-slot="said"></div>
       </div>
       <div data-slot="result"></div>
     </div>
   `);
   stage.appendChild(card);
 
-  card.querySelector('[data-slot="hide"]').addEventListener("click", () => {
-    card.querySelector('[data-slot="words"]').style.visibility = "hidden";
-    card.querySelector('[data-slot="hide"]').hidden = true;
-    card.querySelector('[data-slot="recall-area"]').hidden = false;
-    card.querySelector('[data-slot="answer"]').focus();
+  const entry = card.querySelector('[data-slot="entry"]');
+  const saidWrap = card.querySelector('[data-slot="said"]');
+  const timerEl = card.querySelector('[data-slot="timer"]');
+
+  function addWord(raw) {
+    const word = (raw || "").trim().toLowerCase();
+    if (!word) return;
+    if (!said.has(word)) {
+      said.add(word);
+      saidWrap.innerHTML = [...said]
+        .map((w) => `<span class="pill pill-blue">${escapeHtml(w)}</span>`).join(" ");
+    }
+    entry.value = "";
+    entry.focus();
+  }
+
+  attachMicToInput(card.querySelector(".answer-row"), entry, { onText: (t) => addWord(t) });
+
+  card.querySelector('[data-slot="add"]').addEventListener("click", () => addWord(entry.value));
+  entry.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addWord(entry.value);
   });
 
-  card.querySelector('[data-slot="check"]').addEventListener("click", () => {
-    const typed = (card.querySelector('[data-slot="answer"]').value.toLowerCase().match(/[a-z']+/g) || []);
-    const found = words.filter((w) => typed.includes(w));
-    const missed = words.filter((w) => !typed.includes(w));
+  function finish() {
+    clearInterval(timer);
+    card.querySelector('[data-slot="live"]').hidden = true;
     card.querySelector('[data-slot="result"]').innerHTML = `
-      <p style="font-size:1.15rem; font-weight:600; margin-top:16px;">You remembered ${found.length} of ${words.length}.</p>
+      <h3 style="margin-top:6px;">You named ${said.size}</h3>
+      ${said.size ? `<p>${[...said].map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
+      <p class="muted">This is your own count for today, not a score and not compared to anybody else.</p>
+    `;
+    logActivityCompletion("fluency", {
+      contentKey: suggestion.contentKey,
+      category: suggestion.data.category,
+      count: said.size,
+    });
+  }
+
+  card.querySelector('[data-slot="stop"]').addEventListener("click", finish);
+  card.querySelector('[data-slot="begin"]').addEventListener("click", () => {
+    card.querySelector('[data-slot="pre"]').hidden = true;
+    card.querySelector('[data-slot="live"]').hidden = false;
+    entry.focus();
+    timer = setInterval(() => {
+      remaining--;
+      const m = Math.floor(remaining / 60);
+      const s = String(remaining % 60).padStart(2, "0");
+      timerEl.textContent = `${m}:${s}`;
+      if (remaining <= 0) finish();
+    }, 1000);
+  });
+}
+
+/* ---------- Word recall, with a real delay ---------- */
+
+function wordRecallGame(stage, suggestion) {
+  const words = suggestion.data.words;
+  const distractors = suggestion.data.distractors || [];
+  const task = INTERFERENCE_TASKS[Math.floor(Math.random() * INTERFERENCE_TASKS.length)];
+  let found = [];
+  let missed = [];
+
+  stage.innerHTML = "";
+  const card = el(`<div class="glass-panel"></div>`);
+  stage.appendChild(card);
+
+  /* Step 1: study the words */
+  function study() {
+    card.innerHTML = `
+      <h3>Five-word memory game</h3>
+      <p class="muted">Read these five words slowly, once or twice.</p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;">
+        ${words.map((w) => `<span class="pill pill-yellow" style="font-size:1.15rem; padding:10px 20px;">${escapeHtml(w)}</span>`).join("")}
+      </div>
+      <button class="btn btn-primary btn-large" data-slot="next">I've read them</button>
+    `;
+    card.querySelector('[data-slot="next"]').addEventListener("click", interference);
+  }
+
+  /* Step 2: a short filled delay, so this measures recall and not echo */
+  function interference() {
+    let left = task.seconds;
+    card.innerHTML = `
+      <h3>Just a moment first</h3>
+      <p style="font-size:1.2rem; font-weight:600;">${escapeHtml(task.instruction)}</p>
+      <p class="muted">This short gap is what makes the next part about remembering rather than repeating.</p>
+      <div class="fluency-timer" data-slot="count">${left}</div>
+      <button class="btn btn-secondary" data-slot="skip">Skip ahead</button>
+    `;
+    const countEl = card.querySelector('[data-slot="count"]');
+    const tick = setInterval(() => {
+      left--;
+      countEl.textContent = left;
+      if (left <= 0) { clearInterval(tick); recall(); }
+    }, 1000);
+    card.querySelector('[data-slot="skip"]').addEventListener("click", () => {
+      clearInterval(tick);
+      recall();
+    });
+  }
+
+  /* Step 3: free recall */
+  function recall() {
+    card.innerHTML = `
+      <h3>Now, what comes back?</h3>
+      <p class="muted">Type or say every word you can remember. Any order is fine.</p>
+      <div class="answer-row">
+        <input type="text" data-slot="answer" placeholder="e.g. apple, river..." autocomplete="off" />
+      </div>
+      <button class="btn btn-primary btn-large" style="margin-top:12px;" data-slot="check">See how I did</button>
+    `;
+    const input = card.querySelector('[data-slot="answer"]');
+    attachMicToInput(card.querySelector(".answer-row"), input);
+    input.focus();
+
+    card.querySelector('[data-slot="check"]').addEventListener("click", () => {
+      const typed = (input.value.toLowerCase().match(/[a-z']+/g) || []);
+      found = words.filter((w) => typed.includes(w));
+      missed = words.filter((w) => !typed.includes(w));
+      if (missed.length && distractors.length) recognition();
+      else done();
+    });
+  }
+
+  /* Step 4: recognition for the ones that did not come back freely.
+     Recognising a word you could not retrieve is an ordinary difference,
+     which is why the wording below stays neutral about what it means. */
+  function recognition() {
+    const options = [...missed, ...distractors.slice(0, missed.length)].sort(() => Math.random() - 0.5);
+    card.innerHTML = `
+      <h3>One more look</h3>
+      <p class="muted">You recalled ${found.length} on your own. Some words are easier to spot than to summon, so tap any of these you think were on the list.</p>
+      <div class="recognition-grid" data-slot="options">
+        ${options.map((w) => `<button class="btn btn-secondary recognition-option" data-word="${escapeHtml(w)}">${escapeHtml(w)}</button>`).join("")}
+      </div>
+      <button class="btn btn-primary btn-large" style="margin-top:16px;" data-slot="finish">I'm done</button>
+    `;
+    const picked = new Set();
+    card.querySelectorAll(".recognition-option").forEach((b) => {
+      b.addEventListener("click", () => {
+        const w = b.dataset.word;
+        if (picked.has(w)) { picked.delete(w); b.classList.remove("picked"); }
+        else { picked.add(w); b.classList.add("picked"); }
+      });
+    });
+    card.querySelector('[data-slot="finish"]').addEventListener("click", () => {
+      const recognised = missed.filter((w) => picked.has(w));
+      done(recognised);
+    });
+  }
+
+  function done(recognised = []) {
+    card.innerHTML = `
+      <h3>Thank you for playing</h3>
+      <p style="font-size:1.15rem; font-weight:600;">You recalled ${found.length} of ${words.length} on your own${recognised.length ? `, and recognised ${recognised.length} more` : ""}.</p>
       ${found.length ? `<p>Came back to you: ${found.map((w) => `<span class="pill pill-blue">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
-      ${missed.length ? `<p>The others were: ${missed.map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
+      ${missed.length ? `<p>The full list was: ${words.map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
       <p class="muted">However many came back, taking the time is what matters.</p>
     `;
-    card.querySelector('[data-slot="check"]').disabled = true;
-    logActivityCompletion("word-recall", { found: found.length, total: words.length });
-  });
+    logActivityCompletion("word-recall", {
+      contentKey: suggestion.contentKey,
+      found: found.length, recognised: recognised.length, total: words.length,
+    });
+  }
+
+  study();
 }
 
 /* ---------- Description prompt ---------- */
@@ -213,7 +384,7 @@ function descriptionActivity(stage, suggestion) {
   stage.innerHTML = "";
   const card = el(`
     <div class="glass-panel">
-      <h3>Description prompt</h3>
+      <h3>${suggestion.data.kind === "procedural" ? "Step by step" : suggestion.data.kind === "reminiscence" ? "Looking back" : "Describe the scene"}</h3>
       <p style="font-size:1.2rem; font-weight:600; color: var(--purple);">${escapeHtml(suggestion.data.prompt)}</p>
       <div data-slot="composer"></div>
       <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
@@ -223,7 +394,82 @@ function descriptionActivity(stage, suggestion) {
   stage.appendChild(card);
 
   const composer = createSpeechComposer({
-    placeholder: "Take your time: colors, sounds, smells, people, feelings...",
+    placeholder: "Take your time: colours, sounds, smells, people, feelings...",
+    SpeechInputClass: SpeechInput,
+    speechSupported,
+  });
+  card.querySelector('[data-slot="composer"]').appendChild(composer.root);
+
+  card.querySelector('[data-slot="done"]').addEventListener("click", async () => {
+    const text = composer.getText();
+    if (!text) {
+      toast("Say or type your description first.");
+      return;
+    }
+    const m = analyzeText(text);
+
+    // Compare only to their own previous descriptions, and only when there
+    // are enough to say anything. No praise that the text has not earned.
+    const past = (await db.allActivityLog())
+      .filter((r) => r.kind === "description" && typeof r.detail?.wordCount === "number")
+      .slice(0, 5)
+      .map((r) => r.detail.wordCount);
+    let comparison = "";
+    if (past.length >= 2) {
+      const avg = past.reduce((a, b) => a + b, 0) / past.length;
+      const diff = m.wordCount - avg;
+      const pct = Math.abs(diff) / Math.max(avg, 1);
+      comparison = pct < 0.2
+        ? "That is about the same length as your recent descriptions."
+        : diff > 0
+          ? "That is longer than your recent descriptions."
+          : "That is shorter than your recent descriptions.";
+    }
+
+    card.querySelector('[data-slot="result"]').innerHTML = `
+      <div style="margin-top:16px;">
+        <div class="metric-row"><span class="metric-name">Words in your description</span><span class="metric-value">${m.wordCount}</span></div>
+        <div class="metric-row"><span class="metric-name">Different words used</span><span class="metric-value">${m.uniqueWords}</span></div>
+        <div class="metric-row"><span class="metric-name">Naming words</span><span class="metric-value">${m.nounCount}</span></div>
+      </div>
+      ${comparison ? `<p class="muted">${comparison}</p>` : ""}
+      <p class="muted">Thank you for taking the time.</p>
+    `;
+    card.querySelector('[data-slot="done"]').disabled = true;
+    composer.destroy();
+    logActivityCompletion("description", {
+      contentKey: suggestion.contentKey,
+      prompt: suggestion.data.prompt,
+      wordCount: m.wordCount,
+    });
+  });
+}
+
+/* ---------- Photo story ---------- */
+
+function photoStoryActivity(stage, suggestion) {
+  const { entry, prompt } = suggestion.data;
+  const photo = entry.photos[0];
+  const when = new Date(entry.date).toLocaleDateString(undefined, {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+
+  stage.innerHTML = "";
+  const card = el(`
+    <div class="glass-panel">
+      <h3>Photo story</h3>
+      <p class="muted">From your journal, ${escapeHtml(when)}.</p>
+      <img class="photo-large" src="${photoUrl(photo.blob)}" alt="A photo from your journal" />
+      <p style="font-size:1.2rem; font-weight:600; color: var(--purple); margin-top:14px;">${escapeHtml(prompt)}</p>
+      <div data-slot="composer"></div>
+      <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
+      <div data-slot="result"></div>
+    </div>
+  `);
+  stage.appendChild(card);
+
+  const composer = createSpeechComposer({
+    placeholder: "Whatever comes back to you about this picture...",
     SpeechInputClass: SpeechInput,
     speechSupported,
   });
@@ -232,20 +478,171 @@ function descriptionActivity(stage, suggestion) {
   card.querySelector('[data-slot="done"]').addEventListener("click", () => {
     const text = composer.getText();
     if (!text) {
-      toast("Say or type your description first.");
+      toast("Say or type something about the photo first.");
       return;
     }
     const m = analyzeText(text);
     card.querySelector('[data-slot="result"]').innerHTML = `
-      <div style="margin-top:16px;">
-        <div class="metric-row"><span class="metric-name">Words in your description</span><span class="metric-value">${m.wordCount}</span></div>
-        <div class="metric-row"><span class="metric-name">Different words used</span><span class="metric-value">${m.uniqueWords}</span></div>
-        <div class="metric-row"><span class="metric-name">Naming words</span><span class="metric-value">${m.nounCount}</span></div>
+      <div class="compare-cols" style="margin-top:16px;">
+        <div class="compare-col">
+          <strong>What you wrote that day</strong>
+          <p>${escapeHtml(entry.text)}</p>
+        </div>
+        <div class="compare-col">
+          <strong>What you said just now</strong>
+          <p>${escapeHtml(text)}</p>
+        </div>
       </div>
-      <p class="muted">A rich description! Thanks for taking the time.</p>
+      <p class="muted">Two tellings of the same day, side by side. They are meant to be different, not matching.</p>
     `;
     card.querySelector('[data-slot="done"]').disabled = true;
     composer.destroy();
-    logActivityCompletion("description", { prompt: suggestion.data.prompt, wordCount: m.wordCount });
+    logActivityCompletion("photo-story", {
+      contentKey: suggestion.contentKey,
+      entryId: entry.id,
+      wordCount: m.wordCount,
+    });
   });
+}
+
+/* ---------- Music moments ---------- */
+
+function musicMomentsActivity(stage, suggestion) {
+  const era = suggestion.data;
+  const prompt = MUSIC_PROMPTS[Math.floor(Math.random() * MUSIC_PROMPTS.length)];
+  let chosenCue = null;
+
+  stage.innerHTML = "";
+  const card = el(`<div class="glass-panel"></div>`);
+  stage.appendChild(card);
+
+  /* Step 1: pick a cue that means something to them */
+  function choose() {
+    card.innerHTML = `
+      <h3>Music moments: ${escapeHtml(era.era)}</h3>
+      <p class="muted">Capsule does not play the music. Pick anything below that stirs something, and tell the story it brings back.</p>
+      <p style="font-weight:700; margin-top:16px;">Songs</p>
+      <div class="cue-grid">
+        ${era.songs.map((s) => `
+          <button class="cue-card" data-cue="${escapeHtml(s.title)} by ${escapeHtml(s.artist)}">
+            <strong>${escapeHtml(s.title)}</strong>
+            <span class="muted">${escapeHtml(s.artist)}</span>
+          </button>`).join("")}
+      </div>
+      <p style="font-weight:700; margin-top:18px;">Places and moments</p>
+      <div class="cue-grid">
+        ${era.scenes.map((s) => `
+          <button class="cue-card" data-cue="${escapeHtml(s)}">
+            <strong>${escapeHtml(s)}</strong>
+          </button>`).join("")}
+      </div>
+      <p class="muted" style="margin-top:18px;">None of these? Tap any one anyway and talk about whatever it reminds you of instead.</p>
+    `;
+    card.querySelectorAll(".cue-card").forEach((b) => {
+      b.addEventListener("click", () => { chosenCue = b.dataset.cue; tell(); });
+    });
+  }
+
+  /* Step 2: the reminiscence itself */
+  function tell() {
+    card.innerHTML = `
+      <h3>${escapeHtml(chosenCue)}</h3>
+      <p style="font-size:1.2rem; font-weight:600; color: var(--purple);">${escapeHtml(prompt)}</p>
+      <div data-slot="composer"></div>
+      <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
+      <button class="btn btn-secondary" style="margin-top:10px;" data-slot="back">Pick something else</button>
+      <div data-slot="result"></div>
+    `;
+    const composer = createSpeechComposer({
+      placeholder: "Whatever it brings back: people, places, how it felt...",
+      SpeechInputClass: SpeechInput,
+      speechSupported,
+    });
+    card.querySelector('[data-slot="composer"]').appendChild(composer.root);
+    card.querySelector('[data-slot="back"]').addEventListener("click", () => {
+      composer.destroy();
+      choose();
+    });
+
+    card.querySelector('[data-slot="done"]').addEventListener("click", () => {
+      const text = composer.getText();
+      if (!text) {
+        toast("Say or type what it brings back first.");
+        return;
+      }
+      const m = analyzeText(text);
+      card.querySelector('[data-slot="result"]').innerHTML = `
+        <div style="margin-top:16px;">
+          <div class="metric-row"><span class="metric-name">Words in your memory</span><span class="metric-value">${m.wordCount}</span></div>
+          <div class="metric-row"><span class="metric-name">Different words used</span><span class="metric-value">${m.uniqueWords}</span></div>
+        </div>
+        <p class="muted">Memories like this are worth keeping. You can save it into your journal.</p>
+        <button class="btn btn-accent" data-slot="save">Save this to my journal</button>
+      `;
+      card.querySelector('[data-slot="done"]').disabled = true;
+      composer.destroy();
+      logActivityCompletion("music", {
+        contentKey: suggestion.contentKey, era: era.era, cue: chosenCue, wordCount: m.wordCount,
+      });
+
+      card.querySelector('[data-slot="save"]').addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        try {
+          await db.putEntry({
+            id: newId(),
+            type: "journal",
+            date: new Date().toISOString(),
+            text: `${chosenCue}: ${text}`,
+            metrics: m,
+            photoIds: [],
+          });
+          btn.innerHTML = `${icon("check")} Saved to your journal`;
+          toast("Saved to your journal.");
+        } catch (err) {
+          console.error(err);
+          btn.disabled = false;
+          toast("Couldn't save that. You can try again.");
+        }
+      });
+    });
+  }
+
+  choose();
+}
+
+/* ---------- Gentle history ---------- */
+
+async function renderHistory(mount) {
+  let log = [];
+  try {
+    log = await db.allActivityLog();
+  } catch {
+    return;
+  }
+  if (!log.length) return;
+
+  const LABELS = {
+    naming: "Naming game",
+    fluency: "How many can you name",
+    "word-recall": "Five-word memory game",
+    description: "Description prompt",
+    "photo-story": "Photo story",
+    music: "Music moments",
+  };
+
+  const recent = log.slice(0, 8);
+  mount.appendChild(el(`
+    <div class="glass-card" style="margin-top:6px;">
+      <h3>What you've done</h3>
+      <p class="muted">${log.length} activit${log.length === 1 ? "y" : "ies"} so far. This is a record, not a score.</p>
+      <ul class="activity-log-list">
+        ${recent.map((r) => `
+          <li>
+            <span>${escapeHtml(LABELS[r.kind] || r.kind)}</span>
+            <span class="muted">${new Date(r.date).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</span>
+          </li>`).join("")}
+      </ul>
+    </div>
+  `));
 }

@@ -26,11 +26,17 @@
       your own past entries, never to anyone else. If something in your report seems worth discussing,
       consider sharing it with a doctor.
     </p>
+    <div class="policy-preview" id="policy-preview"></div>
+
     <label class="ack-row">
       <input type="checkbox" id="ack-checkbox" />
-      <span>I understand this is a journaling tool, not a diagnostic or medical device.</span>
+      <span>I understand this is a journaling tool, not a diagnostic or medical device, and I accept the Privacy Policy and Terms of Service.</span>
     </label>
     <button id="ack-continue" class="btn btn-primary btn-large" disabled>Continue to Capsule</button>
+    <div class="entry-legal-links">
+      <button id="policy-open" class="btn-text" type="button">Privacy Policy</button>
+      <button id="terms-open" class="btn-text" type="button">Terms of Service</button>
+    </div>
   </div>
 </div>
 
@@ -46,6 +52,10 @@
   <main id="view-root" class="view-root"></main>
 
   <nav class="tab-bar" id="tab-bar">
+    <button class="tab-btn" data-view="home" data-icon="home" aria-label="Home">
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">Home</span>
+    </button>
     <button class="tab-btn" data-view="journal" data-icon="pencil" aria-label="Today">
       <span class="tab-icon" aria-hidden="true"></span>
       <span class="tab-label">Today</span>

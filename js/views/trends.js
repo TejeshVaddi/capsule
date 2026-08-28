@@ -71,6 +71,7 @@ export async function renderTrendsView(root) {
           ${def.researchBacked ? "" : `<span class="pill" title="Tracked by Capsule; not a research-validated measure">app metric</span>`}
         </div>
         <div class="chart-wrap"><canvas></canvas></div>
+        ${def.note ? `<p class="muted chart-note">${escapeHtml(def.note)}</p>` : ""}
       </div>
     `);
     chartsWrap.appendChild(card);

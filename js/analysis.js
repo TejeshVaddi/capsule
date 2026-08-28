@@ -4,6 +4,77 @@
 
 const FILLER_WORDS = new Set(["um", "uh", "erm", "er", "hmm", "mm", "uhh", "umm"]);
 
+// Bumped whenever a metric's definition changes, so stored metrics computed
+// under an older definition can be recomputed rather than silently compared
+// against new ones. Entries keep their original text, so this is lossless.
+export const METRICS_VERSION = 3;
+
+// Window for the moving-average type-token ratio, in words.
+//
+// Chosen by measuring, not convention, and the measurements showed that a
+// SINGLE journal entry is simply too short to carry this metric:
+//   window 25 -> no real entry (13 to 19 words) is long enough to measure
+//   window 12 -> every entry measurable, but separation collapses to ~0.00003,
+//                because short windows saturate near 1.0 and stop discriminating
+//
+// So vocabulary variety is not measured per entry at all. It is measured over
+// a pooled run of recent entries (see pooledVocabRichness), which gives enough
+// text for a window wide enough to mean something. Per-entry values stay null,
+// which is the honest answer to a question the text cannot support.
+export const MATTR_WINDOW = 25;
+
+// How many consecutive entries are pooled before measuring variety.
+export const VOCAB_POOL_SIZE = 7;
+
+/**
+ * Vocabulary variety, measured as a moving-average type-token ratio.
+ *
+ * The plain ratio (unique / total) cannot be used for this: it falls
+ * mechanically as text gets longer, because every extra word is another
+ * chance to repeat one already used. In testing against simulated decline
+ * that confound was strong enough to INVERT the metric, so shortening
+ * entries appeared as richer vocabulary.
+ *
+ * MATTR takes the ratio inside a fixed-size window, slid across the text,
+ * and averages the results. Every measurement covers the same number of
+ * words, so length cancels out and two entries of different lengths can
+ * honestly be compared.
+ *
+ * Returns null when there are fewer words than one window. A short entry
+ * genuinely does not carry enough evidence, and reporting null is better
+ * than reporting a number that only reflects its brevity.
+ */
+export function movingAverageTTR(tokens, window = MATTR_WINDOW) {
+  if (!tokens || tokens.length < window) return null;
+
+  // Rolling frequency map, so this stays linear in the length of the text.
+  const counts = new Map();
+  let distinct = 0;
+  const add = (w) => {
+    const n = counts.get(w) || 0;
+    counts.set(w, n + 1);
+    if (n === 0) distinct++;
+  };
+  const remove = (w) => {
+    const n = counts.get(w);
+    if (n === 1) { counts.delete(w); distinct--; }
+    else counts.set(w, n - 1);
+  };
+
+  for (let i = 0; i < window; i++) add(tokens[i]);
+  let sum = distinct / window;
+  let windows = 1;
+
+  for (let i = window; i < tokens.length; i++) {
+    add(tokens[i]);
+    remove(tokens[i - window]);
+    sum += distinct / window;
+    windows++;
+  }
+
+  return sum / windows;
+}
+
 function tokenize(text) {
   return (text.match(/[A-Za-z']+/g) || []).map((w) => w.toLowerCase());
 }
@@ -97,7 +168,11 @@ export function analyzeText(rawText) {
   const tokens = tokenize(text);
   const wordCount = tokens.length;
   const uniqueWords = new Set(tokens).size;
-  const vocabRichness = wordCount > 0 ? uniqueWords / wordCount : 0;
+  // Length-invariant. Null when the entry is too short to measure honestly.
+  const vocabRichness = movingAverageTTR(tokens);
+  // The raw ratio is kept for reference only. It is NOT charted or trended,
+  // because it tracks how long an entry is more than how varied it is.
+  const typeTokenRatio = wordCount > 0 ? uniqueWords / wordCount : 0;
 
   const posTerms = window.nlp ? posTermsFromCompromise(text) : [];
   let nounCount = 0, verbCount = 0, adjCount = 0, advCount = 0, pronounCount = 0;
@@ -137,8 +212,10 @@ export function analyzeText(rawText) {
 
   return {
     wordCount,
+    v: METRICS_VERSION,
     uniqueWords,
     vocabRichness,
+    typeTokenRatio,
     nounCount,
     verbCount,
     adjCount,
@@ -159,7 +236,8 @@ export function analyzeText(rawText) {
 
 function emptyMetrics() {
   return {
-    wordCount: 0, uniqueWords: 0, vocabRichness: 0,
+    v: METRICS_VERSION,
+    wordCount: 0, uniqueWords: 0, vocabRichness: null, typeTokenRatio: 0,
     nounCount: 0, verbCount: 0, adjCount: 0, advCount: 0, pronounCount: 0,
     contentWordCount: 0, nounRate: 0, pronounRate: 0, adverbRate: 0,
     disfluencyRate: 0, fillerCount: 0, repeatCount: 0,
@@ -167,6 +245,28 @@ function emptyMetrics() {
     distinctContentWords: [],
     wordPosMap: {},
   };
+}
+
+/**
+ * Vocabulary variety across a pooled run of entries.
+ *
+ * One entry of 15 words cannot support this measurement; seven of them can.
+ * Pooling trades day-level resolution, which was never real here, for a
+ * number that actually moves when vocabulary does.
+ *
+ * Returns a series of { date, value }, one per entry from the pool-th onward,
+ * each measured over that entry and the ones before it.
+ */
+export function pooledVocabSeries(entries, pool = VOCAB_POOL_SIZE) {
+  const withText = entries.filter((e) => e.text).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const out = [];
+  for (let i = pool - 1; i < withText.length; i++) {
+    const slice = withText.slice(i - pool + 1, i + 1);
+    const tokens = slice.flatMap((e) => tokenize(e.text));
+    const value = movingAverageTTR(tokens);
+    if (typeof value === "number") out.push({ date: withText[i].date, value });
+  }
+  return out;
 }
 
 /** Compares a recall attempt's text against the original entry's text for that same day. */

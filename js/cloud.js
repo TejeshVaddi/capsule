@@ -32,13 +32,18 @@ export async function currentUser() {
   return session?.user || null;
 }
 
-/** Emails the person a 6-digit sign-in code (also creates the account on first use). */
-export async function sendSignInCode(email) {
+/**
+ * Emails the person a 6-digit sign-in code (also creates the account on
+ * first use). `metadata` records which privacy policy version they accepted,
+ * stored on the auth user so the record survives on the server, not just
+ * on the device they signed up from.
+ */
+export async function sendSignInCode(email, metadata) {
   const c = getClient();
   if (!c) throw new Error("Cloud is not configured");
   const { error } = await c.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true },
+    options: { shouldCreateUser: true, data: metadata || undefined },
   });
   if (error) throw error;
 }

@@ -5,6 +5,8 @@ import { toast, escapeHtml, el } from "../ui.js";
 import { icon } from "../icons.js";
 import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js";
 import { startWalkthrough } from "../walkthrough.js";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js";
+import { openTerms, TERMS_VERSION } from "../terms.js";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -140,7 +142,7 @@ function appendLocalDangerZone(root, navigate) {
 
 /* ---------- Multi-step deletion flow ---------- */
 
-function openDeleteFlow({ mode, navigate }) {
+export function openDeleteFlow({ mode, navigate }) {
   const isLocal = mode === "local";
   const overlay = document.createElement("div");
   overlay.className = "overlay";
@@ -310,7 +312,15 @@ function renderSignIn(root, navigate) {
       <div data-step="email">
         <label style="font-weight:600; display:block; margin:14px 0 6px;">Your email address</label>
         <input type="text" inputmode="email" autocomplete="email" data-slot="email" placeholder="you@example.com" />
-        <button class="btn btn-primary btn-large" style="margin-top:14px;" data-slot="send">${icon("mail")} Email me a code</button>
+
+        <div class="policy-consent">
+          <label class="ack-row">
+            <input type="checkbox" data-slot="accept" />
+            <span>I have read and accept the <button type="button" class="btn-link" data-slot="open-policy">Privacy Policy</button> and the <button type="button" class="btn-link" data-slot="open-terms">Terms of Service</button>. I understand Capsule stores my journal entries, photos, and speech measurements, and that it does not diagnose any condition.</span>
+          </label>
+        </div>
+
+        <button class="btn btn-primary btn-large" style="margin-top:4px;" data-slot="send" disabled>${icon("mail")} Email me a code</button>
       </div>
 
       <div data-step="code" hidden>
@@ -331,9 +341,28 @@ function renderSignIn(root, navigate) {
   const codeStep = panel.querySelector('[data-step="code"]');
   const emailInput = panel.querySelector('[data-slot="email"]');
   const codeInput = panel.querySelector('[data-slot="code"]');
+  const acceptBox = panel.querySelector('[data-slot="accept"]');
+  const sendBtn = panel.querySelector('[data-slot="send"]');
 
-  panel.querySelector('[data-slot="send"]').addEventListener("click", async (e) => {
+  // No account can be created without accepting the policy first.
+  acceptBox.addEventListener("change", () => {
+    sendBtn.disabled = !acceptBox.checked;
+  });
+  panel.querySelector('[data-slot="open-policy"]').addEventListener("click", (e) => {
+    e.preventDefault();
+    openPrivacyPolicy();
+  });
+  panel.querySelector('[data-slot="open-terms"]').addEventListener("click", (e) => {
+    e.preventDefault();
+    openTerms();
+  });
+
+  sendBtn.addEventListener("click", async (e) => {
     const email = emailInput.value.trim().toLowerCase();
+    if (!acceptBox.checked) {
+      toast("Please read and accept the Privacy Policy and Terms of Service first.");
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       toast("That doesn't look like an email address. Please check it.");
       return;
@@ -342,7 +371,15 @@ function renderSignIn(root, navigate) {
     btn.disabled = true;
     btn.textContent = "Sending...";
     try {
-      await sendSignInCode(email);
+      const acceptedAt = new Date().toISOString();
+      await sendSignInCode(email, {
+        privacy_policy_version: POLICY_VERSION,
+        terms_version: TERMS_VERSION,
+        legal_accepted_at: acceptedAt,
+      });
+      await db.setMeta("legalAccepted", {
+        privacyVersion: POLICY_VERSION, termsVersion: TERMS_VERSION, at: acceptedAt, email,
+      });
       panel.querySelector('[data-slot="sent-to"]').textContent = email;
       emailStep.hidden = true;
       codeStep.hidden = false;
