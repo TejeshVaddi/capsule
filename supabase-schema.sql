@@ -1,6 +1,9 @@
--- Capsule — Supabase schema
--- Run this in your Supabase project's SQL editor (Dashboard → SQL Editor → New query).
--- Row-level security ensures every user can only ever read/write their own data.
+-- Capsule, Supabase schema
+--
+-- Safe to run as many times as you like. Every statement is idempotent:
+-- tables use "if not exists", and each policy is dropped before it is
+-- recreated, because Postgres has no "create policy if not exists" and a
+-- duplicate would otherwise abort the whole script partway through.
 
 create table if not exists public.entries (
   id uuid primary key,
@@ -17,6 +20,7 @@ create table if not exists public.entries (
 
 alter table public.entries enable row level security;
 
+drop policy if exists "users manage own entries" on public.entries;
 create policy "users manage own entries"
   on public.entries for all
   using (auth.uid() = user_id)
@@ -35,6 +39,7 @@ create table if not exists public.activity_log (
 
 alter table public.activity_log enable row level security;
 
+drop policy if exists "users manage own activity" on public.activity_log;
 create policy "users manage own activity"
   on public.activity_log for all
   using (auth.uid() = user_id)
@@ -46,18 +51,22 @@ insert into storage.buckets (id, name, public)
 values ('photos', 'photos', false)
 on conflict (id) do nothing;
 
+drop policy if exists "users read own photos" on storage.objects;
 create policy "users read own photos"
   on storage.objects for select
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
+drop policy if exists "users upload own photos" on storage.objects;
 create policy "users upload own photos"
   on storage.objects for insert
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
+drop policy if exists "users update own photos" on storage.objects;
 create policy "users update own photos"
   on storage.objects for update
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
+drop policy if exists "users delete own photos" on storage.objects;
 create policy "users delete own photos"
   on storage.objects for delete
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
@@ -96,6 +105,7 @@ create table if not exists public.reminder_prefs (
 
 alter table public.reminder_prefs enable row level security;
 
+drop policy if exists "users manage own reminder prefs" on public.reminder_prefs;
 create policy "users manage own reminder prefs"
   on public.reminder_prefs for all
   using (auth.uid() = user_id)
