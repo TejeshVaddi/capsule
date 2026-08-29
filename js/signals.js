@@ -144,7 +144,7 @@ export const SIGNAL_TARGETS = {
   elaboration: {
     kinds: ["description", "photo-story", "music"],
     because: "Your recent entries have been shorter than they used to be.",
-    invite: "A prompt to describe something, out loud or typed."
+    invite: "A prompt to describe something, out loud or typed.",
   },
   variety: {
     kinds: ["fluency", "description"],
@@ -159,7 +159,7 @@ export const SIGNAL_TARGETS = {
   fluency: {
     kinds: ["naming", "word-recall"],
     because: "Your recent entries have had more pauses and repeats than before.",
-    invite: "Read a description, name the thing it describes."
+    invite: "Read a description, name the thing it describes.",
   },
   recallDetail: {
     kinds: ["photo-story", "word-recall"],

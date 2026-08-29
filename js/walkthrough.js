@@ -31,13 +31,13 @@ const STEPS = [
   {
     icon: "clock",
     title: "Recall: revisit an older day",
-    body: "After a while, Capsule brings back an earlier day and asks what you remember about it. It shows you a photo from that day to help."
+    body: "After a while, Capsule brings back an earlier day and asks what you remember about it. It shows you a photo from that day to help.",
     tab: "recall",
   },
   {
     icon: "star",
     title: "Activities: word and memory games",
-    body: "Naming games, memory games, and prompts that get you talking. A couple change every day."
+    body: "Naming games, memory games, and prompts that get you talking. A couple change every day.",
     tab: "activities",
   },
   {
