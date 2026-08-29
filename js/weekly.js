@@ -1,20 +1,8 @@
-// The weekly look back.
+// Builds the weekly look back for the week that has just finished.
 //
-// A note on framing, because it matters here more than anywhere else in the
-// app. The brief asked for "overall POSITIVE growth". Capsule's founding rule
-// is that it never promises improvement, because the conditions people use
-// this app to think about are progressive, and a weekly note that always says
-// "you improved" would be false on exactly the weeks it would hurt most.
-//
-// So this week's page is warm about the things that are genuinely, verifiably
-// good and fully within the person's control:
-//   - that they showed up, how many days, how consistently
-//   - what they actually made: entries, photos, activities, memory visits
-//   - the memories themselves, in their own words
-// Those are real achievements and worth celebrating properly.
-//
-// Metric movement is reported separately and factually, in either direction,
-// with steadiness treated as the good outcome it is rather than as failure.
+// Two parts: what the person did (days active, entries, activities, memory
+// visits, plus snippets and photos), and how their metrics moved compared with
+// the week before. Movement is reported in whichever direction it went.
 
 import { db } from "./data.js";
 import { dateKey, daysBetween } from "./daily.js";

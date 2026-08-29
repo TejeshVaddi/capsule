@@ -1,3 +1,5 @@
+// Renders and runs each activity. See activities.js for what the six kinds are.
+
 import { db, newId } from "../data.js";
 import { suggestActivities, logActivityCompletion } from "../activities.js";
 import { analyzeText } from "../analysis.js";
@@ -132,10 +134,9 @@ function namingGame(stage, suggestion) {
     if (index >= items.length) {
       if (activeSpeech) activeSpeech.stop();
       card.innerHTML = `
-        <h3>That's the set finished</h3>
+        <h3>Set finished</h3>
         <p style="font-size:1.15rem;">You found ${gotten} of ${items.length} without help.</p>
-        <p class="muted">Reaching for a word and not finding it is an ordinary part of how memory works. Doing the reaching is the point.</p>
-      `;
+        `;
       logActivityCompletion("naming", {
         contentKey: suggestion.contentKey, theme: suggestion.data.theme,
         gotten, total: items.length,
@@ -192,7 +193,7 @@ function fluencyGame(stage, suggestion) {
   const card = el(`
     <div class="glass-panel">
       <h3>${escapeHtml(suggestion.data.prompt)}</h3>
-      <p class="muted">You have a minute. There is no target, and stopping early is completely fine.</p>
+      <p class="muted">You have a minute. Stop whenever you like.</p>
       <div data-slot="pre">
         <button class="btn btn-primary btn-large" data-slot="begin">Begin</button>
       </div>
@@ -239,7 +240,6 @@ function fluencyGame(stage, suggestion) {
     card.querySelector('[data-slot="result"]').innerHTML = `
       <h3 style="margin-top:6px;">You named ${said.size}</h3>
       ${said.size ? `<p>${[...said].map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
-      <p class="muted">This is your own count for today, not a score and not compared to anybody else.</p>
     `;
     logActivityCompletion("fluency", {
       contentKey: suggestion.contentKey,
@@ -363,11 +363,10 @@ function wordRecallGame(stage, suggestion) {
 
   function done(recognised = []) {
     card.innerHTML = `
-      <h3>Thank you for playing</h3>
+      <h3>How you did</h3>
       <p style="font-size:1.15rem; font-weight:600;">You recalled ${found.length} of ${words.length} on your own${recognised.length ? `, and recognised ${recognised.length} more` : ""}.</p>
       ${found.length ? `<p>Came back to you: ${found.map((w) => `<span class="pill pill-blue">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
       ${missed.length ? `<p>The full list was: ${words.map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
-      <p class="muted">However many came back, taking the time is what matters.</p>
     `;
     logActivityCompletion("word-recall", {
       contentKey: suggestion.contentKey,
@@ -433,7 +432,7 @@ function descriptionActivity(stage, suggestion) {
         <div class="metric-row"><span class="metric-name">Naming words</span><span class="metric-value">${m.nounCount}</span></div>
       </div>
       ${comparison ? `<p class="muted">${comparison}</p>` : ""}
-      <p class="muted">Thank you for taking the time.</p>
+      <p class="muted">Saved.</p>
     `;
     card.querySelector('[data-slot="done"]').disabled = true;
     composer.destroy();
@@ -493,7 +492,7 @@ function photoStoryActivity(stage, suggestion) {
           <p>${escapeHtml(text)}</p>
         </div>
       </div>
-      <p class="muted">Two tellings of the same day, side by side. They are meant to be different, not matching.</p>
+      <p class="muted">Two tellings of the same day, side by side.</p>
     `;
     card.querySelector('[data-slot="done"]').disabled = true;
     composer.destroy();
@@ -576,7 +575,7 @@ function musicMomentsActivity(stage, suggestion) {
           <div class="metric-row"><span class="metric-name">Words in your memory</span><span class="metric-value">${m.wordCount}</span></div>
           <div class="metric-row"><span class="metric-name">Different words used</span><span class="metric-value">${m.uniqueWords}</span></div>
         </div>
-        <p class="muted">Memories like this are worth keeping. You can save it into your journal.</p>
+        <p class="muted">You can save this into your journal.</p>
         <button class="btn btn-accent" data-slot="save">Save this to my journal</button>
       `;
       card.querySelector('[data-slot="done"]').disabled = true;
@@ -635,7 +634,7 @@ async function renderHistory(mount) {
   mount.appendChild(el(`
     <div class="glass-card" style="margin-top:6px;">
       <h3>What you've done</h3>
-      <p class="muted">${log.length} activit${log.length === 1 ? "y" : "ies"} so far. This is a record, not a score.</p>
+      <p class="muted">${log.length} activit${log.length === 1 ? "y" : "ies"} so far.</p>
       <ul class="activity-log-list">
         ${recent.map((r) => `
           <li>

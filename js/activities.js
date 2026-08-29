@@ -1,9 +1,16 @@
-// Tailored cognitive-engagement activities. These are supportive engagement,
-// NOT treatment, and nothing here claims to improve or slow anything.
+// Builds the day's activity list.
 //
-// Tailoring compares the person's latest entry to their OWN recent average,
-// never to any external benchmark. When nothing stands out, activities are
-// offered on merit rather than invented urgency.
+// Six kinds, all speech-or-typing:
+//   naming      read a clue, name the thing (6 per set)
+//   fluency     name as many things in a category as you can in 60s
+//   word-recall read 5 words, do a filler task, recall them, then recognise
+//   description a prompt to describe something, out loud or typed
+//   photo-story one of your own photos, and the story behind it
+//   music       a song title or era cue, and what it brings back (no audio)
+//
+// The set is seeded by the calendar date so it is stable through the day and
+// changes at midnight. Ordering is influenced by detectSignals(), which
+// compares recent entries to earlier ones.
 
 import { db, newId } from "./data.js";
 import {
@@ -68,8 +75,8 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     tag: reasons.has("naming") ? "Picked for you" : "Word finding",
     tailored: reasons.has("naming"),
     why: reasons.has("naming")
-      ? "Your last entry used fewer specific naming words than your recent ones. This is a gentle way to reach for exact words."
-      : "A relaxed exercise in finding exact words from a description.",
+      ? "Your last entry used fewer specific naming words than your recent ones."
+      : "Read a description, name the thing it describes. Six of them, speech or typing.",
     contentKey: `naming:${namingSet.theme}`,
     data: namingSet,
     real: true,
@@ -83,8 +90,8 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     tag: reasons.has("variety") ? "Picked for you" : "Word finding",
     tailored: reasons.has("variety"),
     why: reasons.has("variety")
-      ? "Your recent entries have drawn on a narrower set of words than usual for you. This one opens the tap wide."
-      : "One minute, one category, as many as come to mind. No target to hit.",
+      ? "Your recent entries have drawn on a narrower set of words than usual for you."
+      : "Name as many things in one category as you can in a minute.",
     contentKey: `fluency:${fluency.category}`,
     data: fluency,
     real: true,
@@ -99,7 +106,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: "Five-word memory game",
     tag: "Memory",
     tailored: false,
-    why: "Read five words, let something else fill the gap, then see what comes back.",
+    why: "Read five words, do a short task, then recall as many as you can.",
     contentKey: `words:${list.words[0]}`,
     data: list,
     real: true,
@@ -116,14 +123,12 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     tag: descTailored ? "Picked for you" : prompt.kind === "reminiscence" ? "Memories" : "Storytelling",
     tailored: descTailored,
     why: reasons.has("detail")
-      ? "Your recent entries have been shorter than usual for you. This prompt invites a longer, detail-rich description."
-      : reasons.has("variety")
-        ? "This prompt invites a wide range of words: colours, textures, places, feelings."
-        : prompt.kind === "procedural"
-          ? "Describing a familiar routine in order, one step at a time."
-          : prompt.kind === "reminiscence"
-            ? "An invitation to talk about something from your own life."
-            : "An open prompt to describe something in front of you.",
+      ? "Your recent entries have been shorter than usual for you."
+      : prompt.kind === "procedural"
+        ? "Describe a familiar routine in order, step by step."
+        : prompt.kind === "reminiscence"
+          ? "A question about your own past. Answer out loud or type it."
+          : "Describe a scene in as much detail as you like.",
     contentKey: `desc:${prompt.prompt}`,
     data: { prompt: prompt.prompt, kind: prompt.kind },
     real: true,
@@ -140,7 +145,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
       title: "Photo story",
       tag: "Memories",
       tailored: false,
-      why: "A picture from your own journal, and the story behind it.",
+      why: "A photo from your journal, and the story behind it. Shows what you wrote that day afterwards.",
       contentKey: `photo:${photoEntry.id}`,
       data: { entry: photoEntry, prompt: photoPrompt },
       real: true,
@@ -156,7 +161,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: `Music moments: ${era.era}`,
     tag: "Memories",
     tailored: false,
-    why: "Pick a tune or a place you remember, and say where it takes you.",
+    why: "Pick a song title or a place from a decade, and say what it brings back. No audio.",
     contentKey: `music:${era.era}`,
     data: era,
     real: true,
@@ -171,7 +176,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: "A question for you",
     tag: "Just talking",
     tailored: false,
-    why: "No right answer to this one. Say as much or as little as you like.",
+    why: "An open question about your life. Say as much or as little as you like.",
     contentKey: `open:${open.prompt}`,
     data: { prompt: open.prompt, kind: "open" },
     real: true,

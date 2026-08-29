@@ -1,18 +1,10 @@
-// Detecting shifts in a person's own speech patterns, and matching activities
-// to them.
+// Compares a person's recent entries to their earlier ones and reports which
+// patterns have shifted. Used only to order the activity list.
 //
-// Framing first, because it governs the code. These are not deficits, and the
-// app never says so. They are changes in someone's own patterns relative to
-// their own earlier entries, used for one narrow purpose: choosing which
-// activity to offer today. Nothing here is shown as a finding, a score, or a
-// judgement, and none of it means anything clinically.
-//
-// The old approach compared a SINGLE latest entry to a running average, which
-// is far too noisy: one tired day, one busy day, or one genuinely quiet day
-// would trip a flag and the app would start "targeting" a problem that did not
-// exist. This compares a window of recent entries against an earlier baseline,
-// and only reports a shift when it is both large enough to matter and larger
-// than the person's own day-to-day variation.
+// Windows, not single entries: comparing one latest entry to a running average
+// is too noisy, since a single tired or busy day trips a flag. This takes 7
+// recent entries against the 14 before them, and only reports a shift that is
+// both proportionally large AND larger than the person's own day-to-day spread.
 
 import { pooledVocabSeries } from "./analysis.js";
 
@@ -142,37 +134,37 @@ export const SIGNAL_TARGETS = {
   wordFinding: {
     kinds: ["naming", "fluency"],
     because: "Your recent entries have reached for specific naming words less often than they used to.",
-    invite: "This one is a gentle way to reach for exact words.",
+    invite: "Read a description, name the thing it describes.",
   },
   specificity: {
     kinds: ["naming", "description"],
     because: "Your recent entries have leaned on general words like \"it\" and \"they\" more than before.",
-    invite: "This one invites naming things exactly.",
+    invite: "Read a description, name the thing it describes.",
   },
   elaboration: {
     kinds: ["description", "photo-story", "music"],
     because: "Your recent entries have been shorter than they used to be.",
-    invite: "This one gives you room to say more, at whatever length suits you.",
+    invite: "A prompt to describe something, out loud or typed."
   },
   variety: {
     kinds: ["fluency", "description"],
     because: "Your recent entries have drawn on a narrower range of words than before.",
-    invite: "This one opens the tap wide, with no target to hit.",
+    invite: "Name as many things in a category as you can in a minute.",
   },
   repetition: {
     kinds: ["fluency", "naming"],
     because: "Your recent entries have returned to the same words more than they used to.",
-    invite: "This one reaches for words you have not used lately.",
+    invite: "Name as many things in a category as you can in a minute.",
   },
   fluency: {
     kinds: ["naming", "word-recall"],
     because: "Your recent entries have had more pauses and repeats than before.",
-    invite: "A relaxed exercise in finding words, with no timer and no score.",
+    invite: "Read a description, name the thing it describes."
   },
   recallDetail: {
     kinds: ["photo-story", "word-recall"],
     because: "Your recent memory visits have carried less detail than earlier ones.",
-    invite: "This one uses your own photographs as a way in.",
+    invite: "A photo from your journal, and the story behind it.",
   },
 };
 

@@ -196,7 +196,7 @@ async function buildWeeklyCard(mount, s) {
               <span>${escapeHtml(m.text)}</span>
             </div>`).join("")}
         </div>
-        <p class="muted week-footnote">These describe your own entries this week next to last week. They are not a score, and steady is a perfectly good result.</p>
+        <p class="muted week-footnote">Compared with the week before.</p>
       ` : ""}
     </div>
   `);
