@@ -130,6 +130,73 @@ The function takes the user id from the caller's verified JWT, never from the re
 
 New users get an eight-step tour on first use and on first sign-in, covering each tab in plain language with large type. It is skippable at every step, replayable from the Account screen ("Show me around again"), and remembered per device. Deleting your data resets it, so a fresh start is genuinely fresh.
 
+### Evening reminders
+
+Off by default. A person turns them on from the Account screen, which writes to
+`reminder_prefs` along with their browser timezone. An hourly job wakes the
+function; it emails only those whose own clock reads 7pm and who have not
+finished the day, at most once per person per day.
+
+The timezone matters: without it "7pm" means 7pm wherever the server runs,
+which is the middle of the night for most users.
+
+**1. Secrets** (Terminal, from the project folder):
+
+```bash
+NEW=$(openssl rand -hex 24); echo "SAVE THIS: $NEW"
+supabase secrets set RESEND_API_KEY="your_resend_key" \
+  REMINDER_FROM="Capsule <noreply@capsulemem.com>" \
+  REMINDER_SECRET="$NEW"
+```
+
+**2. Deploy with JWT verification off:**
+
+```bash
+supabase functions deploy daily-reminder --no-verify-jwt
+```
+
+This flag is required and is specific to this function. Edge Functions normally
+demand an `Authorization` header, which a cron job has no user token to supply.
+Passing the anon key in the cron headers also works but means pasting a very
+long JWT into SQL, where a stray line break produces `UNAUTHORIZED_INVALID_JWT_FORMAT`.
+The `x-reminder-secret` header is the real gate either way.
+
+**Never pass `--no-verify-jwt` to `delete-account`.** That one identifies the
+caller from their own JWT, which is what stops one person deleting another's
+account.
+
+**3. Enable `pg_cron` and `pg_net`** under Database, Extensions.
+
+**4. Schedule it** (SQL editor, substituting the secret from step 1):
+
+```sql
+select cron.schedule(
+  'capsule-reminders',
+  '0 * * * *',
+  $$ select net.http_post(
+       url := 'https://<project-ref>.supabase.co/functions/v1/daily-reminder',
+       headers := jsonb_build_object('x-reminder-secret', 'YOUR_SECRET')
+     ); $$
+);
+```
+
+**5. Verify.** `net.http_post` is asynchronous and returns a request id, not a
+result, so a scheduled job that fails looks identical to one that works until
+you read the response:
+
+```sql
+select status_code, content::text, created
+from net._http_response order by created desc limit 3;
+```
+
+`200` with `{"ok":true,...}` is success. `401 UNAUTHORIZED_NO_AUTH_HEADER` or
+`UNAUTHORIZED_INVALID_JWT_FORMAT` are the gateway rejecting the call before the
+function runs. `401 {"ok":false,"error":"unauthorised"}` is the function itself,
+meaning the secret does not match.
+
+If the secret is ever exposed, rotate it in **both** places: `supabase secrets
+set` and the cron job. They must match or reminders stop silently.
+
 ### Scaling to hundreds of users
 
 Supabase's free tier covers roughly this size; the paid tier ($25/mo) is the realistic launch target once you pass ~500MB of database or 1GB of photo storage. Photos dominate storage, so consider client-side downscaling before upload (resize to ~1600px, re-encode as JPEG) to cut usage roughly 5–10×. The analysis stays in the browser at any scale, so there is no server compute to grow.
