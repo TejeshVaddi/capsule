@@ -1,0 +1,7 @@
+#!/bin/sh
+# Blocks a push that would break the live site. See scripts/check.mjs.
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-push: node not found, skipping checks" >&2
+  exit 0
+fi
+node "$(git rev-parse --show-toplevel)/scripts/check.mjs" || exit 1

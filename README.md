@@ -152,3 +152,29 @@ The History page's "Download my data" button exports all entries as JSON (photos
 ## Design
 
 Palette: purple `#4A2E5C`, blue `#4483B0`, lavender `#C9B6E8`, dark `#211A2E`, glass `#F3EFFB`, highlight `#FAF6B0`. Word-graph node colors: noun `#7B3FA0`, verb `#4E6E7E`, adjective `#B25BB0`, adverb `#8DB3BE`, pronoun `#5E2542`. Inter font, glass panels (backdrop blur), 22px radii, large text and tap targets throughout. All iconography is inline SVG inheriting `currentColor`, no emoji, no icon-font or image requests.
+
+## Checks
+
+The app has no build step, so a syntax error or a bad import in any one file
+takes down every screen rather than degrading part of it. That happened once
+in production. `scripts/check.mjs` guards against it:
+
+```bash
+npm run check
+```
+
+It parses every JS file **as an ES module**, resolves every relative import,
+checks that imported names are actually exported, verifies files referenced by
+`index.html` exist, and scans for committed credentials.
+
+It runs automatically before every push via `.githooks/pre-push`, and again in
+CI on GitHub. If you clone fresh, activate the hook with:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Note that `node --check file.js` is **not** sufficient on its own. On a `.js`
+path it does not parse in module mode, and it silently passed the exact missing
+comma that took the site down. The checker feeds each file on stdin with
+`--input-type=module`, which is how the browser actually parses them.
