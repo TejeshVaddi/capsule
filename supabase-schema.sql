@@ -100,3 +100,9 @@ create policy "users manage own reminder prefs"
   on public.reminder_prefs for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Timezone for evening reminders. Without it "7pm" would mean 7pm in whatever
+-- zone the server happens to run in, which for most users is the middle of the
+-- night. Captured from the browser when reminders are switched on.
+alter table public.reminder_prefs
+  add column if not exists timezone text not null default 'UTC';

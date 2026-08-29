@@ -43,28 +43,48 @@ Deno.serve(async (req) => {
   }
 
   const now = new Date();
-  const todayStart = new Date(now); todayStart.setUTCHours(0, 0, 0, 0);
+
+  /** What the clock reads for this person right now, in their own zone. */
+  function localParts(timeZone: string) {
+    try {
+      const fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone, hour12: false,
+        year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit",
+      });
+      const parts = Object.fromEntries(fmt.formatToParts(now).map((p) => [p.type, p.value]));
+      return { date: `${parts.year}-${parts.month}-${parts.day}`, hour: Number(parts.hour) };
+    } catch {
+      return { date: now.toISOString().slice(0, 10), hour: now.getUTCHours() };
+    }
+  }
 
   // Who has opted in, and has not already been reminded today?
   const { data: prefs, error: prefErr } = await admin
     .from("reminder_prefs")
-    .select("user_id, email, last_reminded_on")
+    .select("user_id, email, last_reminded_on, send_hour_local, timezone")
     .eq("enabled", true);
   if (prefErr) return json({ ok: false, error: prefErr.message }, 500);
 
-  const todayKey = now.toISOString().slice(0, 10);
-  let sent = 0, skipped = 0;
+  let sent = 0, skipped = 0, notTheirHour = 0;
 
   for (const p of prefs ?? []) {
-    if (p.last_reminded_on === todayKey) { skipped++; continue; }
+    // This runs hourly. Only act for people whose own clock says 7pm, so a
+    // reminder never lands in the middle of someone's night.
+    const local = localParts(p.timezone ?? "UTC");
+    if (local.hour !== (p.send_hour_local ?? 19)) { notTheirHour++; continue; }
+    if (p.last_reminded_on === local.date) { skipped++; continue; }
 
-    // Anything logged today counts as having shown up.
+    // Their day, not the server's.
+    const dayStart = new Date(now);
+    dayStart.setUTCHours(dayStart.getUTCHours() - 26); // generous lower bound
+    const todayKey = local.date;
+
     const { count: entryCount } = await admin
       .from("entries").select("id", { count: "exact", head: true })
-      .eq("user_id", p.user_id).gte("date", todayStart.toISOString());
+      .eq("user_id", p.user_id).gte("date", dayStart.toISOString());
     const { count: actCount } = await admin
       .from("activity_log").select("id", { count: "exact", head: true })
-      .eq("user_id", p.user_id).gte("date", todayStart.toISOString());
+      .eq("user_id", p.user_id).gte("date", dayStart.toISOString());
 
     if ((entryCount ?? 0) > 0 && (actCount ?? 0) >= 2) { skipped++; continue; }
 
@@ -90,5 +110,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ ok: true, sent, skipped, total: prefs?.length ?? 0 });
+  return json({ ok: true, sent, skipped, notTheirHour, total: prefs?.length ?? 0 });
 });

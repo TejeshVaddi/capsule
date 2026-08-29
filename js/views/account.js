@@ -1,5 +1,5 @@
 import { cloudConfigured } from "../config.js";
-import { currentUser, sendSignInCode, verifySignInCode, signOut } from "../cloud.js";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js";
 import { refreshDataMode, migrateLocalToCloud, localEntryCount, db } from "../data.js";
 import { toast, escapeHtml, el } from "../ui.js";
 import { icon } from "../icons.js";
@@ -85,8 +85,48 @@ function renderSignedIn(root, user, navigate) {
     }
   });
 
+  appendReminderCard(root);
   appendTourCard(root, navigate);
   appendCloudDangerZone(root, navigate);
+}
+
+/* ---------- Evening reminder ---------- */
+
+function appendReminderCard(root) {
+  const card = el(`
+    <div class="glass-card" style="margin-top:16px;">
+      <h3>Evening reminder</h3>
+      <p class="muted">If you have not finished the day's list by 7pm, Capsule can send you a short email. Off unless you turn it on.</p>
+      <label class="ack-row" style="margin:12px 4px;">
+        <input type="checkbox" data-slot="reminder" />
+        <span data-slot="reminder-label">Email me a reminder at 7pm</span>
+      </label>
+    </div>
+  `);
+  root.appendChild(card);
+
+  const box = card.querySelector('[data-slot="reminder"]');
+  const label = card.querySelector('[data-slot="reminder-label"]');
+
+  getReminderPref().then((pref) => {
+    box.checked = Boolean(pref?.enabled);
+  }).catch(() => {});
+
+  box.addEventListener("change", async () => {
+    const wanted = box.checked;
+    box.disabled = true;
+    try {
+      await setReminderPref(wanted);
+      label.textContent = wanted ? "Reminders are on" : "Email me a reminder at 7pm";
+      toast(wanted ? "Reminders are on." : "Reminders are off.");
+    } catch (err) {
+      console.error(err);
+      box.checked = !wanted;
+      toast("Could not save that. Please try again.");
+    } finally {
+      box.disabled = false;
+    }
+  });
 }
 
 /* ---------- Replayable tour ---------- */

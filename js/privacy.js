@@ -12,10 +12,9 @@ import { openLegalModal, sectionsToHTML } from "./legal.js";
 export const POLICY_VERSION = "2026-08-20";
 export const POLICY_UPDATED = "20 August 2026";
 
-// TODO BEFORE LAUNCH: set a contact address people can actually reach.
-// Left empty deliberately rather than guessed. While it is empty the
-// contact section says so plainly instead of showing a broken placeholder.
-export const CONTACT_EMAIL = "";
+// Shown in both the privacy policy and the terms. Must stay an address that
+// is actually monitored: it is the only route a user has to reach anyone.
+export const CONTACT_EMAIL = "getcapsulemem@gmail.com";
 
 const SECTIONS = [
   {

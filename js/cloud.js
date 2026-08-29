@@ -98,6 +98,39 @@ function entryToRow(entry, userId) {
 
 /* ---------- Data (mirrors db.js API) ---------- */
 
+/* ---------- Evening reminders ---------- */
+
+/** Current reminder preference, or null when none has been set. */
+export async function getReminderPref() {
+  const c = getClient();
+  const user = await currentUser();
+  if (!c || !user) return null;
+  const { data, error } = await c.from("reminder_prefs").select("*").eq("user_id", user.id).maybeSingle();
+  if (error) return null;
+  return data;
+}
+
+/** Turns the evening reminder on or off. Off is the default. */
+export async function setReminderPref(enabled) {
+  const c = getClient();
+  const user = await currentUser();
+  if (!c || !user) throw new Error("Not signed in");
+  // The browser is the only place that knows what 7pm means for this person.
+  let timezone = "UTC";
+  try {
+    timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    /* keep UTC */
+  }
+  const { error } = await c.from("reminder_prefs").upsert({
+    user_id: user.id,
+    email: user.email,
+    enabled,
+    timezone,
+  });
+  if (error) throw error;
+}
+
 export const cloudDb = {
   async putEntry(entry) {
     const c = getClient();
