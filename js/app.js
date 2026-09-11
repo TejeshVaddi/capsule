@@ -32,7 +32,7 @@ const VIEWS = {
 
 const viewRoot = document.getElementById("view-root");
 const tabBar = document.getElementById("tab-bar");
-let currentView = null;
+let navToken = 0;
 
 document.getElementById("brand-mark").innerHTML = LOGO_SVG;
 document.getElementById("disclaimer-logo").innerHTML = LOGO_SVG;
@@ -43,7 +43,6 @@ for (const btn of tabBar.querySelectorAll(".tab-btn")) {
 
 async function navigate(viewName) {
   if (!VIEWS[viewName]) viewName = "home";
-  currentView = viewName;
 
   destroyCharts();
   revokePhotoUrls();
@@ -54,29 +53,39 @@ async function navigate(viewName) {
     btn.classList.toggle("active", btn.dataset.view === viewName);
   }
 
+  // Each visit gets its own page element. A page still loading when the
+  // person taps another tab (Home is slow at start-up, cloud data slower
+  // still) keeps writing into its own element, now detached, instead of
+  // painting over the page they asked for under the wrong tab.
+  const token = ++navToken;
+  const page = document.createElement("div");
+  viewRoot.replaceChildren(page);
+
   viewRoot.style.animation = "none";
   // force reflow so the fade replays on every navigation
   void viewRoot.offsetHeight;
   viewRoot.style.animation = "";
 
+  // A new page starts at its top. Otherwise it opens at the previous page's
+  // scroll position, which on a phone can mean landing on the footer.
+  window.scrollTo(0, 0);
+
   try {
-    await VIEWS[viewName](viewRoot, { navigate });
+    await VIEWS[viewName](page, { navigate });
   } catch (err) {
     console.error("View render failed:", err);
-    viewRoot.innerHTML = `
+    if (token !== navToken) return;
+    page.innerHTML = `
       <div class="glass-panel empty-state">
         <h2>Something went wrong</h2>
         <p>That page hit a snag. Your saved entries are safe. Try another tab.</p>
       </div>`;
   }
+  if (token !== navToken) return;
 
   // The legal footer sits on every screen, including the error state above,
   // so these links are never more than a scroll away.
-  viewRoot.appendChild(renderFooter({ navigate, onDeleteData: openDeleteFromFooter }));
-
-  // A new page starts at its top. Otherwise it opens at the previous page's
-  // scroll position, which on a phone can mean landing on the footer.
-  window.scrollTo(0, 0);
+  page.appendChild(renderFooter({ navigate, onDeleteData: openDeleteFromFooter }));
 }
 
 /** Footer "Delete your data" opens the flow that matches the current mode. */

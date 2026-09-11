@@ -7,6 +7,7 @@
 // both proportionally large AND larger than the person's own day-to-day spread.
 
 import { pooledVocabSeries } from "./analysis.js";
+import { comparableRecalls } from "./recall.js";
 
 // Nothing is claimed until there is enough history to claim it from.
 export const MIN_HISTORY = 12;
@@ -108,8 +109,7 @@ export function detectSignals(entries) {
     "up", "pauses while speaking");
 
   // Recall detail, from memory visits rather than journals.
-  const recalls = entries
-    .filter((e) => e.type === "recall" && e.recallComparison)
+  const recalls = comparableRecalls(entries.filter((e) => e.type === "recall" && e.recallComparison))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   if (recalls.length >= 6) {
     const half = Math.floor(recalls.length / 2);

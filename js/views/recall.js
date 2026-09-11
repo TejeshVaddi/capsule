@@ -2,7 +2,7 @@ import { db, newId } from "../data.js";
 import { icon } from "../icons.js";
 import { compareRecallToOriginal, analyzeText } from "../analysis.js";
 import { SpeechInput, speechSupported } from "../speech.js";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween } from "../recall.js";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints } from "../recall.js";
 import { toast, escapeHtml, el, createSpeechComposer, photoUrl } from "../ui.js";
 
 export async function renderRecallView(root, { navigate }) {
@@ -27,6 +27,7 @@ export async function renderRecallView(root, { navigate }) {
   // would be offered as a memory cue for a day it has nothing to do with.
   const photos = await db.getPhotosForEntry(target.id).catch(() => []) || [];
   const age = daysBetween(target.date, new Date().toISOString());
+  const hints = recallHints(target.text);
 
   const panel = el(`
     <div class="stack">
@@ -40,9 +41,17 @@ export async function renderRecallView(root, { navigate }) {
         </p>
         ${photos.length ? `<p class="recall-hint-label">${icon("camera")} A picture from that day, to help</p>` : ""}
         <div class="recall-hint-strip" data-slot="photos"></div>
-        <p class="muted space-above">
-          Take a moment. What comes back first? Start with that, even if it's small.
-        </p>
+        ${hints.length ? `
+          <p class="recall-hint-label">${icon("book")} You mentioned ${hints.length === 1 ? "this" : "these"} that day</p>
+          <ul class="recall-cues">
+            ${hints.map((h) => `<li>${escapeHtml(h.text)}</li>`).join("")}
+          </ul>
+          <p class="muted space-above">
+            Start with ${hints.length === 1 ? "it" : "one of them"}. What else comes back about that day?
+          </p>` : `
+          <p class="muted space-above">
+            Take a moment. What comes back first? Start with that, even if it's small.
+          </p>`}
         <div data-slot="composer"></div>
         <button class="btn btn-primary btn-large" data-slot="save">I've said what I remember</button>
       </div>
@@ -77,7 +86,8 @@ export async function renderRecallView(root, { navigate }) {
     saveBtn.textContent = "Saving...";
 
     try {
-      const comparison = compareRecallToOriginal(text, target.text);
+      const hintWords = hints.flatMap((h) => h.words);
+      const comparison = compareRecallToOriginal(text, target.text, hintWords);
       const entry = {
         id: newId(),
         type: "recall",
@@ -92,6 +102,7 @@ export async function renderRecallView(root, { navigate }) {
           originalDistinctContentWords: comparison.originalDistinctContentWords,
           overlapCount: comparison.overlapCount,
           overlapRatio: comparison.overlapRatio,
+          ...(hints.length ? { hints: hints.map((h) => h.text), hintWords, hintCount: hints.length } : {}),
         },
       };
       await db.putEntry(entry);
@@ -129,6 +140,7 @@ function showComparison(container, original, recallEntry) {
         <div class="metric-row"><span class="metric-name">Details remembered now</span><span class="metric-value">${c.recallDistinctContentWords}</span></div>
         <div class="metric-row"><span class="metric-name">Shared details</span><span class="metric-value">${c.overlapCount}</span></div>
       </div>
+      ${c.hintCount ? `<p class="muted space-above">Words from the ${c.hintCount === 1 ? "hint" : "hints"} aren't counted here, only what you brought back yourself.</p>` : ""}
       <p class="muted space-above">This becomes part of your own recall trend over time. You can see it on the Trends page.</p>
     </div>
   `;

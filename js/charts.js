@@ -6,6 +6,7 @@
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
 import { VOCAB_POOL_SIZE, pooledVocabSeries } from "./analysis.js";
+import { comparableRecalls } from "./recall.js";
 
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },
@@ -40,8 +41,7 @@ export function metricSeriesFromEntries(entries, key) {
 }
 
 export function recallDetailSeries(entries) {
-  return entries
-    .filter((e) => e.type === "recall" && e.recallComparison)
+  return comparableRecalls(entries.filter((e) => e.type === "recall" && e.recallComparison))
     .map((e) => ({
       date: e.date,
       value: e.recallComparison.recallWordCount + e.recallComparison.recallDistinctContentWords,

@@ -269,13 +269,22 @@ export function pooledVocabSeries(entries, pool = VOCAB_POOL_SIZE) {
   return out;
 }
 
-/** Compares a recall attempt's text against the original entry's text for that same day. */
-export function compareRecallToOriginal(recallText, originalText) {
+/**
+ * Compares a recall attempt's text against the original entry's text for that same day.
+ *
+ * `hintWords` are words the visit showed as hints. Saying a hint back is not
+ * remembering it, so those words are left out of the recalled detail and the
+ * shared details, and out of the original's total that sharing is measured
+ * against. The original's own detail count is kept whole: it describes the day.
+ */
+export function compareRecallToOriginal(recallText, originalText, hintWords = []) {
   const recallMetrics = analyzeText(recallText);
   const originalMetrics = analyzeText(originalText);
+  const hinted = new Set(hintWords.map((w) => w.toLowerCase()));
 
-  const originalSet = new Set(originalMetrics.distinctContentWords);
-  const recallSet = new Set(recallMetrics.distinctContentWords);
+  const originalAll = new Set(originalMetrics.distinctContentWords);
+  const originalSet = new Set([...originalAll].filter((w) => !hinted.has(w)));
+  const recallSet = new Set(recallMetrics.distinctContentWords.filter((w) => !hinted.has(w)));
   let overlap = 0;
   for (const w of recallSet) if (originalSet.has(w)) overlap++;
 
@@ -285,7 +294,7 @@ export function compareRecallToOriginal(recallText, originalText) {
     recallWordCount: recallMetrics.wordCount,
     originalWordCount: originalMetrics.wordCount,
     recallDistinctContentWords: recallSet.size,
-    originalDistinctContentWords: originalSet.size,
+    originalDistinctContentWords: originalAll.size,
     overlapCount: overlap,
     overlapRatio,
     recallMetrics,

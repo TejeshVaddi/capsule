@@ -966,6 +966,16 @@ a { color: var(--blue); }
 /* ---------- Recall hint ---------- */
 .recall-hint-label { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--purple); margin: 14px 0 8px; }
 .recall-hint-strip { display: flex; gap: 12px; flex-wrap: wrap; }
+.recall-cues { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.recall-cues li {
+  position: relative; padding: 12px 16px 12px 38px;
+  border-radius: var(--radius-sm); background: rgba(255,255,255,0.6);
+  font-size: 1.1rem; font-weight: 600; color: var(--dark-text); overflow-wrap: anywhere;
+}
+.recall-cues li::before {
+  content: ""; position: absolute; left: 16px; top: 50%; width: 10px; height: 10px;
+  margin-top: -5px; border-radius: 50%; background: var(--blue);
+}
 .recall-hint-photo {
   width: 100%; max-width: 300px; max-height: 240px; object-fit: cover;
   border-radius: var(--radius-sm); border: 3px solid rgba(255,255,255,.8); box-shadow: var(--shadow-soft);

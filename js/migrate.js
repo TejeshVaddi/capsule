@@ -29,7 +29,12 @@ export async function migrateMetrics(onProgress = () => {}) {
     if (entry.type === "recall" && entry.recallOf) {
       const original = entries.find((e) => e.id === entry.recallOf);
       if (original?.text) {
-        next.recallComparison = compareRecallToOriginal(entry.text, original.text);
+        // Keep the hints the visit showed, and keep them out of the score.
+        const { hints, hintWords, hintCount } = entry.recallComparison || {};
+        next.recallComparison = {
+          ...compareRecallToOriginal(entry.text, original.text, hintWords || []),
+          ...(hintCount ? { hints, hintWords, hintCount } : {}),
+        };
       }
     }
 

@@ -31,7 +31,7 @@ const STEPS = [
   {
     icon: "clock",
     title: "Recall: revisit an older day",
-    body: "After a while, Capsule brings back an earlier day and asks what you remember about it. It shows you a photo from that day to help.",
+    body: "After a while, Capsule brings back an earlier day and asks what you remember about it. To help, it shows a few things you mentioned that day, and a photo if you added one.",
     tab: "recall",
   },
   {
