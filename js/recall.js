@@ -34,11 +34,6 @@ export async function pickEntryForRecall() {
   return eligible[0];
 }
 
-export async function recallHistoryForEntry(entryId) {
-  const all = await db.allEntries();
-  return all.filter((e) => e.type === "recall" && e.recallOf === entryId);
-}
-
 export function daysBetween(isoA, isoB) {
   return Math.round(Math.abs(new Date(isoA) - new Date(isoB)) / (24 * 60 * 60 * 1000));
 }

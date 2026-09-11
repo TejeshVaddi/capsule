@@ -37,13 +37,13 @@ const STEPS = [
   {
     icon: "star",
     title: "Activities: word and memory games",
-    body: "Naming games, memory games, and prompts that get you talking. A couple change every day.",
+    body: "Questions to get you talking, and short games with words and memory. Two new ones turn up each day.",
     tab: "activities",
   },
   {
     icon: "trend",
     title: "Trends: your own patterns",
-    body: "Capsule shows how your entries change over time, compared only to your own past. It is not a medical test and does not diagnose anything. If something looks worth discussing, bring it to your doctor.",
+    body: "Charts of how your entries change over time, compared only with your own earlier ones.",
     tab: "trends",
   },
   {

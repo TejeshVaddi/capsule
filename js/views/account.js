@@ -37,9 +37,9 @@ function renderSignedIn(root, user, navigate) {
     <div class="stack">
       <div class="glass-panel">
         <div class="section-title"><h2>Account</h2><span class="pill pill-blue">${icon("cloud")} Signed in</span></div>
-        <p style="font-size:1.1rem;"><strong>${escapeHtml(user.email)}</strong></p>
+        <p class="lead"><strong>${escapeHtml(user.email)}</strong></p>
         <p class="muted">Your journal is saved to your account, so it's there even if you change devices.</p>
-        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
+        <div class="button-row">
           <button class="btn btn-secondary" data-slot="signout">${icon("signOut")} Sign out</button>
         </div>
       </div>
@@ -94,10 +94,10 @@ function renderSignedIn(root, user, navigate) {
 
 function appendReminderCard(root) {
   const card = el(`
-    <div class="glass-card" style="margin-top:16px;">
+    <div class="glass-card space-above">
       <h3>Evening reminder</h3>
       <p class="muted">If you have not finished the day's list by 7pm, Capsule can send you a short email. Off unless you turn it on.</p>
-      <label class="ack-row" style="margin:12px 4px;">
+      <label class="ack-row compact">
         <input type="checkbox" data-slot="reminder" />
         <span data-slot="reminder-label">Email me a reminder at 7pm</span>
       </label>
@@ -133,7 +133,7 @@ function appendReminderCard(root) {
 
 function appendTourCard(root, navigate) {
   const card = el(`
-    <div class="glass-card" style="margin-top:16px;">
+    <div class="glass-card space-above">
       <h3>Show me around again</h3>
       <p class="muted">A short tour of what each part of Capsule does.</p>
       <button class="btn btn-secondary" data-slot="tour">Start the tour</button>
@@ -220,9 +220,9 @@ export function openDeleteFlow({ mode, navigate }) {
       <div class="glass-panel delete-panel">
         <h2>Are you certain?</h2>
         <p>To confirm, type <strong>DELETE</strong> below.</p>
-        <input type="text" data-slot="confirm" autocomplete="off" autocapitalize="characters"
+        <input class="confirm-input" type="text" data-slot="confirm" autocomplete="off" autocapitalize="characters"
                spellcheck="false" aria-label="Type DELETE to confirm"
-               style="font-size:1.4rem; letter-spacing:0.15em; text-align:center;" />
+               />
         <div class="delete-actions">
           <button class="btn btn-secondary btn-large" data-slot="cancel">Cancel</button>
           <button class="btn btn-danger btn-large" data-slot="go" disabled>
@@ -345,13 +345,14 @@ export function openDeleteFlow({ mode, navigate }) {
 
 function renderSignIn(root, navigate) {
   const panel = el(`
-    <div class="glass-panel" style="max-width:560px; margin:0 auto;">
+    <div class="glass-panel narrow-panel">
       <h2>Sign in to Capsule</h2>
       <p class="muted">Enter your email and we'll send you a 6-digit code. No password to remember.</p>
 
       <div data-step="email">
-        <label style="font-weight:600; display:block; margin:14px 0 6px;">Your email address</label>
-        <input type="text" inputmode="email" autocomplete="email" data-slot="email" placeholder="you@example.com" />
+        <label class="field-label" for="signin-email">Your email address</label>
+        <input id="signin-email" type="text" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false"
+               data-slot="email" placeholder="you@example.com" />
 
         <div class="policy-consent">
           <label class="ack-row">
@@ -360,19 +361,19 @@ function renderSignIn(root, navigate) {
           </label>
         </div>
 
-        <button class="btn btn-primary btn-large" style="margin-top:4px;" data-slot="send" disabled>${icon("mail")} Email me a code</button>
+        <button class="btn btn-primary btn-large space-above-sm" data-slot="send" disabled>${icon("mail")} Email me a code</button>
       </div>
 
       <div data-step="code" hidden>
-        <p style="font-weight:600; margin-top:14px;">We emailed a 6-digit code to <span data-slot="sent-to"></span>.</p>
-        <label style="font-weight:600; display:block; margin:14px 0 6px;">Enter the code</label>
-        <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-slot="code"
-               placeholder="123456" style="font-size:1.6rem; letter-spacing:0.3em; text-align:center;" />
-        <button class="btn btn-primary btn-large" style="margin-top:14px;" data-slot="verify">${icon("check")} Sign in</button>
-        <button class="btn btn-secondary btn-large" style="margin-top:10px;" data-slot="back">Use a different email</button>
+        <p class="sub-label">We emailed a 6-digit code to <span data-slot="sent-to"></span>.</p>
+        <label class="field-label" for="signin-code">Enter the code</label>
+        <input id="signin-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-slot="code"
+               placeholder="123456" />
+        <button class="btn btn-primary btn-large space-above" data-slot="verify">${icon("check")} Sign in</button>
+        <button class="btn btn-secondary btn-large space-above-sm" data-slot="back">Use a different email</button>
       </div>
 
-      <p class="muted" style="margin-top:18px;">Prefer not to have an account? Your journal simply stays on this device, and everything still works.</p>
+      <p class="muted space-above">Prefer not to have an account? Your journal simply stays on this device, and everything still works.</p>
     </div>
   `);
   root.appendChild(panel);

@@ -224,12 +224,6 @@ export async function suggestActivities(latestMetrics, recentEntries) {
   return suggestions;
 }
 
-/** How many entries are still needed before tailoring can begin. */
-export async function tailoringStatus(entries) {
-  const { ready, entriesNeeded, signals } = detectSignals(entries);
-  return { ready, entriesNeeded, signalCount: signals.length };
-}
-
 /** Finds a past entry that actually has a photo attached. */
 async function findEntryWithPhoto(entries) {
   const candidates = [...entries].filter((e) => e.type === "journal").reverse();

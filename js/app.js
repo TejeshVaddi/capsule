@@ -2,7 +2,7 @@ import { db, refreshDataMode } from "./data.js";
 import { onAuthChange } from "./cloud.js";
 import { cloudConfigured } from "./config.js";
 import { revokePhotoUrls } from "./ui.js";
-import { ICONS, LOGO_SVG, LOGO_DATA_URI } from "./icons.js";
+import { ICONS, LOGO_SVG } from "./icons.js";
 import { renderHomeView } from "./views/home.js";
 import { renderJournalView } from "./views/journal.js";
 import { playIntro } from "./intro.js";
@@ -34,8 +34,6 @@ const viewRoot = document.getElementById("view-root");
 const tabBar = document.getElementById("tab-bar");
 let currentView = null;
 
-/* Branding: favicon, header mark, disclaimer logo, tab icons */
-document.getElementById("favicon").href = LOGO_DATA_URI;
 document.getElementById("brand-mark").innerHTML = LOGO_SVG;
 document.getElementById("disclaimer-logo").innerHTML = LOGO_SVG;
 for (const btn of tabBar.querySelectorAll(".tab-btn")) {
@@ -50,6 +48,7 @@ async function navigate(viewName) {
   destroyCharts();
   revokePhotoUrls();
   document.body.classList.remove("typing");
+  queueFit();
 
   for (const btn of tabBar.querySelectorAll(".tab-btn")) {
     btn.classList.toggle("active", btn.dataset.view === viewName);
@@ -100,6 +99,38 @@ if (touchScreen) {
   // tab bar hidden for good. Any later touch re-checks.
   document.addEventListener("pointerdown", () => setTimeout(settleTyping, 0), { passive: true });
 }
+
+/* Tab labels: width-based CSS rules cannot see enlarged system text (Android
+   text scaling, Samsung and Firefox font-size settings), because the screen
+   is no narrower, only the letters are bigger. So measure instead: if any
+   label is cut off, lay the bar out in two rows. */
+const SIDEBAR_LAYOUT = window.matchMedia("(min-width: 860px) and (min-height: 540px)");
+function fitTabLabels() {
+  tabBar.classList.remove("tab-bar--rows");
+  document.body.classList.remove("tabs-in-rows");
+  if (SIDEBAR_LAYOUT.matches) return;
+  const clipped = [...tabBar.querySelectorAll(".tab-label")].some((l) => l.scrollWidth > l.clientWidth + 0.5);
+  if (clipped) {
+    tabBar.classList.add("tab-bar--rows");
+    document.body.classList.add("tabs-in-rows");
+  }
+  // Content keeps clear of the bar at whatever height it has ended up,
+  // one row or three, rather than a guessed fixed padding.
+  if (getComputedStyle(tabBar).position === "fixed") {
+    document.documentElement.style.setProperty("--tabbar-h", `${tabBar.offsetHeight}px`);
+  }
+}
+// A timer rather than requestAnimationFrame: rAF does not run at all while a
+// tab is in the background, so a page opened in a new tab would sit with
+// clipped labels until it was shown.
+let fitTimer = null;
+const queueFit = () => {
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(fitTabLabels, 60);
+};
+window.addEventListener("resize", queueFit);
+window.addEventListener("orientationchange", queueFit);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueFit);
 
 tabBar.addEventListener("click", (e) => {
   const btn = e.target.closest(".tab-btn");
@@ -191,8 +222,7 @@ async function boot() {
   // Recompute anything saved under an older metric definition, so trend
   // lines never mix two definitions of the same measurement.
   try {
-    const { migrated } = await migrateMetrics();
-    if (migrated) console.info(`Recomputed metrics for ${migrated} entr${migrated === 1 ? "y" : "ies"}.`);
+    await migrateMetrics();
   } catch (err) {
     console.error("Metric migration failed:", err);
   }

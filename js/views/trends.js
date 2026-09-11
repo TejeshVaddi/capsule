@@ -50,8 +50,8 @@ export async function renderTrendsView(root) {
   const notesWrap = panel.querySelector('[data-slot="notes"]');
   if (notes.length) {
     notesWrap.innerHTML = `
-      <h3 style="margin-bottom:8px;">What's changed</h3>
-      <div class="stack" style="gap:10px;">
+      <h3 class="space-below-sm">What's changed</h3>
+      <div class="stack stack-tight">
         ${notes.map((n) => `<div class="trend-note">${escapeHtml(n)}</div>`).join("")}
       </div>
     `;
@@ -66,7 +66,7 @@ export async function renderTrendsView(root) {
     if (series.length < 2) return;
     const card = el(`
       <div class="glass-card">
-        <div class="section-title" style="margin-bottom:6px;">
+        <div class="section-title space-below-sm">
           <strong>${escapeHtml(def.label)}</strong>
           ${def.researchBacked ? "" : `<span class="pill" title="Tracked by Capsule; not a research-validated measure">app metric</span>`}
         </div>
@@ -82,7 +82,7 @@ export async function renderTrendsView(root) {
   if (recallSeries.length >= 2) {
     const card = el(`
       <div class="glass-card">
-        <div class="section-title" style="margin-bottom:6px;">
+        <div class="section-title space-below-sm">
           <strong>Recall detail (memory visits)</strong>
           <span class="pill pill-yellow">recall</span>
         </div>

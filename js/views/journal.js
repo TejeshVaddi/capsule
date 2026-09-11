@@ -20,16 +20,16 @@ export async function renderJournalView(root, { navigate }) {
           <h2>Today's journal</h2>
           <span class="pill">${escapeHtml(todayLabel)}</span>
         </div>
-        <p class="muted">Tell Capsule about your day: what you did, who you saw, what you noticed. There's no wrong way to do it.</p>
+        <p class="muted">Tell Capsule about your day. Start anywhere, even with what you had for lunch.</p>
         <div data-slot="composer"></div>
         <div class="photo-strip" data-slot="photos"></div>
-        <div style="margin-top:14px; display:flex; gap:12px; flex-wrap:wrap;">
+        <div class="button-row">
           <label class="upload-label">
             ${icon("camera")} Add photos from today
-            <input type="file" accept="image/*" multiple hidden data-slot="file-input" />
+            <input type="file" accept="image/*" multiple data-slot="file-input" />
           </label>
         </div>
-        <div style="margin-top:18px;">
+        <div class="space-above">
           <button class="btn btn-primary btn-large" data-slot="save">Save today's entry</button>
         </div>
       </div>
@@ -111,10 +111,10 @@ export async function renderJournalView(root, { navigate }) {
 async function showResults(container, entry, navigate) {
   const m = entry.metrics;
   const all = await db.allEntries();
-  const suggestions = suggestActivities(m, all).filter((s) => s.real).slice(0, 2);
+  const suggestions = (await suggestActivities(m, all)).filter((s) => s.real).slice(0, 2);
 
   container.innerHTML = `
-    <div class="glass-card" style="animation: fadeUp 0.4s ease;">
+    <div class="glass-card fade-in">
       <h3>Today's word patterns</h3>
       <p class="muted">A snapshot of how you told your story today.</p>
       <div class="grid grid-2">
@@ -131,10 +131,10 @@ async function showResults(container, entry, navigate) {
         </div>
       </div>
     </div>
-    <div class="glass-card" style="margin-top:16px;">
+    <div class="glass-card space-above">
       <h3>Suggested for you today</h3>
       <div class="grid grid-2" data-slot="suggestions"></div>
-      <div style="margin-top:14px;">
+      <div class="space-above">
         <button class="btn btn-accent" data-slot="go-activities">See all activities</button>
       </div>
     </div>

@@ -35,13 +35,13 @@ export async function renderRecallView(root, { navigate }) {
           <h2>A memory visit</h2>
           <span class="pill pill-blue">${age} day${age === 1 ? "" : "s"} ago</span>
         </div>
-        <p style="font-size:1.15rem; font-weight:600; color: var(--purple);">
+        <p class="prompt">
           ${escapeHtml(formatFriendlyDate(target.date))}
         </p>
         ${photos.length ? `<p class="recall-hint-label">${icon("camera")} A picture from that day, to help</p>` : ""}
         <div class="recall-hint-strip" data-slot="photos"></div>
-        <p class="muted" style="margin-top:14px;">
-          Take a moment. What do you remember from this day? Who was there, what happened, how did it feel?
+        <p class="muted space-above">
+          Take a moment. What comes back first? Start with that, even if it's small.
         </p>
         <div data-slot="composer"></div>
         <button class="btn btn-primary btn-large" data-slot="save">I've said what I remember</button>
@@ -111,7 +111,7 @@ export async function renderRecallView(root, { navigate }) {
 function showComparison(container, original, recallEntry) {
   const c = recallEntry.recallComparison;
   container.innerHTML = `
-    <div class="glass-card" style="animation: fadeUp 0.4s ease;">
+    <div class="glass-card fade-in">
       <h3>Then and now</h3>
       <p class="muted">Here's what you said on the day, next to what you remembered just now.</p>
       <div class="compare-cols">
@@ -124,12 +124,12 @@ function showComparison(container, original, recallEntry) {
           <p>${escapeHtml(recallEntry.text)}</p>
         </div>
       </div>
-      <div style="margin-top:16px;">
+      <div class="space-above">
         <div class="metric-row"><span class="metric-name">Details mentioned then</span><span class="metric-value">${c.originalDistinctContentWords}</span></div>
         <div class="metric-row"><span class="metric-name">Details remembered now</span><span class="metric-value">${c.recallDistinctContentWords}</span></div>
         <div class="metric-row"><span class="metric-name">Shared details</span><span class="metric-value">${c.overlapCount}</span></div>
       </div>
-      <p class="muted" style="margin-top:12px;">This becomes part of your own recall trend over time. You can see it on the Trends page.</p>
+      <p class="muted space-above">This becomes part of your own recall trend over time. You can see it on the Trends page.</p>
     </div>
   `;
   container.scrollIntoView({ behavior: "smooth", block: "start" });

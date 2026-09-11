@@ -182,8 +182,3 @@ export async function wipeLocalData() {
     await localDb.setMeta("disclaimerAcknowledged", ack).catch(() => {});
   }
 }
-
-export async function localDataSummary() {
-  const entries = await localDb.allEntries();
-  return { entries: entries.length };
-}

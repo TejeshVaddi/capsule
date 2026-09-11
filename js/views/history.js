@@ -27,7 +27,7 @@ export async function renderHistoryView(root) {
           <span class="pill">${all.length} total</span>
         </div>
         <p class="muted">${isCloudMode() ? "Saved to your account." : "Stored privately on this device."} Tap an entry to revisit it.</p>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+        <div class="button-row">
           <button class="btn btn-secondary" data-slot="export">${icon("download")} Download my data</button>
         </div>
       </div>
@@ -48,11 +48,11 @@ export async function renderHistoryView(root) {
     const preview = entry.text.length > 140 ? entry.text.slice(0, 140) + "..." : entry.text;
     const card = el(`
       <div class="glass-card entry-card">
-        <div class="section-title" style="margin-bottom:6px;">
+        <div class="section-title space-below-sm">
           <strong>${escapeHtml(formatFriendlyDate(entry.date))}</strong>
           <span class="pill ${isRecall ? "pill-yellow" : "pill-blue"}">${isRecall ? "Memory visit" : "Journal"}</span>
         </div>
-        <p class="muted" style="margin:4px 0 0;">${escapeHtml(preview)}</p>
+        <p class="muted space-above-sm">${escapeHtml(preview)}</p>
         <div class="entry-thumbs" data-slot="thumbs"></div>
       </div>
     `);
@@ -83,20 +83,20 @@ async function showDetail(container, entry) {
   if (isRecall && entry.recallOf) original = await db.getEntry(entry.recallOf);
 
   container.innerHTML = `
-    <div class="glass-panel" style="animation: fadeUp 0.35s ease;">
+    <div class="glass-panel fade-in">
       <div class="section-title">
         <h3>${escapeHtml(formatFriendlyDate(entry.date))}</h3>
         <span class="pill ${isRecall ? "pill-yellow" : "pill-blue"}">${isRecall ? "Memory visit" : "Journal"}</span>
       </div>
       <div class="photo-strip" data-slot="photos"></div>
-      <p style="font-size:1.1rem;">${escapeHtml(entry.text)}</p>
+      <p class="lead">${escapeHtml(entry.text)}</p>
       ${original ? `
-        <div class="compare-col" style="margin-top:10px;">
+        <div class="compare-col space-above-sm">
           <span class="pill">The original day (${escapeHtml(formatFriendlyDate(original.date))})</span>
           <p>${escapeHtml(original.text)}</p>
         </div>` : ""}
       ${m ? `
-        <div class="grid grid-2" style="margin-top:14px;">
+        <div class="grid grid-2 space-above">
           <div>
             <div class="metric-row"><span class="metric-name">Words</span><span class="metric-value">${m.wordCount}</span></div>
             <div class="metric-row"><span class="metric-name">Different words</span><span class="metric-value">${m.uniqueWords}</span></div>

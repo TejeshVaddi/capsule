@@ -20,7 +20,7 @@ export async function renderActivitiesView(root) {
     <div class="stack">
       <div class="glass-panel">
         <h2>Activities</h2>
-        <p class="muted">Gentle ways to spend time with words and memories.</p>
+        <p class="muted">Two to try today, and more below if you feel like it. Most take a few minutes.</p>
       </div>
       <div class="stack" data-slot="list"></div>
       <div data-slot="stage"></div>
@@ -38,10 +38,10 @@ export async function renderActivitiesView(root) {
         <span class="pill ${s.doneToday ? "" : s.tailored ? "pill-yellow" : s.real ? "pill-blue" : ""} activity-tag">
           ${s.doneToday ? "Done today" : escapeHtml(s.tag)}
         </span>
-        <strong style="font-size:1.15rem;">${escapeHtml(s.title)}</strong>
+        <strong class="lead">${escapeHtml(s.title)}</strong>
         ${s.because && !s.doneToday ? `<span class="activity-because">${escapeHtml(s.because)}</span>` : ""}
         <span class="muted">${escapeHtml(s.why)}</span>
-        ${s.real ? `<button class="btn ${s.doneToday ? "btn-secondary" : "btn-accent"}" style="align-self:flex-start;">${s.doneToday ? "Do it again" : "Start"}</button>` : ``}
+        ${s.real ? `<button class="btn card-action ${s.doneToday ? "btn-secondary" : "btn-accent"}">${s.doneToday ? "Do it again" : "Start"}</button>` : ``}
       </div>
     `);
     if (s.real) {
@@ -107,15 +107,15 @@ function namingGame(stage, suggestion) {
         <h3>Naming game: ${escapeHtml(suggestion.data.theme)}</h3>
         <span class="pill" data-slot="progress"></span>
       </div>
-      <p style="font-size:1.25rem; font-weight:600;" data-slot="clue"></p>
+      <p class="clue" data-slot="clue"></p>
       <div class="answer-row">
         <input type="text" data-slot="answer" placeholder="Say or type the word..." autocomplete="off" />
       </div>
-      <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+      <div class="button-row">
         <button class="btn btn-primary" data-slot="check">Check</button>
         <button class="btn btn-secondary" data-slot="reveal">Show me</button>
       </div>
-      <p data-slot="feedback" style="min-height:1.5em; font-weight:600;"></p>
+      <p class="feedback" data-slot="feedback"></p>
     </div>
   `);
   stage.appendChild(card);
@@ -135,7 +135,7 @@ function namingGame(stage, suggestion) {
       if (activeSpeech) activeSpeech.stop();
       card.innerHTML = `
         <h3>Set finished</h3>
-        <p style="font-size:1.15rem;">You found ${gotten} of ${items.length} without help.</p>
+        <p class="lead">You found ${gotten} of ${items.length} without help.</p>
         `;
       logActivityCompletion("naming", {
         contentKey: suggestion.contentKey, theme: suggestion.data.theme,
@@ -202,8 +202,8 @@ function fluencyGame(stage, suggestion) {
         <div class="answer-row">
           <input type="text" data-slot="entry" placeholder="Say or type one, then add another..." autocomplete="off" />
         </div>
-        <button class="btn btn-secondary" style="margin-top:12px;" data-slot="add">Add it</button>
-        <button class="btn btn-secondary" style="margin-top:12px;" data-slot="stop">I'm finished</button>
+        <button class="btn btn-secondary space-above" data-slot="add">Add it</button>
+        <button class="btn btn-secondary space-above" data-slot="stop">I'm finished</button>
         <div class="fluency-list" data-slot="said"></div>
       </div>
       <div data-slot="result"></div>
@@ -238,7 +238,7 @@ function fluencyGame(stage, suggestion) {
     clearInterval(timer);
     card.querySelector('[data-slot="live"]').hidden = true;
     card.querySelector('[data-slot="result"]').innerHTML = `
-      <h3 style="margin-top:6px;">You named ${said.size}</h3>
+      <h3 class="space-above-sm">You named ${said.size}</h3>
       ${said.size ? `<p>${[...said].map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
     `;
     logActivityCompletion("fluency", {
@@ -281,8 +281,8 @@ function wordRecallGame(stage, suggestion) {
     card.innerHTML = `
       <h3>Five-word memory game</h3>
       <p class="muted">Read these five words slowly, once or twice.</p>
-      <div style="display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;">
-        ${words.map((w) => `<span class="pill pill-yellow" style="font-size:1.15rem; padding:10px 20px;">${escapeHtml(w)}</span>`).join("")}
+      <div class="chip-row">
+        ${words.map((w) => `<span class="pill pill-yellow word-chip">${escapeHtml(w)}</span>`).join("")}
       </div>
       <button class="btn btn-primary btn-large" data-slot="next">I've read them</button>
     `;
@@ -294,7 +294,7 @@ function wordRecallGame(stage, suggestion) {
     let left = task.seconds;
     card.innerHTML = `
       <h3>Just a moment first</h3>
-      <p style="font-size:1.2rem; font-weight:600;">${escapeHtml(task.instruction)}</p>
+      <p class="instruction">${escapeHtml(task.instruction)}</p>
       <p class="muted">This short gap is what makes the next part about remembering rather than repeating.</p>
       <div class="fluency-timer" data-slot="count">${left}</div>
       <button class="btn btn-secondary" data-slot="skip">Skip ahead</button>
@@ -319,7 +319,7 @@ function wordRecallGame(stage, suggestion) {
       <div class="answer-row">
         <input type="text" data-slot="answer" placeholder="e.g. apple, river..." autocomplete="off" />
       </div>
-      <button class="btn btn-primary btn-large" style="margin-top:12px;" data-slot="check">See how I did</button>
+      <button class="btn btn-primary btn-large space-above" data-slot="check">See how I did</button>
     `;
     const input = card.querySelector('[data-slot="answer"]');
     attachMicToInput(card.querySelector(".answer-row"), input);
@@ -345,7 +345,7 @@ function wordRecallGame(stage, suggestion) {
       <div class="recognition-grid" data-slot="options">
         ${options.map((w) => `<button class="btn btn-secondary recognition-option" data-word="${escapeHtml(w)}">${escapeHtml(w)}</button>`).join("")}
       </div>
-      <button class="btn btn-primary btn-large" style="margin-top:16px;" data-slot="finish">I'm done</button>
+      <button class="btn btn-primary btn-large space-above" data-slot="finish">I'm done</button>
     `;
     const picked = new Set();
     card.querySelectorAll(".recognition-option").forEach((b) => {
@@ -364,7 +364,7 @@ function wordRecallGame(stage, suggestion) {
   function done(recognised = []) {
     card.innerHTML = `
       <h3>How you did</h3>
-      <p style="font-size:1.15rem; font-weight:600;">You recalled ${found.length} of ${words.length} on your own${recognised.length ? `, and recognised ${recognised.length} more` : ""}.</p>
+      <p class="lead result-line">You recalled ${found.length} of ${words.length} on your own${recognised.length ? `, and recognised ${recognised.length} more` : ""}.</p>
       ${found.length ? `<p>Came back to you: ${found.map((w) => `<span class="pill pill-blue">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
       ${missed.length ? `<p>The full list was: ${words.map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
     `;
@@ -384,7 +384,7 @@ function descriptionActivity(stage, suggestion) {
   const card = el(`
     <div class="glass-panel">
       <h3>${suggestion.data.kind === "procedural" ? "Step by step" : suggestion.data.kind === "reminiscence" ? "Looking back" : "Describe the scene"}</h3>
-      <p style="font-size:1.2rem; font-weight:600; color: var(--purple);">${escapeHtml(suggestion.data.prompt)}</p>
+      <p class="prompt">${escapeHtml(suggestion.data.prompt)}</p>
       <div data-slot="composer"></div>
       <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
       <div data-slot="result"></div>
@@ -426,7 +426,7 @@ function descriptionActivity(stage, suggestion) {
     }
 
     card.querySelector('[data-slot="result"]').innerHTML = `
-      <div style="margin-top:16px;">
+      <div class="space-above">
         <div class="metric-row"><span class="metric-name">Words in your description</span><span class="metric-value">${m.wordCount}</span></div>
         <div class="metric-row"><span class="metric-name">Different words used</span><span class="metric-value">${m.uniqueWords}</span></div>
         <div class="metric-row"><span class="metric-name">Naming words</span><span class="metric-value">${m.nounCount}</span></div>
@@ -459,7 +459,7 @@ function photoStoryActivity(stage, suggestion) {
       <h3>Photo story</h3>
       <p class="muted">From your journal, ${escapeHtml(when)}.</p>
       <img class="photo-large" src="${photoUrl(photo.blob)}" alt="A photo from your journal" />
-      <p style="font-size:1.2rem; font-weight:600; color: var(--purple); margin-top:14px;">${escapeHtml(prompt)}</p>
+      <p class="prompt space-above">${escapeHtml(prompt)}</p>
       <div data-slot="composer"></div>
       <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
       <div data-slot="result"></div>
@@ -482,7 +482,7 @@ function photoStoryActivity(stage, suggestion) {
     }
     const m = analyzeText(text);
     card.querySelector('[data-slot="result"]').innerHTML = `
-      <div class="compare-cols" style="margin-top:16px;">
+      <div class="compare-cols space-above">
         <div class="compare-col">
           <strong>What you wrote that day</strong>
           <p>${escapeHtml(entry.text)}</p>
@@ -520,7 +520,7 @@ function musicMomentsActivity(stage, suggestion) {
     card.innerHTML = `
       <h3>Music moments: ${escapeHtml(era.era)}</h3>
       <p class="muted">Capsule does not play the music. Pick anything below that stirs something, and tell the story it brings back.</p>
-      <p style="font-weight:700; margin-top:16px;">Songs</p>
+      <p class="sub-label">Songs</p>
       <div class="cue-grid">
         ${era.songs.map((s) => `
           <button class="cue-card" data-cue="${escapeHtml(s.title)} by ${escapeHtml(s.artist)}">
@@ -528,14 +528,14 @@ function musicMomentsActivity(stage, suggestion) {
             <span class="muted">${escapeHtml(s.artist)}</span>
           </button>`).join("")}
       </div>
-      <p style="font-weight:700; margin-top:18px;">Places and moments</p>
+      <p class="sub-label">Places and moments</p>
       <div class="cue-grid">
         ${era.scenes.map((s) => `
           <button class="cue-card" data-cue="${escapeHtml(s)}">
             <strong>${escapeHtml(s)}</strong>
           </button>`).join("")}
       </div>
-      <p class="muted" style="margin-top:18px;">None of these? Tap any one anyway and talk about whatever it reminds you of instead.</p>
+      <p class="muted space-above">None of these? Tap any one anyway and talk about whatever it reminds you of instead.</p>
     `;
     card.querySelectorAll(".cue-card").forEach((b) => {
       b.addEventListener("click", () => { chosenCue = b.dataset.cue; tell(); });
@@ -546,14 +546,14 @@ function musicMomentsActivity(stage, suggestion) {
   function tell() {
     card.innerHTML = `
       <h3>${escapeHtml(chosenCue)}</h3>
-      <p style="font-size:1.2rem; font-weight:600; color: var(--purple);">${escapeHtml(prompt)}</p>
+      <p class="prompt">${escapeHtml(prompt)}</p>
       <div data-slot="composer"></div>
       <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
-      <button class="btn btn-secondary" style="margin-top:10px;" data-slot="back">Pick something else</button>
+      <button class="btn btn-secondary space-above-sm" data-slot="back">Pick something else</button>
       <div data-slot="result"></div>
     `;
     const composer = createSpeechComposer({
-      placeholder: "Whatever it brings back: people, places, how it felt...",
+      placeholder: "Whatever it brings back, even just a face or a room...",
       SpeechInputClass: SpeechInput,
       speechSupported,
     });
@@ -571,7 +571,7 @@ function musicMomentsActivity(stage, suggestion) {
       }
       const m = analyzeText(text);
       card.querySelector('[data-slot="result"]').innerHTML = `
-        <div style="margin-top:16px;">
+        <div class="space-above">
           <div class="metric-row"><span class="metric-name">Words in your memory</span><span class="metric-value">${m.wordCount}</span></div>
           <div class="metric-row"><span class="metric-name">Different words used</span><span class="metric-value">${m.uniqueWords}</span></div>
         </div>
@@ -632,7 +632,7 @@ async function renderHistory(mount) {
 
   const recent = log.slice(0, 8);
   mount.appendChild(el(`
-    <div class="glass-card" style="margin-top:6px;">
+    <div class="glass-card space-above-sm">
       <h3>What you've done</h3>
       <p class="muted">${log.length} activit${log.length === 1 ? "y" : "ies"} so far.</p>
       <ul class="activity-log-list">

@@ -52,4 +52,3 @@ export function icon(name, className = "icon") {
   return `<span class="${className}">${ICONS[name] || ""}</span>`;
 }
 
-export const LOGO_DATA_URI = "data:image/svg+xml," + encodeURIComponent(LOGO_SVG.trim());

@@ -5,7 +5,7 @@
 // the week before. Movement is reported in whichever direction it went.
 
 import { db } from "./data.js";
-import { dateKey, daysBetween } from "./daily.js";
+import { dateKey } from "./daily.js";
 
 export function startOfWeek(d = new Date()) {
   const c = new Date(d);
@@ -61,11 +61,6 @@ export async function buildWeeklySummary(weekStart = startOfWeek()) {
       "More pauses and repeats than last week.", "Fewer pauses and repeats than last week."),
   ].filter(Boolean);
 
-  // Recall detail, reported only when there is something to report.
-  const recallOverlap = mean(
-    recalls.filter((r) => r.recallComparison).map((r) => r.recallComparison.overlapRatio)
-  );
-
   // Snippets for the collage. A day only gets a note if it actually has
   // something to say; a sticky reading "Quiet day." is worse than no sticky.
   const snippets = journals
@@ -82,7 +77,6 @@ export async function buildWeeklySummary(weekStart = startOfWeek()) {
     photoEntryIds: journals.map((e) => e.id),
     snippets,
     movements,
-    recallOverlap,
     // Things that are true, good, and entirely about what they did.
     wins: buildWins({ daysActive, journals, activities, recalls }),
   };

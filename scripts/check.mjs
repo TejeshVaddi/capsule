@@ -120,7 +120,41 @@ for (const f of jsFiles) {
   }
 }
 
-/* 5. No live credentials committed. The anon key is public by design; a
+/* 5. An async function's result must be awaited before it is used.
+      suggestActivities became async while one caller still did
+      suggestActivities(...).filter(...). It parsed, it imported, and every
+      journal save then threw after writing the entry, so people were told
+      the save failed and invited to save again. This catches a call to any
+      known async function followed directly by .something or [index]. */
+const asyncNames = new Set();
+for (const f of jsFiles) {
+  const src = readFileSync(f, "utf8");
+  for (const m of src.matchAll(/\basync\s+function\s+([A-Za-z0-9_$]+)/g)) asyncNames.add(m[1]);
+  for (const m of src.matchAll(/\b(?:const|let)\s+([A-Za-z0-9_$]+)\s*=\s*async\b/g)) asyncNames.add(m[1]);
+}
+const PROMISE_METHODS = new Set(["then", "catch", "finally"]);
+for (const f of jsFiles) {
+  const src = readFileSync(f, "utf8");
+  for (const name of asyncNames) {
+    const re = new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, "\\$")}\\(`, "g");
+    for (const m of src.matchAll(re)) {
+      const open = m.index + m[0].length - 1;
+      const before = src.slice(Math.max(0, open - name.length - 40), open - name.length);
+      if (/\b(await|function)\s*\(?\s*$/.test(before)) continue;
+      let depth = 0, i = open;
+      for (; i < src.length; i++) {
+        if (src[i] === "(") depth++;
+        else if (src[i] === ")" && --depth === 0) break;
+      }
+      const after = src.slice(i + 1).match(/^\s*(?:\.\s*([A-Za-z0-9_$]+)|(\[))/);
+      if (!after || PROMISE_METHODS.has(after[1])) continue;
+      const line = src.slice(0, open).split("\n").length;
+      fail(rel(f), `uses the result of async ${name}() without await (line ${line})`);
+    }
+  }
+}
+
+/* 6. No live credentials committed. The anon key is public by design; a
       service-role key or private key never is. */
 for (const f of files.filter((x) => /\.(js|html|css|md|sql|ts|json)$/.test(x))) {
   const src = readFileSync(f, "utf8");
@@ -133,7 +167,7 @@ for (const f of files.filter((x) => /\.(js|html|css|md|sql|ts|json)$/.test(x))) 
 if (failures.length) {
   console.error(`\n  ${failures.length} problem${failures.length === 1 ? "" : "s"} found:\n`);
   for (const { file, msg } of failures) console.error(`   ${file}\n     ${msg}\n`);
-  console.error("  Push blocked. The app has no build step, so any one of these\n  takes down every screen, not just one.\n");
+  console.error("  Push blocked. The app has no build step, so nothing else will\n  catch these before they reach the live site.\n");
   process.exit(1);
 }
 
