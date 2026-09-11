@@ -34,6 +34,7 @@ html, body {
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   font-size: 18px;
   line-height: 1.5;
   background: var(--lavender);
@@ -50,8 +51,6 @@ button { font-family: var(--font); }
 /* ---------- Glass panels ---------- */
 .glass-panel {
   background: rgba(243, 239, 251, 0.6);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -60,8 +59,6 @@ button { font-family: var(--font); }
 
 .glass-card {
   background: rgba(243, 239, 251, 0.72);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
@@ -69,15 +66,31 @@ button { font-family: var(--font); }
 }
 
 /* ---------- Overlay / disclaimer ---------- */
+/* Every full-screen layer scrolls when its content is taller than the screen.
+   "align-items: center" on its own is the trap here: an overflowing child is
+   pushed off BOTH edges, so the top is cut off and cannot be scrolled back to.
+   Instead the container scrolls, and the child's auto margins centre it only
+   when there is room to spare. On a small phone the welcome screen is roughly
+   twice the height of the display, so without this nobody could reach the
+   Continue button. */
 .overlay {
   position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0;
   inset: 0;
   z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 24px;
   background: rgba(33, 26, 46, 0.68);
+}
+.overlay > * { margin-top: auto; margin-bottom: auto; flex-shrink: 0; }
+
+@media (max-width: 520px) {
+  .overlay { padding: 12px; }
 }
 
 .disclaimer-panel {
@@ -141,7 +154,6 @@ button { font-family: var(--font); }
   color: var(--glass);
   box-shadow: var(--shadow-soft);
 }
-.btn-primary:not(:disabled):hover { box-shadow: var(--shadow-lift); }
 
 .btn-secondary {
   background: rgba(255,255,255,0.55);
@@ -174,7 +186,7 @@ button { font-family: var(--font); }
 }
 
 /* ---------- App shell ---------- */
-#app { min-height: 100vh; display: flex; flex-direction: column; }
+#app { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 
 .app-header {
   display: flex;
@@ -229,11 +241,14 @@ button { font-family: var(--font); }
   color: #6b5c7d;
   font-size: 0.78rem;
   font-weight: 600;
-  padding: 6px 10px;
+  padding: 6px 2px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  min-width: 60px;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
 }
+.tab-label { max-width: 100%; white-space: nowrap; overflow: hidden; }
 .tab-icon { line-height: 1; display: inline-flex; }
 .tab-icon svg { width: 24px; height: 24px; }
 .tab-btn.active { color: var(--purple); background: rgba(255,255,255,0.55); }
@@ -259,13 +274,14 @@ button { font-family: var(--font); }
     flex-direction: column;
     width: 220px;
     height: 100vh;
+    height: 100dvh;
     justify-content: flex-start;
     gap: 8px;
     padding: 24px 14px;
     border-top: none;
     border-right: 1px solid rgba(255,255,255,0.5);
   }
-  .tab-btn { flex-direction: row; justify-content: flex-start; gap: 12px; font-size: 1rem; padding: 14px 16px; width: 100%; }
+  .tab-btn { flex: 0 0 auto; flex-direction: row; justify-content: flex-start; gap: 12px; font-size: 1rem; padding: 14px 16px; width: 100%; }
   #app { flex-direction: row; }
   .app-header { display: none; }
   .view-root { padding: 30px 40px 60px; max-width: 1000px; }
@@ -370,7 +386,6 @@ textarea:focus, input[type="text"]:focus {
 .chart-wrap { position: relative; height: 240px; }
 
 .entry-card { cursor: pointer; }
-.entry-card:hover { box-shadow: var(--shadow-lift); }
 .entry-thumbs { display: flex; gap: 8px; margin-top: 8px; }
 .entry-thumbs img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
 
@@ -401,7 +416,6 @@ textarea:focus, input[type="text"]:focus {
   text-underline-offset: 3px;
   cursor: pointer;
 }
-.footer-inline-link:hover { color: var(--blue); }
 
 .footer-rule {
   height: 1px;
@@ -442,7 +456,6 @@ textarea:focus, input[type="text"]:focus {
   display: inline-flex;
   align-items: center;
 }
-.footer-link:hover { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
 
 .footer-fineprint {
   margin: 16px 0 0;
@@ -601,7 +614,6 @@ textarea:focus, input[type="text"]:focus {
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 .cue-card strong { color: var(--purple); font-size: 1.05rem; }
-.cue-card:hover { border-color: var(--blue); background: rgba(255, 255, 255, 0.75); }
 .cue-card:active { transform: scale(0.98); }
 
 .activity-log-list { list-style: none; padding: 0; margin: 10px 0 0; }
@@ -631,7 +643,6 @@ textarea:focus, input[type="text"]:focus {
   border: 2px solid #9c3129;
   font-weight: 700;
 }
-.btn-danger:not(:disabled):hover { background: #9c3129; color: var(--glass); }
 .btn-danger:disabled { opacity: 0.4; }
 
 /* ---------- Deletion modal ---------- */
@@ -871,7 +882,7 @@ a { color: var(--blue); }
 
 /* ---------- Intro ---------- */
 .intro-screen {
-  position: fixed; inset: 0; z-index: 3000;
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 3000;
   display: flex; align-items: center; justify-content: center;
   background: var(--lavender);
   transition: opacity .4s ease;
@@ -896,11 +907,13 @@ a { color: var(--blue); }
 
 /* ---------- Celebration ---------- */
 .celebrate-screen {
-  position: fixed; inset: 0; z-index: 3500;
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 3500;
   display: flex; align-items: center; justify-content: center;
   background: var(--lavender);
   transition: opacity .4s ease;
-  touch-action: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .celebrate-screen.celebrate-out { opacity: 0; }
 .celebrate-inner { text-align: center; width: 100%; max-width: 460px; padding: 20px; }
@@ -960,7 +973,6 @@ a { color: var(--blue); }
   font-family: var(--font); font-size: 1rem; font-weight: 700;
   color: var(--purple); cursor: pointer; min-height: 60px; text-align: left;
 }
-.week-reopen:hover { box-shadow: var(--shadow-lift); }
 .week-reopen-cue { font-weight: 600; color: var(--blue); text-decoration: underline; text-underline-offset: 3px; flex-shrink: 0; }
 
 /* ---------- Tailored suggestions ---------- */
@@ -987,4 +999,99 @@ a { color: var(--blue); }
   .today-suggestions { padding-left: 0; }
   .suggestion-card { flex-direction: column; align-items: stretch; }
   .suggestion-go { width: 100%; }
+}
+
+/* Hover effects, only on devices that can actually hover. */
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:not(:disabled):hover { box-shadow: var(--shadow-lift); }
+  .entry-card:hover { box-shadow: var(--shadow-lift); }
+  .footer-inline-link:hover { color: var(--blue); }
+  .footer-link:hover { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+  .cue-card:hover { border-color: var(--blue); background: rgba(255, 255, 255, 0.75); }
+  .btn-danger:not(:disabled):hover { background: #9c3129; color: var(--glass); }
+  .week-reopen:hover { box-shadow: var(--shadow-lift); }
+}
+
+/* =====================================================================
+   Phones and tablets, across Safari, Firefox, Samsung Internet and Chrome
+   ===================================================================== */
+
+html {
+  /* Stops iOS enlarging text on rotation, which reflows the layout. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Focused fields scroll into view clear of the fixed tab bar. */
+  scroll-padding-bottom: 100px;
+}
+
+/* Taps act immediately. "manipulation" removes the double-tap-to-zoom wait
+   that makes a tap feel ignored, while leaving pinch-zoom fully available,
+   which matters for anyone who needs to enlarge the text. */
+button, a, label, input, select, textarea, summary, [role="button"],
+.tab-btn, .cue-card, .today-item, .suggestion-card, .activity-card {
+  touch-action: manipulation;
+}
+
+/* Visible confirmation that a tap registered, on every touch browser. */
+button, a, label, [role="button"] {
+  -webkit-tap-highlight-color: rgba(74, 46, 92, 0.14);
+}
+.tab-btn:active,
+.cue-card:active,
+.footer-link:active,
+.btn-text:active,
+.btn-link:active,
+.week-reopen:active,
+.recognition-option:active {
+  opacity: 0.6;
+  transition: opacity 0s;
+}
+.tab-btn { transition: opacity 0.15s ease, background 0.15s ease; }
+
+/* Tab labels: seven tabs share the bar evenly, so the text steps down on
+   narrower phones rather than pushing the last tab off the screen. */
+@media (max-width: 859px) { .tab-btn { padding-left: 0; padding-right: 0; } }
+@media (max-width: 400px) { .tab-btn { font-size: 11px; letter-spacing: -0.01em; } }
+@media (max-width: 365px) { .tab-btn { font-size: 10.5px; letter-spacing: -0.02em; } }
+@media (max-width: 340px) {
+  .tab-btn { font-size: 10px; letter-spacing: -0.02em; gap: 2px; }
+  .tab-icon svg { width: 22px; height: 22px; }
+  .tab-bar { padding-left: 2px; padding-right: 2px; }
+}
+
+/* With the blur gone from panels, anything sitting over the dimmed page is
+   made nearly opaque so the screen behind never shows through the text. */
+.overlay .glass-panel,
+.overlay .glass-card { background: rgba(243, 239, 251, 0.98); }
+
+/* The page underneath stays put while a panel is open, so a swipe scrolls
+   the panel rather than the screen behind it. */
+body:has(.overlay:not([hidden])),
+body:has(.celebrate-screen),
+body:has(.intro-screen) {
+  overflow: hidden;
+}
+
+/* Browsers without backdrop blur get a solid bar instead of a see-through one. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tab-bar, .app-header { background: rgba(243, 239, 251, 0.97); }
+}
+
+/* While typing on a phone the fixed tab bar is hidden: iOS floats it above
+   the keyboard, where it covers the very field being typed into. */
+@media (max-width: 859px) {
+  body.typing .tab-bar { display: none; }
+  body.typing .view-root { padding-bottom: 24px; }
+}
+
+/* Celebration: centred when it fits, scrollable on short landscape screens. */
+.celebrate-screen { align-items: flex-start; }
+.celebrate-screen > * { margin-top: auto; margin-bottom: auto; }
+@media (max-height: 640px) {
+  .celebrate-stage { height: 300px; }
+}
+
+/* Square photo tiles on Safari older than 15. */
+@supports not (aspect-ratio: 1) {
+  .week-photos img { height: 104px; }
 }

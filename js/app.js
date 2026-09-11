@@ -49,6 +49,7 @@ async function navigate(viewName) {
 
   destroyCharts();
   revokePhotoUrls();
+  document.body.classList.remove("typing");
 
   for (const btn of tabBar.querySelectorAll(".tab-btn")) {
     btn.classList.toggle("active", btn.dataset.view === viewName);
@@ -78,6 +79,26 @@ async function navigate(viewName) {
 /** Footer "Delete your data" opens the flow that matches the current mode. */
 function openDeleteFromFooter(nav) {
   openDeleteFlow({ mode: isCloudMode() ? "cloud" : "local", navigate: nav });
+}
+
+/* While a text field has focus on a touch screen, the tab bar steps aside
+   (see body.typing in the stylesheet). The short delay on focusout avoids a
+   flicker when moving straight from one field to the next. */
+const TEXT_ENTRY = 'textarea, input:not([type]), input[type="text"], input[type="email"], input[type="search"], input[type="tel"], input[type="number"]';
+const touchScreen = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+if (touchScreen) {
+  document.addEventListener("focusin", (e) => {
+    if (e.target.matches && e.target.matches(TEXT_ENTRY)) document.body.classList.add("typing");
+  });
+  const settleTyping = () => {
+    const a = document.activeElement;
+    if (!(a && a.matches && a.matches(TEXT_ENTRY))) document.body.classList.remove("typing");
+  };
+  document.addEventListener("focusout", () => setTimeout(settleTyping, 120));
+  // A focused field removed from the page (a view re-rendering after a save)
+  // does not reliably fire focusout in Safari or Chrome, which would leave the
+  // tab bar hidden for good. Any later touch re-checks.
+  document.addEventListener("pointerdown", () => setTimeout(settleTyping, 0), { passive: true });
 }
 
 tabBar.addEventListener("click", (e) => {
