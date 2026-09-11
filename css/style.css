@@ -1117,10 +1117,14 @@ body:has(.intro-screen) {
 .today-body, .suggestion-body, .activity-card, .glass-card, .glass-panel { min-width: 0; }
 .today-title, .today-detail, .metric-name, .sticky-text, .compare-col p { overflow-wrap: anywhere; }
 
-@media (max-width: 420px) {
-  /* Today list: the Start / Open button drops under its text. */
+@media (max-width: 480px) {
+  /* Today list: the Start / Open button drops under its text. The text needs
+     a real basis, or it shrinks to a sliver and the row never wraps. */
   .today-item { flex-wrap: wrap; }
+  .today-body { flex: 1 1 180px; }
   .today-go { margin-left: 52px; }
+}
+@media (max-width: 420px) {
   .glass-panel { padding: 18px; }
   .glass-card { padding: 16px; }
   .view-root { padding-left: 12px; padding-right: 12px; }

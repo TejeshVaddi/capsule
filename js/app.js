@@ -73,6 +73,10 @@ async function navigate(viewName) {
   // The legal footer sits on every screen, including the error state above,
   // so these links are never more than a scroll away.
   viewRoot.appendChild(renderFooter({ navigate, onDeleteData: openDeleteFromFooter }));
+
+  // A new page starts at its top. Otherwise it opens at the previous page's
+  // scroll position, which on a phone can mean landing on the footer.
+  window.scrollTo(0, 0);
 }
 
 /** Footer "Delete your data" opens the flow that matches the current mode. */
