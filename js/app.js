@@ -1,24 +1,24 @@
-import { db, refreshDataMode } from "./data.js";
-import { onAuthChange } from "./cloud.js";
-import { cloudConfigured } from "./config.js";
-import { revokePhotoUrls } from "./ui.js";
-import { ICONS, LOGO_SVG } from "./icons.js";
-import { renderHomeView } from "./views/home.js";
-import { renderJournalView } from "./views/journal.js";
-import { playIntro } from "./intro.js";
-import { getStreak } from "./daily.js";
-import { renderRecallView } from "./views/recall.js";
-import { renderActivitiesView } from "./views/activities.js";
-import { renderTrendsView } from "./views/trends.js";
-import { renderHistoryView } from "./views/history.js";
-import { renderAccountView, openDeleteFlow } from "./views/account.js";
-import { renderFooter } from "./footer.js";
-import { isCloudMode } from "./data.js";
-import { destroyCharts } from "./charts.js";
-import { shouldShowWalkthrough, startWalkthrough } from "./walkthrough.js";
-import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js";
-import { openTerms, TERMS_VERSION } from "./terms.js";
-import { migrateMetrics } from "./migrate.js";
+import { db, refreshDataMode } from "./data.js?v=a2bef25b51";
+import { onAuthChange } from "./cloud.js?v=a2bef25b51";
+import { cloudConfigured } from "./config.js?v=a2bef25b51";
+import { revokePhotoUrls } from "./ui.js?v=a2bef25b51";
+import { ICONS, LOGO_SVG } from "./icons.js?v=a2bef25b51";
+import { renderHomeView } from "./views/home.js?v=a2bef25b51";
+import { renderJournalView } from "./views/journal.js?v=a2bef25b51";
+import { playIntro } from "./intro.js?v=a2bef25b51";
+import { getStreak } from "./daily.js?v=a2bef25b51";
+import { renderRecallView } from "./views/recall.js?v=a2bef25b51";
+import { renderActivitiesView } from "./views/activities.js?v=a2bef25b51";
+import { renderTrendsView } from "./views/trends.js?v=a2bef25b51";
+import { renderHistoryView } from "./views/history.js?v=a2bef25b51";
+import { renderAccountView, openDeleteFlow } from "./views/account.js?v=a2bef25b51";
+import { renderFooter } from "./footer.js?v=a2bef25b51";
+import { isCloudMode } from "./data.js?v=a2bef25b51";
+import { destroyCharts } from "./charts.js?v=a2bef25b51";
+import { shouldShowWalkthrough, startWalkthrough } from "./walkthrough.js?v=a2bef25b51";
+import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=a2bef25b51";
+import { openTerms, TERMS_VERSION } from "./terms.js?v=a2bef25b51";
+import { migrateMetrics } from "./migrate.js?v=a2bef25b51";
 
 const VIEWS = {
   home: renderHomeView,
@@ -209,6 +209,9 @@ overlay.addEventListener("click", (e) => {
 /* ---------- Boot ---------- */
 
 async function boot() {
+  // Optional: a page cached from before this note existed has no such element,
+  // and a missing loading note must never stop the app from starting.
+  document.getElementById("boot-note")?.remove();
   let acknowledged;
   try {
     acknowledged = await db.getMeta("disclaimerAcknowledged");

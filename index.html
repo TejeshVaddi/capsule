@@ -11,9 +11,34 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/style.css?v=a2bef25b51" />
 </head>
 <body>
+
+<!-- Shown until the app starts, so a slow connection is never a blank page. -->
+<div id="boot-note" class="boot-note" role="status">
+  <p id="boot-text">Loading Capsule...</p>
+  <button id="boot-retry" class="btn btn-primary" type="button" hidden>Try again</button>
+</div>
+<script>
+  (function () {
+    function stuck() {
+      var note = document.getElementById("boot-note");
+      if (!note || note.hidden) return;
+      document.getElementById("boot-text").textContent =
+        "Capsule is having trouble opening. Check that you are connected to the internet, then tap Try again.";
+      var retry = document.getElementById("boot-retry");
+      retry.hidden = false;
+      retry.onclick = function () { location.reload(); };
+    }
+    // A script that fails to load or start shows the message straight away;
+    // otherwise it appears if the app has not started within 15 seconds.
+    window.addEventListener("error", function (e) {
+      if ((e.target && e.target.tagName === "SCRIPT") || /SyntaxError|import/i.test(e.message || "")) stuck();
+    }, true);
+    setTimeout(stuck, 15000);
+  })();
+</script>
 
 <!-- Entry disclaimer, shown until acknowledged -->
 <div id="disclaimer-overlay" class="overlay" hidden>
@@ -94,6 +119,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <!-- App -->
-<script type="module" src="js/app.js"></script>
+<script type="module" src="js/app.js?v=a2bef25b51"></script>
 </body>
 </html>

@@ -1,10 +1,9 @@
-import { db } from "../data.js";
-import { suggestActivities } from "../activities.js";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js";
-import { celebrateStreak } from "../celebrate.js";
-import { el, escapeHtml, photoUrl } from "../ui.js";
-import { icon } from "../icons.js";
+import { db } from "../data.js?v=a2bef25b51";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=a2bef25b51";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=a2bef25b51";
+import { celebrateStreak } from "../celebrate.js?v=a2bef25b51";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=a2bef25b51";
+import { icon } from "../icons.js?v=a2bef25b51";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;
@@ -36,7 +35,9 @@ export async function renderHomeView(root, { navigate }) {
 
       <div class="glass-panel">
         <h2>Today, in order</h2>
-        <p class="muted">Work down the list. There is no rush, and you can come back through the day.</p>
+        ${guideHtml(plan.allDone
+          ? "Everything is done for today. You can come back tomorrow."
+          : `Do the steps from the top. Next is: ${plan.nextTask.title}. Tap the purple Start button.`)}
         <ol class="today-list" data-slot="tasks"></ol>
       </div>
 
@@ -61,15 +62,6 @@ export async function renderHomeView(root, { navigate }) {
     const btn = item.querySelector(".today-go");
     if (btn) btn.addEventListener("click", () => navigate(t.view));
     list.appendChild(item);
-
-    // Once today's journal is written, the activities step expands in place to
-    // show the actual suggestions, chosen against today's entry. Before that
-    // there is nothing to choose from, so it stays a plain step.
-    if (t.key === "activities" && plan.tasks.find((x) => x.key === "journal")?.done && !t.done) {
-      const slot = el(`<li class="today-suggestions" data-slot="suggestions"></li>`);
-      list.appendChild(slot);
-      mountSuggestions(slot, navigate);
-    }
   });
 
   // Finishing everything triggers the celebration, once a day.
@@ -81,39 +73,6 @@ export async function renderHomeView(root, { navigate }) {
   }
 
   await mountWeekly(panel.querySelector('[data-slot="weekly"]'), navigate);
-}
-
-/** Today's suggestions, inline under the activities step. */
-async function mountSuggestions(mount, navigate) {
-  const all = await db.allEntries();
-  const journals = all.filter((e) => e.type === "journal");
-  const latest = journals.length ? journals[journals.length - 1].metrics : null;
-  const suggestions = (await suggestActivities(latest, all))
-    .filter((s) => s.real && !s.doneToday)
-    .slice(0, 2);
-  if (!suggestions.length) return;
-
-  const tailored = suggestions.filter((s) => s.because);
-  mount.innerHTML = `
-    <p class="suggestions-lead">${tailored.length
-      ? "Chosen from how your recent entries have been going:"
-      : "Two to try today:"}</p>
-    <div class="suggestion-cards" data-slot="cards"></div>`;
-
-  const cards = mount.querySelector('[data-slot="cards"]');
-  for (const s of suggestions) {
-    const card = el(`
-      <div class="suggestion-card">
-        <div class="suggestion-body">
-          <strong>${escapeHtml(s.title)}</strong>
-          ${s.because ? `<span class="activity-because">${escapeHtml(s.because)}</span>` : ""}
-          <span class="muted">${escapeHtml(s.why)}</span>
-        </div>
-        <button class="btn btn-accent suggestion-go">Start</button>
-      </div>`);
-    card.querySelector(".suggestion-go").addEventListener("click", () => navigate("activities"));
-    cards.appendChild(card);
-  }
 }
 
 function streakLine(streak, plan) {

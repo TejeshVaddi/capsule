@@ -154,7 +154,28 @@ for (const f of jsFiles) {
   }
 }
 
-/* 6. No live credentials committed. The anon key is public by design; a
+/* 6. Every script and stylesheet address carries the current version stamp.
+      Without it, a browser right after a release can mix an old cached module
+      with a new one; one missing export and the whole app is a blank page.
+      See scripts/stamp.mjs. */
+{
+  const { fingerprint } = await import("./stamp.mjs");
+  const version = fingerprint();
+  const stale = new Set();
+  for (const f of jsFiles) {
+    const src = readFileSync(f, "utf8");
+    for (const m of src.matchAll(/(?:\bfrom\s+|\bimport\s*\(\s*)["'](\.{1,2}\/[^"']+)["']/g)) {
+      if (!m[1].endsWith(`?v=${version}`)) stale.add(rel(f));
+    }
+  }
+  const html = readFileSync(indexPath, "utf8");
+  for (const m of html.matchAll(/(?:src|href)="(\/?(?:js\/app\.js|css\/style\.css)[^"]*)"/g)) {
+    if (!m[1].endsWith(`?v=${version}`)) stale.add("index.html");
+  }
+  for (const f of stale) fail(f, `has imports without the current version stamp (${version}). Run: npm run stamp`);
+}
+
+/* 7. No live credentials committed. The anon key is public by design; a
       service-role key or private key never is. */
 for (const f of files.filter((x) => /\.(js|html|css|md|sql|ts|json)$/.test(x))) {
   const src = readFileSync(f, "utf8");

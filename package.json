@@ -4,6 +4,7 @@
   "description": "Speech-based journaling and cognitive-engagement app",
   "scripts": {
     "check": "node scripts/check.mjs",
+    "stamp": "node scripts/stamp.mjs",
     "serve": "python3 -m http.server 8741"
   }
 }

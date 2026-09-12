@@ -1,4 +1,4 @@
-import { ICONS } from "./icons.js";
+import { ICONS } from "./icons.js?v=a2bef25b51";
 
 export function toast(message, ms = 3200) {
   const root = document.getElementById("toast-root");
@@ -23,6 +23,20 @@ export function el(html) {
   const template = document.createElement("template");
   template.innerHTML = html.trim();
   return template.content.firstElementChild;
+}
+
+/* ---------- The guide box ----------
+   Every page and every step of an activity opens with one: what to do right
+   now, in a sentence or two, naming the exact button to press. It is the one
+   place to look when unsure, so it always looks the same. */
+
+/** Markup for a guide box. `step` is an optional label such as "Step 1 of 3". */
+export function guideHtml(text, step = "") {
+  return `
+    <div class="guide" role="note">
+      ${step ? `<span class="guide-step">${escapeHtml(step)}</span>` : ""}
+      <p class="guide-text">${escapeHtml(text)}</p>
+    </div>`;
 }
 
 const objectUrls = [];

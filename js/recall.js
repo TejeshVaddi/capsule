@@ -1,4 +1,4 @@
-import { db } from "./data.js";
+import { db } from "./data.js?v=a2bef25b51";
 
 const MIN_AGE_DAYS = 2; // an entry must be at least this old before it can be resurfaced
 

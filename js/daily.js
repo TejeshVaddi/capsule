@@ -10,9 +10,12 @@
 // and feel like a reminder of failure. So one missed day is forgiven per
 // rolling week. The number still means something, and it survives a bad day.
 
-import { db } from "./data.js";
+import { db } from "./data.js?v=a2bef25b51";
 
 export const GRACE_PER_WEEK = 1;
+
+// Where today's two required activities are remembered (see activities.js).
+export const REQUIRED_META = "requiredActivities";
 
 export function dateKey(d = new Date()) {
   const y = d.getFullYear();
@@ -58,6 +61,12 @@ export async function getDailyPlan() {
   );
   const recallAvailable = recallCandidates.length > 0;
 
+  // The activities step is done when today's two required activities are,
+  // not when any two things were done. Extras never count toward it.
+  const todaysPair = await db.getMeta(REQUIRED_META).catch(() => null);
+  const requiredKeys = todaysPair?.date === today ? todaysPair.keys || [] : [];
+  const doneKeys = new Set(todaysActivities.map((r) => r.detail?.contentKey));
+  const requiredDone = requiredKeys.filter((k) => doneKeys.has(k)).length;
   const ACTIVITY_TARGET = 2;
 
   const tasks = [
@@ -71,13 +80,11 @@ export async function getDailyPlan() {
     },
     {
       key: "activities",
-      title: "Today's activities",
-      detail: `${ACTIVITY_TARGET} to try. They change every day.`,
+      title: "Do today's 2 activities",
+      detail: "Two short games or questions. They change every day.",
       view: "activities",
-      done: todaysActivities.length >= ACTIVITY_TARGET,
-      progress: todaysActivities.length ? `${Math.min(todaysActivities.length, ACTIVITY_TARGET)} of ${ACTIVITY_TARGET} done` : null,
-      count: todaysActivities.length,
-      target: ACTIVITY_TARGET,
+      done: requiredKeys.length > 0 && requiredDone >= requiredKeys.length,
+      progress: requiredDone ? `${requiredDone} of ${ACTIVITY_TARGET} done` : null,
     },
   ];
 

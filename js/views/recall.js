@@ -1,9 +1,9 @@
-import { db, newId } from "../data.js";
-import { icon } from "../icons.js";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js";
-import { SpeechInput, speechSupported } from "../speech.js";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints } from "../recall.js";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl } from "../ui.js";
+import { db, newId } from "../data.js?v=a2bef25b51";
+import { icon } from "../icons.js?v=a2bef25b51";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=a2bef25b51";
+import { SpeechInput, speechSupported } from "../speech.js?v=a2bef25b51";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints } from "../recall.js?v=a2bef25b51";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml } from "../ui.js?v=a2bef25b51";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";
@@ -39,6 +39,7 @@ export async function renderRecallView(root, { navigate }) {
         <p class="prompt">
           ${escapeHtml(formatFriendlyDate(target.date))}
         </p>
+        ${guideHtml("Think back to this day. Tap the microphone and say what you remember, or type it in the box. Then tap I've said what I remember at the bottom.")}
         ${photos.length ? `<p class="recall-hint-label">${icon("camera")} A picture from that day, to help</p>` : ""}
         <div class="recall-hint-strip" data-slot="photos"></div>
         ${hints.length ? `
@@ -107,8 +108,7 @@ export async function renderRecallView(root, { navigate }) {
       };
       await db.putEntry(entry);
       composer.destroy();
-      toast("Recall saved.");
-      showComparison(panel.querySelector('[data-slot="results"]'), target, entry);
+      showComparison(panel.querySelector('[data-slot="results"]'), target, entry, navigate);
       saveBtn.remove();
     } catch (err) {
       console.error(err);
@@ -119,7 +119,7 @@ export async function renderRecallView(root, { navigate }) {
   });
 }
 
-function showComparison(container, original, recallEntry) {
+function showComparison(container, original, recallEntry, navigate) {
   const c = recallEntry.recallComparison;
   container.innerHTML = `
     <div class="glass-card fade-in">
@@ -142,7 +142,10 @@ function showComparison(container, original, recallEntry) {
       </div>
       ${c.hintCount ? `<p class="muted space-above">Words from the ${c.hintCount === 1 ? "hint" : "hints"} aren't counted here, only what you brought back yourself.</p>` : ""}
       <p class="muted space-above">This becomes part of your own recall trend over time. You can see it on the Trends page.</p>
+      ${guideHtml("Your memory visit is saved. Tap the button below to go back to Home.")}
+      <button class="btn btn-primary btn-large" data-slot="home">Go to Home</button>
     </div>
   `;
+  container.querySelector('[data-slot="home"]').addEventListener("click", () => navigate("home"));
   container.scrollIntoView({ behavior: "smooth", block: "start" });
 }

@@ -1,5 +1,5 @@
-import { db } from "../data.js";
-import { icon } from "../icons.js";
+import { db } from "../data.js?v=a2bef25b51";
+import { icon } from "../icons.js?v=a2bef25b51";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -7,8 +7,8 @@ import {
   renderTrendChart,
   destroyCharts,
   generateTrendNotes,
-} from "../charts.js";
-import { escapeHtml, el } from "../ui.js";
+} from "../charts.js?v=a2bef25b51";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=a2bef25b51";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -37,6 +37,7 @@ export async function renderTrendsView(root) {
     <div class="stack">
       <div class="glass-panel">
         <h2>Your patterns over time</h2>
+        ${guideHtml("These charts show how your own entries change over time. You do not need to do anything here. Just look if you want to.")}
         <p class="muted">
           ${journals.length} journal entr${journals.length === 1 ? "y" : "ies"}${recalls.length ? ` and ${recalls.length} memory visit${recalls.length === 1 ? "" : "s"}` : ""}, compared only to your own history.
         </p>

@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js";
-import { analyzeText } from "../analysis.js";
-import { SpeechInput, speechSupported } from "../speech.js";
-import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js";
-import { suggestActivities } from "../activities.js";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl } from "../ui.js";
-import { icon } from "../icons.js";
+import { db, newId } from "../data.js?v=a2bef25b51";
+import { analyzeText } from "../analysis.js?v=a2bef25b51";
+import { SpeechInput, speechSupported } from "../speech.js?v=a2bef25b51";
+import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=a2bef25b51";
+import { getDailyPlan } from "../daily.js?v=a2bef25b51";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml } from "../ui.js?v=a2bef25b51";
+import { icon } from "../icons.js?v=a2bef25b51";
 
 export async function renderJournalView(root, { navigate }) {
   const today = new Date();
@@ -20,7 +20,7 @@ export async function renderJournalView(root, { navigate }) {
           <h2>Today's journal</h2>
           <span class="pill">${escapeHtml(todayLabel)}</span>
         </div>
-        <p class="muted">Tell Capsule about your day. Start anywhere, even with what you had for lunch.</p>
+        ${guideHtml("Tell Capsule about your day. Tap the purple microphone and talk, or type in the box. When you are done, tap Save today's entry at the bottom.")}
         <div data-slot="composer"></div>
         <div class="photo-strip" data-slot="photos"></div>
         <div class="button-row">
@@ -96,7 +96,6 @@ export async function renderJournalView(root, { navigate }) {
         await db.putPhoto({ id: p.id, entryId: entry.id, blob: p.file, name: p.file.name });
       }
       composer.destroy();
-      toast("Entry saved.");
       await showResults(panel.querySelector('[data-slot="results"]'), entry, navigate);
       saveBtn.innerHTML = `${icon("check")} Saved`;
     } catch (err) {
@@ -110,13 +109,22 @@ export async function renderJournalView(root, { navigate }) {
 
 async function showResults(container, entry, navigate) {
   const m = entry.metrics;
-  const all = await db.allEntries();
-  const suggestions = (await suggestActivities(m, all)).filter((s) => s.real).slice(0, 2);
+  // What to do next comes first. The word patterns are there for anyone who
+  // wants them, below it.
+  const plan = await getDailyPlan();
+  const next = plan.nextTask;
 
   container.innerHTML = `
-    <div class="glass-card fade-in">
+    <div class="glass-panel fade-in">
+      <h2>${icon("check")} Saved</h2>
+      ${guideHtml(next
+        ? `Your entry is saved. Next: ${next.title}. Tap the button below.`
+        : "Your entry is saved. Everything for today is done.")}
+      <button class="btn btn-primary btn-large" data-slot="next">${next ? escapeHtml(next.title) : "Go to Home"}</button>
+    </div>
+    <div class="glass-card space-above">
       <h3>Today's word patterns</h3>
-      <p class="muted">A snapshot of how you told your story today.</p>
+      <p class="muted">How you told your story today.</p>
       <div class="grid grid-2">
         <div>
           <div class="metric-row"><span class="metric-name">Words spoken</span><span class="metric-value">${m.wordCount}</span></div>
@@ -131,26 +139,8 @@ async function showResults(container, entry, navigate) {
         </div>
       </div>
     </div>
-    <div class="glass-card space-above">
-      <h3>Suggested for you today</h3>
-      <div class="grid grid-2" data-slot="suggestions"></div>
-      <div class="space-above">
-        <button class="btn btn-accent" data-slot="go-activities">See all activities</button>
-      </div>
-    </div>
   `;
 
-  const sugWrap = container.querySelector('[data-slot="suggestions"]');
-  for (const s of suggestions) {
-    sugWrap.appendChild(el(`
-      <div class="glass-card activity-card">
-        <span class="pill ${s.tailored ? "pill-yellow" : "pill-blue"} activity-tag">${escapeHtml(s.tag)}</span>
-        <strong>${escapeHtml(s.title)}</strong>
-        <span class="muted">${escapeHtml(s.why)}</span>
-      </div>
-    `));
-  }
-
-  container.querySelector('[data-slot="go-activities"]').addEventListener("click", () => navigate("activities"));
+  container.querySelector('[data-slot="next"]').addEventListener("click", () => navigate(next ? next.view : "home"));
   container.scrollIntoView({ behavior: "smooth", block: "start" });
 }

@@ -1,12 +1,12 @@
-import { cloudConfigured } from "../config.js";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js";
-import { refreshDataMode, migrateLocalToCloud, localEntryCount, db } from "../data.js";
-import { toast, escapeHtml, el } from "../ui.js";
-import { icon } from "../icons.js";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js";
-import { startWalkthrough } from "../walkthrough.js";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js";
-import { openTerms, TERMS_VERSION } from "../terms.js";
+import { cloudConfigured } from "../config.js?v=a2bef25b51";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=a2bef25b51";
+import { refreshDataMode, migrateLocalToCloud, localEntryCount, db } from "../data.js?v=a2bef25b51";
+import { toast, escapeHtml, el, guideHtml } from "../ui.js?v=a2bef25b51";
+import { icon } from "../icons.js?v=a2bef25b51";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=a2bef25b51";
+import { startWalkthrough } from "../walkthrough.js?v=a2bef25b51";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=a2bef25b51";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=a2bef25b51";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -347,7 +347,7 @@ function renderSignIn(root, navigate) {
   const panel = el(`
     <div class="glass-panel narrow-panel">
       <h2>Sign in to Capsule</h2>
-      <p class="muted">Enter your email and we'll send you a 6-digit code. No password to remember.</p>
+      ${guideHtml("You do not have to sign in. If you want to, type your email address, tick the box, and tap Email me a code. Then type the 6 numbers from the email.")}
 
       <div data-step="email">
         <label class="field-label" for="signin-email">Your email address</label>

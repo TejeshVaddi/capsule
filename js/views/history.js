@@ -1,8 +1,8 @@
-import { db, isCloudMode } from "../data.js";
-import { icon } from "../icons.js";
-import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js";
-import { formatFriendlyDate } from "../recall.js";
-import { escapeHtml, el, photoUrl, toast } from "../ui.js";
+import { db, isCloudMode } from "../data.js?v=a2bef25b51";
+import { icon } from "../icons.js?v=a2bef25b51";
+import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=a2bef25b51";
+import { formatFriendlyDate } from "../recall.js?v=a2bef25b51";
+import { escapeHtml, el, photoUrl, toast, guideHtml } from "../ui.js?v=a2bef25b51";
 
 export async function renderHistoryView(root) {
   root.innerHTML = "";
@@ -26,7 +26,8 @@ export async function renderHistoryView(root) {
           <h2>Your entries</h2>
           <span class="pill">${all.length} total</span>
         </div>
-        <p class="muted">${isCloudMode() ? "Saved to your account." : "Stored privately on this device."} Tap an entry to revisit it.</p>
+        ${guideHtml("Here is everything you have saved. Tap any entry to read it again. You do not need to do anything here.")}
+        <p class="muted">${isCloudMode() ? "Saved to your account." : "Stored privately on this device."}</p>
         <div class="button-row">
           <button class="btn btn-secondary" data-slot="export">${icon("download")} Download my data</button>
         </div>

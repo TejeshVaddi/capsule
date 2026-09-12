@@ -4,8 +4,8 @@
 // large type, plain language, an always-visible way out, and no jargon.
 // It never implies the app assesses or diagnoses anything.
 
-import { db } from "./data.js";
-import { ICONS } from "./icons.js";
+import { db } from "./data.js?v=a2bef25b51";
+import { ICONS } from "./icons.js?v=a2bef25b51";
 
 const SEEN_KEY = "walkthroughSeen";
 
@@ -37,7 +37,7 @@ const STEPS = [
   {
     icon: "star",
     title: "Activities: word and memory games",
-    body: "Questions to get you talking, and short games with words and memory. Two new ones turn up each day.",
+    body: "Each day there are 2 short activities to do: a game or a question. After those, there are extras, but you never have to do them.",
     tab: "activities",
   },
   {

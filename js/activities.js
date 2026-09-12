@@ -12,7 +12,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js";
+import { db, newId } from "./data.js?v=a2bef25b51";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -22,19 +22,32 @@ import {
   MUSIC_ERAS,
   OPEN_PROMPTS,
   pickFresh,
-} from "./activities-content.js";
-import { daySeed, dateKey } from "./daily.js";
-import { detectSignals, scoreForSignals } from "./signals.js";
+} from "./activities-content.js?v=a2bef25b51";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=a2bef25b51";
+import { detectSignals, scoreForSignals } from "./signals.js?v=a2bef25b51";
 
-/** Recent activity keys, so the same content is not served twice running. */
+/**
+ * Recent activity keys, so the same content is not served twice running.
+ * Today's own activities are left out: counting them would swap a finished
+ * game for a fresh one the moment it was done, and the done card would vanish.
+ */
 async function recentKeys(limit = 14) {
   try {
+    const today = dateKey();
     const log = await db.allActivityLog();
-    return log.slice(0, limit).map((r) => r.detail?.contentKey).filter(Boolean);
+    return log
+      .filter((r) => dateKey(new Date(r.date)) !== today)
+      .slice(0, limit)
+      .map((r) => r.detail?.contentKey)
+      .filter(Boolean);
   } catch {
     return [];
   }
 }
+
+// Today's two required activities come from different families, so a day is
+// never two word games or two questions.
+const FAMILY = { naming: "words", fluency: "words", "word-recall": "memory", description: "talk", "photo-story": "talk", music: "talk" };
 
 export async function suggestActivities(latestMetrics, recentEntries) {
   const seen = await recentKeys();
@@ -74,9 +87,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: `Naming game: ${namingSet.theme}`,
     tag: reasons.has("naming") ? "Picked for you" : "Word finding",
     tailored: reasons.has("naming"),
-    why: reasons.has("naming")
-      ? "Your last entry used fewer specific naming words than your recent ones."
-      : "Read a description, name the thing it describes. Six of them, speech or typing.",
+    why: "Read a clue. Say the word it describes.",
     contentKey: `naming:${namingSet.theme}`,
     data: namingSet,
     real: true,
@@ -89,9 +100,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: `How many can you name: ${fluency.category}`,
     tag: reasons.has("variety") ? "Picked for you" : "Word finding",
     tailored: reasons.has("variety"),
-    why: reasons.has("variety")
-      ? "Your recent entries have drawn on a narrower set of words than usual for you."
-      : "Name as many things in one category as you can in a minute.",
+    why: `Name as many ${fluency.category.toLowerCase()} as you can in 1 minute.`,
     contentKey: `fluency:${fluency.category}`,
     data: fluency,
     real: true,
@@ -106,7 +115,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: "Five-word memory game",
     tag: "Memory",
     tailored: false,
-    why: "Read five words, do a short task, then recall as many as you can.",
+    why: "Read 5 words. A little later, say the ones you remember.",
     contentKey: `words:${list.words[0]}`,
     data: list,
     real: true,
@@ -122,13 +131,11 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: prompt.kind === "procedural" ? "Step by step" : prompt.kind === "reminiscence" ? "Looking back" : "Describe the scene",
     tag: descTailored ? "Picked for you" : prompt.kind === "reminiscence" ? "Memories" : "Storytelling",
     tailored: descTailored,
-    why: reasons.has("detail")
-      ? "Your recent entries have been shorter than usual for you."
-      : prompt.kind === "procedural"
-        ? "Describe a familiar routine in order, step by step."
+    why: prompt.kind === "procedural"
+        ? "Say how you do something, one step at a time."
         : prompt.kind === "reminiscence"
-          ? "A question about your own past. Answer out loud or type it."
-          : "Describe a scene in as much detail as you like.",
+          ? "Answer a question about your past."
+          : "Describe a place or a scene.",
     contentKey: `desc:${prompt.prompt}`,
     data: { prompt: prompt.prompt, kind: prompt.kind },
     real: true,
@@ -145,7 +152,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
       title: "Photo story",
       tag: "Memories",
       tailored: false,
-      why: "A photo from your journal, and the story behind it. Shows what you wrote that day afterwards.",
+      why: "Look at one of your photos. Say what you remember about it.",
       contentKey: `photo:${photoEntry.id}`,
       data: { entry: photoEntry, prompt: photoPrompt },
       real: true,
@@ -161,7 +168,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: `Music moments: ${era.era}`,
     tag: "Memories",
     tailored: false,
-    why: "Pick a song title or a place from a decade, and say what it brings back. No audio.",
+    why: "Pick a song or a place you know. Say what it reminds you of.",
     contentKey: `music:${era.era}`,
     data: era,
     real: true,
@@ -176,7 +183,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     title: "A question for you",
     tag: "Just talking",
     tailored: false,
-    why: "An open question about your life. Say as much or as little as you like.",
+    why: "Answer a question about your life.",
     contentKey: `open:${open.prompt}`,
     data: { prompt: open.prompt, kind: "open" },
     real: true,
@@ -211,17 +218,47 @@ export async function suggestActivities(latestMetrics, recentEntries) {
       seenReasons.add(s.pendingReason.key);
       s.tailored = true;
       s.tag = "Picked for you";
-      s.why = s.pendingReason.invite;
       s.because = s.pendingReason.because;
       s.signalKey = s.pendingReason.key;
     });
 
+  // Today's two required activities: the best matched, from two different
+  // families, rotating by day when nothing is tailored. Chosen once and then
+  // kept for the day, so finishing one never moves another into its place.
+  const requiredKeys = await requiredForToday(suggestions, today);
+  suggestions.forEach((s) => {
+    const at = requiredKeys.indexOf(s.contentKey);
+    s.required = at !== -1;
+    s.requiredOrder = at;
+  });
+
   suggestions.sort((a, b) => {
+    if (a.required !== b.required) return a.required ? -1 : 1;
+    if (a.required) return a.requiredOrder - b.requiredOrder;
     if (a.doneToday !== b.doneToday) return a.doneToday ? 1 : -1;
     if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
     return (b.tailored ? 1 : 0) - (a.tailored ? 1 : 0);
   });
   return suggestions;
+}
+
+async function requiredForToday(suggestions, today) {
+  const saved = await db.getMeta(REQUIRED_META).catch(() => null);
+  const available = new Set(suggestions.map((s) => s.contentKey));
+  if (saved?.date === today && saved.keys?.length === 2 && saved.keys.every((k) => available.has(k))) {
+    return saved.keys;
+  }
+
+  const rotate = daySeed() % suggestions.length;
+  const ranked = suggestions
+    .map((s, i) => ({ s, turn: (i - rotate + suggestions.length) % suggestions.length }))
+    .sort((a, b) => b.s.matchScore - a.s.matchScore || a.turn - b.turn)
+    .map(({ s }) => s);
+  const first = ranked[0];
+  const second = ranked.find((s) => s !== first && FAMILY[s.kind] !== FAMILY[first.kind]) || ranked[1];
+  const keys = [first.contentKey, second.contentKey];
+  await db.setMeta(REQUIRED_META, { date: today, keys }).catch(() => {});
+  return keys;
 }
 
 /** Finds a past entry that actually has a photo attached. */

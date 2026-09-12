@@ -48,6 +48,14 @@ p { margin: 0.5em 0; }
 
 button { font-family: var(--font); }
 
+/* ---------- Before the app starts ---------- */
+.boot-note {
+  position: fixed; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  padding: 24px; text-align: center;
+}
+.boot-note p { max-width: 420px; margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--purple); }
+
 /* ---------- Glass panels ---------- */
 .glass-panel {
   background: rgba(243, 239, 251, 0.6);
@@ -391,7 +399,35 @@ textarea:focus, input[type="text"]:focus {
 .metric-value { font-weight: 800; color: var(--dark-text); }
 
 .activity-card { display: flex; flex-direction: column; gap: 10px; }
-.activity-tag { align-self: flex-start; }
+.activity-head { display: flex; align-items: center; gap: 12px; }
+.activity-number {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(74,46,92,0.12); color: var(--purple); font-weight: 800;
+}
+.activity-number svg { width: 20px; height: 20px; }
+.activity-next { border: 2px solid var(--purple); background: rgba(255,255,255,0.7); }
+.done-panel h2 { display: flex; align-items: center; gap: 10px; }
+.done-panel h2 svg { width: 28px; height: 28px; color: #2e6b3f; }
+.done-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.done-list li { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.done-list svg { width: 20px; height: 20px; color: #2e6b3f; flex-shrink: 0; }
+.back-link { align-self: flex-start; }
+
+/* The guide box: what to do now. It looks the same everywhere, so it is easy
+   to find again. */
+.guide {
+  margin: 12px 0 16px; padding: 14px 16px;
+  border-radius: var(--radius-sm); background: #FDFBE8;
+  border: 2px solid rgba(74,46,92,0.14);
+}
+.guide-step { display: block; font-size: 0.9rem; font-weight: 800; color: var(--purple); margin-bottom: 2px; }
+.guide-text { margin: 0; font-size: 1.08rem; font-weight: 600; color: var(--dark-text); line-height: 1.45; }
+.add-btn { flex-shrink: 0; min-height: 56px; }
+@media (max-width: 400px) {
+  .answer-row.has-add { flex-wrap: wrap; }
+  .answer-row.has-add input[type="text"] { flex: 1 1 100%; }
+}
 
 .chart-wrap { position: relative; height: 240px; }
 
@@ -995,31 +1031,6 @@ a { color: var(--blue); }
 }
 .week-reopen-cue { font-weight: 600; color: var(--blue); text-decoration: underline; text-underline-offset: 3px; flex-shrink: 0; }
 
-/* ---------- Tailored suggestions ---------- */
-.activity-because {
-  font-size: 0.9rem;
-  color: var(--purple);
-  font-weight: 600;
-  line-height: 1.45;
-  padding-left: 10px;
-  border-left: 3px solid rgba(74, 46, 92, 0.3);
-}
-.today-suggestions { list-style: none; padding: 0 0 0 52px; margin: -4px 0 0; }
-.suggestions-lead { font-size: 0.9rem; font-weight: 700; color: var(--purple); margin: 0 0 10px; }
-.suggestion-cards { display: flex; flex-direction: column; gap: 10px; }
-.suggestion-card {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 16px; border-radius: var(--radius-sm);
-  background: rgba(255,255,255,0.5); border: 1px solid rgba(74,46,92,0.12);
-}
-.suggestion-body { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-.suggestion-body strong { font-size: 1rem; }
-.suggestion-go { padding: 10px 20px; min-height: 46px; flex-shrink: 0; }
-@media (max-width: 560px) {
-  .today-suggestions { padding-left: 0; }
-  .suggestion-card { flex-direction: column; align-items: stretch; }
-  .suggestion-go { width: 100%; }
-}
 
 /* Hover effects, only on devices that can actually hover. */
 @media (hover: hover) and (pointer: fine) {
@@ -1048,7 +1059,7 @@ html {
    that makes a tap feel ignored, while leaving pinch-zoom fully available,
    which matters for anyone who needs to enlarge the text. */
 button, a, label, input, select, textarea, summary, [role="button"],
-.tab-btn, .cue-card, .today-item, .suggestion-card, .activity-card {
+.tab-btn, .cue-card, .today-item, .activity-card {
   touch-action: manipulation;
 }
 
@@ -1124,7 +1135,7 @@ body:has(.intro-screen) {
 /* Pills may wrap: some hold a full date. Section headers wrap first, so a
    short pill normally gets a line to itself before it ever needs to. */
 .pill { max-width: 100%; overflow-wrap: anywhere; }
-.today-body, .suggestion-body, .activity-card, .glass-card, .glass-panel { min-width: 0; }
+.today-body, .activity-card, .glass-card, .glass-panel { min-width: 0; }
 .today-title, .today-detail, .metric-name, .sticky-text, .compare-col p { overflow-wrap: anywhere; }
 
 @media (max-width: 480px) {
