@@ -1,9 +1,10 @@
-import { db, newId } from "../data.js?v=a2bef25b51";
-import { icon } from "../icons.js?v=a2bef25b51";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=a2bef25b51";
-import { SpeechInput, speechSupported } from "../speech.js?v=a2bef25b51";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints } from "../recall.js?v=a2bef25b51";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml } from "../ui.js?v=a2bef25b51";
+import { db, newId } from "../data.js?v=c8970c9f30";
+import { icon } from "../icons.js?v=c8970c9f30";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=c8970c9f30";
+import { SpeechInput, speechSupported } from "../speech.js?v=c8970c9f30";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor } from "../recall.js?v=c8970c9f30";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c8970c9f30";
+import { nextStepBlock } from "../next-step.js?v=c8970c9f30";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";
@@ -27,7 +28,14 @@ export async function renderRecallView(root, { navigate }) {
   // would be offered as a memory cue for a day it has nothing to do with.
   const photos = await db.getPhotosForEntry(target.id).catch(() => []) || [];
   const age = daysBetween(target.date, new Date().toISOString());
-  const hints = recallHints(target.text);
+  // How much of the day to reveal follows the person's own recent visits.
+  const level = hintLevelFor(await db.allEntries());
+  const { glimpses, hidden } = recallHints(target.text, level);
+  const guide = !glimpses.length
+    ? "Think back to this day. Tap the microphone and say anything you remember, or type it in the box. Then tap I've said what I remember."
+    : hidden
+      ? `Read ${glimpses.length === 1 ? "the sentence" : "the sentences"} below. One detail is left out on purpose. Say or type what you think it was, and anything else you remember. Then tap I've said what I remember.`
+      : `Read ${glimpses.length === 1 ? "the sentence" : "the 2 sentences"} below. ${glimpses.length === 1 ? "It is" : "They are"} from what you said that day. Then say or type anything else you remember, and tap I've said what I remember.`;
 
   const panel = el(`
     <div class="stack">
@@ -39,20 +47,14 @@ export async function renderRecallView(root, { navigate }) {
         <p class="prompt">
           ${escapeHtml(formatFriendlyDate(target.date))}
         </p>
-        ${guideHtml("Think back to this day. Tap the microphone and say what you remember, or type it in the box. Then tap I've said what I remember at the bottom.")}
+        ${guideHtml(guide)}
         ${photos.length ? `<p class="recall-hint-label">${icon("camera")} A picture from that day, to help</p>` : ""}
         <div class="recall-hint-strip" data-slot="photos"></div>
-        ${hints.length ? `
-          <p class="recall-hint-label">${icon("book")} You mentioned ${hints.length === 1 ? "this" : "these"} that day</p>
+        ${glimpses.length ? `
+          <p class="recall-hint-label">${icon("book")} From your journal that day</p>
           <ul class="recall-cues">
-            ${hints.map((h) => `<li>${escapeHtml(h.text)}</li>`).join("")}
-          </ul>
-          <p class="muted space-above">
-            Start with ${hints.length === 1 ? "it" : "one of them"}. What else comes back about that day?
-          </p>` : `
-          <p class="muted space-above">
-            Take a moment. What comes back first? Start with that, even if it's small.
-          </p>`}
+            ${glimpses.map((g) => `<li>${escapeHtml(g)}</li>`).join("")}
+          </ul>` : ""}
         <div data-slot="composer"></div>
         <button class="btn btn-primary btn-large" data-slot="save">I've said what I remember</button>
       </div>
@@ -80,14 +82,17 @@ export async function renderRecallView(root, { navigate }) {
   saveBtn.addEventListener("click", async () => {
     const text = composer.getText();
     if (!text) {
-      toast("Say or type what you remember first. Even a little is fine.");
+      noteAbove(saveBtn, "Say or type what you remember first. Even a little is fine. Then tap I've said what I remember.");
       return;
     }
+    clearNoteAbove(saveBtn);
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving...";
 
     try {
-      const hintWords = hints.flatMap((h) => h.words);
+      // Saying a hint back is not remembering it, so the words shown are
+      // not counted. A detail left out of a hint is not shown, so it counts.
+      const hintWords = glimpses.length ? analyzeText(glimpses.join(" ")).distinctContentWords : [];
       const comparison = compareRecallToOriginal(text, target.text, hintWords);
       const entry = {
         id: newId(),
@@ -103,12 +108,15 @@ export async function renderRecallView(root, { navigate }) {
           originalDistinctContentWords: comparison.originalDistinctContentWords,
           overlapCount: comparison.overlapCount,
           overlapRatio: comparison.overlapRatio,
-          ...(hints.length ? { hints: hints.map((h) => h.text), hintWords, hintCount: hints.length } : {}),
+          hintLevel: level,
+          hints: glimpses,
+          hintWords,
+          hintCount: glimpses.length,
         },
       };
       await db.putEntry(entry);
       composer.destroy();
-      showComparison(panel.querySelector('[data-slot="results"]'), target, entry, navigate);
+      await showComparison(panel.querySelector('[data-slot="results"]'), target, entry, navigate);
       saveBtn.remove();
     } catch (err) {
       console.error(err);
@@ -119,7 +127,7 @@ export async function renderRecallView(root, { navigate }) {
   });
 }
 
-function showComparison(container, original, recallEntry, navigate) {
+async function showComparison(container, original, recallEntry, navigate) {
   const c = recallEntry.recallComparison;
   container.innerHTML = `
     <div class="glass-card fade-in">
@@ -142,10 +150,8 @@ function showComparison(container, original, recallEntry, navigate) {
       </div>
       ${c.hintCount ? `<p class="muted space-above">Words from the ${c.hintCount === 1 ? "hint" : "hints"} aren't counted here, only what you brought back yourself.</p>` : ""}
       <p class="muted space-above">This becomes part of your own recall trend over time. You can see it on the Trends page.</p>
-      ${guideHtml("Your memory visit is saved. Tap the button below to go back to Home.")}
-      <button class="btn btn-primary btn-large" data-slot="home">Go to Home</button>
     </div>
   `;
-  container.querySelector('[data-slot="home"]').addEventListener("click", () => navigate("home"));
+  container.firstElementChild.appendChild(await nextStepBlock(navigate, "Your memory visit is saved."));
   container.scrollIntoView({ behavior: "smooth", block: "start" });
 }

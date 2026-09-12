@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=a2bef25b51";
-import { analyzeText } from "../analysis.js?v=a2bef25b51";
-import { SpeechInput, speechSupported } from "../speech.js?v=a2bef25b51";
-import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=a2bef25b51";
-import { getDailyPlan } from "../daily.js?v=a2bef25b51";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml } from "../ui.js?v=a2bef25b51";
-import { icon } from "../icons.js?v=a2bef25b51";
+import { db, newId } from "../data.js?v=c8970c9f30";
+import { analyzeText } from "../analysis.js?v=c8970c9f30";
+import { SpeechInput, speechSupported } from "../speech.js?v=c8970c9f30";
+import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=c8970c9f30";
+import { nextStepBlock } from "../next-step.js?v=c8970c9f30";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c8970c9f30";
+import { icon } from "../icons.js?v=c8970c9f30";
 
 export async function renderJournalView(root, { navigate }) {
   const today = new Date();
@@ -75,9 +75,10 @@ export async function renderJournalView(root, { navigate }) {
   saveBtn.addEventListener("click", async () => {
     const text = composer.getText();
     if (!text) {
-      toast("Say or type a little about your day first.");
+      noteAbove(saveBtn, "Say or type a little about your day first. Then tap Save today's entry.");
       return;
     }
+    clearNoteAbove(saveBtn);
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving...";
 
@@ -111,16 +112,9 @@ async function showResults(container, entry, navigate) {
   const m = entry.metrics;
   // What to do next comes first. The word patterns are there for anyone who
   // wants them, below it.
-  const plan = await getDailyPlan();
-  const next = plan.nextTask;
-
   container.innerHTML = `
-    <div class="glass-panel fade-in">
+    <div class="glass-panel fade-in" data-slot="next">
       <h2>${icon("check")} Saved</h2>
-      ${guideHtml(next
-        ? `Your entry is saved. Next: ${next.title}. Tap the button below.`
-        : "Your entry is saved. Everything for today is done.")}
-      <button class="btn btn-primary btn-large" data-slot="next">${next ? escapeHtml(next.title) : "Go to Home"}</button>
     </div>
     <div class="glass-card space-above">
       <h3>Today's word patterns</h3>
@@ -141,6 +135,6 @@ async function showResults(container, entry, navigate) {
     </div>
   `;
 
-  container.querySelector('[data-slot="next"]').addEventListener("click", () => navigate(next ? next.view : "home"));
+  container.querySelector('[data-slot="next"]').appendChild(await nextStepBlock(navigate, "Your entry is saved."));
   container.scrollIntoView({ behavior: "smooth", block: "start" });
 }

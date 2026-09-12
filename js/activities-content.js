@@ -161,6 +161,22 @@ export const WORD_LISTS = [
     distractors: ["daisy", "staircase", "envelope", "acorn", "motor"] },
   { words: ["harvest", "slipper", "marble", "chimney", "onion"],
     distractors: ["autumn", "sandal", "pebble", "rooftop", "garlic"] },
+  { words: ["pebble", "scarf", "orchard", "whistle", "saddle"],
+    distractors: ["stone", "glove", "vineyard", "flute", "bridle"] },
+  { words: ["anchor", "muffin", "tulip", "lamp", "wagon"],
+    distractors: ["rope", "scone", "rose", "torch", "cart"] },
+  { words: ["pocket", "robin", "velvet", "fireplace", "pepper"],
+    distractors: ["purse", "sparrow", "satin", "stove", "salt"] },
+  { words: ["kitten", "barrel", "castle", "honey", "mitten"],
+    distractors: ["puppy", "crate", "tower", "syrup", "sock"] },
+  { words: ["teacup", "forest", "zipper", "parrot", "shovel"],
+    distractors: ["mug", "jungle", "clasp", "pigeon", "rake"] },
+  { words: ["wallet", "poppy", "rocket", "cabbage", "hammer"],
+    distractors: ["handbag", "tulip", "satellite", "lettuce", "spanner"] },
+  { words: ["lighthouse", "pencil", "blossom", "bucket", "tiger"],
+    distractors: ["windmill", "crayon", "bud", "pail", "lion"] },
+  { words: ["umbrella", "carrot", "piano", "island", "boot"],
+    distractors: ["raincoat", "turnip", "violin", "peninsula", "shoe"] },
 ];
 
 /* Light interference between learning and recall. The point is to occupy
@@ -352,15 +368,16 @@ export const PHOTO_PROMPTS = [
 ];
 
 /**
- * Picks an item the person has not seen recently.
- * Rotation keeps daily use from repeating within a week or so; it falls
- * back to a rotating index once every option has been seen.
+ * Picks an item the person has not done recently (see activities.js: the last
+ * 30 days), rotating by day among the rest. Returns null when every item has
+ * been done in that time: the activity is then simply not offered, rather
+ * than offered again too soon.
  */
 export function pickFresh(list, recentKeys, keyOf, seed = Date.now()) {
   if (!list.length) return null;
   const seen = new Set(recentKeys);
   const unseen = list.filter((item) => !seen.has(keyOf(item)));
-  const pool = unseen.length ? unseen : list;
-  const index = Math.abs(Math.floor(seed / 60000)) % pool.length;
-  return pool[index];
+  if (!unseen.length) return null;
+  const index = Math.abs(Math.floor(seed / 60000)) % unseen.length;
+  return unseen[index];
 }

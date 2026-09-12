@@ -1,4 +1,4 @@
-import { ICONS } from "./icons.js?v=a2bef25b51";
+import { ICONS } from "./icons.js?v=c8970c9f30";
 
 export function toast(message, ms = 3200) {
   const root = document.getElementById("toast-root");
@@ -37,6 +37,27 @@ export function guideHtml(text, step = "") {
       ${step ? `<span class="guide-step">${escapeHtml(step)}</span>` : ""}
       <p class="guide-text">${escapeHtml(text)}</p>
     </div>`;
+}
+
+/**
+ * Says, right above a button, why pressing it did nothing yet ("Say or type
+ * your answer first"). A toast at the bottom of the screen can sit behind the
+ * phone's keyboard, and then the button just looks broken.
+ */
+export function noteAbove(button, message) {
+  let note = button.previousElementSibling;
+  if (!note || !note.classList.contains("need-note")) {
+    note = document.createElement("p");
+    note.className = "need-note";
+    note.setAttribute("role", "alert");
+    button.before(note);
+  }
+  note.textContent = message;
+}
+
+export function clearNoteAbove(button) {
+  const note = button.previousElementSibling;
+  if (note && note.classList.contains("need-note")) note.remove();
 }
 
 const objectUrls = [];

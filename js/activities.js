@@ -12,7 +12,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=a2bef25b51";
+import { db, newId } from "./data.js?v=c8970c9f30";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -22,22 +22,26 @@ import {
   MUSIC_ERAS,
   OPEN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=a2bef25b51";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=a2bef25b51";
-import { detectSignals, scoreForSignals } from "./signals.js?v=a2bef25b51";
+} from "./activities-content.js?v=c8970c9f30";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=c8970c9f30";
+import { detectSignals, scoreForSignals } from "./signals.js?v=c8970c9f30";
+
+// Nothing the person has done comes back within this many days. An activity
+// with nothing fresh left is not offered until something is.
+export const NO_REPEAT_DAYS = 30;
 
 /**
- * Recent activity keys, so the same content is not served twice running.
- * Today's own activities are left out: counting them would swap a finished
- * game for a fresh one the moment it was done, and the done card would vanish.
+ * What was done in the last NO_REPEAT_DAYS days. Today's own activities are
+ * left out: counting them would swap a finished game for a fresh one the
+ * moment it was done, and the done card would vanish.
  */
-async function recentKeys(limit = 14) {
+async function recentKeys() {
   try {
     const today = dateKey();
+    const since = Date.now() - NO_REPEAT_DAYS * 86400000;
     const log = await db.allActivityLog();
     return log
-      .filter((r) => dateKey(new Date(r.date)) !== today)
-      .slice(0, limit)
+      .filter((r) => dateKey(new Date(r.date)) !== today && new Date(r.date).getTime() >= since)
       .map((r) => r.detail?.contentKey)
       .filter(Boolean);
   } catch {
@@ -81,7 +85,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
   /* --- Naming family --- */
 
   const namingSet = pickFresh(NAMING_SETS, seen, (s) => `naming:${s.theme}`, seed);
-  suggestions.push({
+  if (namingSet) suggestions.push({
     id: "naming",
     kind: "naming",
     title: `Naming game: ${namingSet.theme}`,
@@ -94,7 +98,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
   });
 
   const fluency = pickFresh(FLUENCY_CATEGORIES, seen, (f) => `fluency:${f.category}`, seed + 1);
-  suggestions.push({
+  if (fluency) suggestions.push({
     id: "fluency",
     kind: "fluency",
     title: `How many can you name: ${fluency.category}`,
@@ -109,7 +113,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
   /* --- Memory family --- */
 
   const list = pickFresh(WORD_LISTS, seen, (l) => `words:${l.words[0]}`, seed + 2);
-  suggestions.push({
+  if (list) suggestions.push({
     id: "word-recall",
     kind: "word-recall",
     title: "Five-word memory game",
@@ -125,7 +129,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
 
   const prompt = pickFresh(DESCRIPTION_PROMPTS, seen, (p) => `desc:${p.prompt}`, seed + 3);
   const descTailored = reasons.has("detail") || reasons.has("variety");
-  suggestions.push({
+  if (prompt) suggestions.push({
     id: "description",
     kind: "description",
     title: prompt.kind === "procedural" ? "Step by step" : prompt.kind === "reminiscence" ? "Looking back" : "Describe the scene",
@@ -143,7 +147,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
 
   /* --- Photo story: only offered when they actually have a photo --- */
 
-  const photoEntry = await findEntryWithPhoto(recentEntries);
+  const photoEntry = await findEntryWithPhoto(recentEntries, seen);
   if (photoEntry) {
     const photoPrompt = PHOTO_PROMPTS[Math.abs(Math.floor(seed / 60000)) % PHOTO_PROMPTS.length];
     suggestions.push({
@@ -162,7 +166,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
   /* --- Music moments --- */
 
   const era = pickFresh(MUSIC_ERAS, seen, (e) => `music:${e.era}`, seed + 4);
-  suggestions.push({
+  if (era) suggestions.push({
     id: "music-moments",
     kind: "music",
     title: `Music moments: ${era.era}`,
@@ -177,7 +181,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
   /* --- An open question, with no right answer --- */
 
   const open = pickFresh(OPEN_PROMPTS, seen, (p) => `open:${p.prompt}`, seed + 5);
-  suggestions.push({
+  if (open) suggestions.push({
     id: "open",
     kind: "description",
     title: "A question for you",
@@ -249,10 +253,23 @@ async function requiredForToday(suggestions, today) {
     return saved.keys;
   }
 
+  if (suggestions.length < 2) return suggestions.map((s) => s.contentKey);
+
+  // The kind of activity done longest ago goes first, so the days rotate
+  // through all of them instead of landing on the same kind by chance.
+  const log = await db.allActivityLog().catch(() => []);
+  const lastDone = new Map();
+  for (const r of log) {
+    const type = (r.detail?.contentKey || "").split(":")[0];
+    const t = new Date(r.date).getTime();
+    if (type && (!lastDone.has(type) || t > lastDone.get(type))) lastDone.set(type, t);
+  }
+  const since = (s) => lastDone.get(s.contentKey.split(":")[0]) ?? -Infinity;
+
   const rotate = daySeed() % suggestions.length;
   const ranked = suggestions
     .map((s, i) => ({ s, turn: (i - rotate + suggestions.length) % suggestions.length }))
-    .sort((a, b) => b.s.matchScore - a.s.matchScore || a.turn - b.turn)
+    .sort((a, b) => b.s.matchScore - a.s.matchScore || since(a.s) - since(b.s) || a.turn - b.turn)
     .map(({ s }) => s);
   const first = ranked[0];
   const second = ranked.find((s) => s !== first && FAMILY[s.kind] !== FAMILY[first.kind]) || ranked[1];
@@ -262,9 +279,12 @@ async function requiredForToday(suggestions, today) {
 }
 
 /** Finds a past entry that actually has a photo attached. */
-async function findEntryWithPhoto(entries) {
-  const candidates = [...entries].filter((e) => e.type === "journal").reverse();
-  for (const entry of candidates.slice(0, 25)) {
+async function findEntryWithPhoto(entries, seen = []) {
+  const used = new Set(seen);
+  const candidates = [...entries]
+    .filter((e) => e.type === "journal" && !used.has(`photo:${e.id}`))
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  for (const entry of candidates.slice(0, 40)) {
     try {
       const photos = await db.getPhotosForEntry(entry.id);
       if (photos && photos.length) return { ...entry, photos };

@@ -4,8 +4,8 @@
 // visits, plus snippets and photos), and how their metrics moved compared with
 // the week before. Movement is reported in whichever direction it went.
 
-import { db } from "./data.js?v=a2bef25b51";
-import { dateKey } from "./daily.js?v=a2bef25b51";
+import { db } from "./data.js?v=c8970c9f30";
+import { dateKey } from "./daily.js?v=c8970c9f30";
 
 export function startOfWeek(d = new Date()) {
   const c = new Date(d);

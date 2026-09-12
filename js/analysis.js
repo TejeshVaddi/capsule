@@ -7,7 +7,7 @@ const FILLER_WORDS = new Set(["um", "uh", "erm", "er", "hmm", "mm", "uhh", "umm"
 // Bumped whenever a metric's definition changes, so stored metrics computed
 // under an older definition can be recomputed rather than silently compared
 // against new ones. Entries keep their original text, so this is lossless.
-export const METRICS_VERSION = 3;
+export const METRICS_VERSION = 4;
 
 // Window for the moving-average type-token ratio, in words.
 //
@@ -146,10 +146,15 @@ export function buildWordGraph(tokens) {
 function countFillersAndRepeats(rawText) {
   const tokens = tokenize(rawText);
   let fillerCount = 0;
+  for (const t of tokens) if (FILLER_WORDS.has(t)) fillerCount++;
+  // A repeat is a word said twice in a row within one stretch of speech.
+  // "...with Tom. Tom drove me" is two sentences, not a stumble, so the
+  // count stops at sentence and clause punctuation. (v4: before this,
+  // repeats were counted across full stops.)
   let repeatCount = 0;
-  for (let i = 0; i < tokens.length; i++) {
-    if (FILLER_WORDS.has(tokens[i])) fillerCount++;
-    if (i > 0 && tokens[i] === tokens[i - 1]) repeatCount++;
+  for (const piece of rawText.split(/[.!?;,:]+/)) {
+    const words = tokenize(piece);
+    for (let i = 1; i < words.length; i++) if (words[i] === words[i - 1]) repeatCount++;
   }
   return { fillerCount, repeatCount, totalWords: tokens.length };
 }

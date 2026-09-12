@@ -9,15 +9,17 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=a2bef25b51";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=a2bef25b51";
-import { analyzeText } from "../analysis.js?v=a2bef25b51";
-import { SpeechInput, speechSupported } from "../speech.js?v=a2bef25b51";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js?v=a2bef25b51";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml } from "../ui.js?v=a2bef25b51";
-import { icon, ICONS } from "../icons.js?v=a2bef25b51";
+import { db, newId } from "../data.js?v=c8970c9f30";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=c8970c9f30";
+import { analyzeText } from "../analysis.js?v=c8970c9f30";
+import { SpeechInput, speechSupported } from "../speech.js?v=c8970c9f30";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js?v=c8970c9f30";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c8970c9f30";
+import { getDailyPlan } from "../daily.js?v=c8970c9f30";
+import { nextStepBlock } from "../next-step.js?v=c8970c9f30";
+import { icon, ICONS } from "../icons.js?v=c8970c9f30";
 
-export async function renderActivitiesView(root) {
+export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
 
   const all = await db.allEntries();
@@ -30,7 +32,10 @@ export async function renderActivitiesView(root) {
 
   const page = el(`<div class="stack"></div>`);
   root.appendChild(page);
-  const back = () => renderActivitiesView(root);
+  // Through the app's own navigation when there is one, so the page comes
+  // back whole (footer included) and opens at its top.
+  const back = () => (navigate ? navigate("activities") : renderActivitiesView(root, { navigate }));
+  const ctx = { back, navigate, required, run };
 
   if (next) {
     // Today's two, and nothing else to choose from.
@@ -54,6 +59,13 @@ export async function renderActivitiesView(root) {
         </ul>
       </div>`));
 
+    if (navigate) {
+      const plan = await getDailyPlan();
+      if (plan.nextTask) {
+        page.firstElementChild.appendChild(await nextStepBlock(navigate, "Both of today's activities are done."));
+      }
+    }
+
     const extrasPanel = el(`
       <div class="glass-panel">
         <div class="section-title">
@@ -76,10 +88,11 @@ export async function renderActivitiesView(root) {
     page.innerHTML = "";
     const top = el(`<button class="btn-text back-link" type="button">Back to activities</button>`);
     top.addEventListener("click", back);
+    ctx.topLink = top;
     const stage = el(`<div></div>`);
     page.append(top, stage);
     window.scrollTo(0, 0);
-    startActivity(stage, s, back);
+    startActivity(stage, s, ctx);
   }
 }
 
@@ -111,13 +124,13 @@ function extraCard(s, onStart) {
   return card;
 }
 
-function startActivity(stage, s, back) {
-  if (s.kind === "naming") return namingGame(stage, s, back);
-  if (s.kind === "fluency") return fluencyGame(stage, s, back);
-  if (s.kind === "word-recall") return wordRecallGame(stage, s, back);
-  if (s.kind === "description") return descriptionActivity(stage, s, back);
-  if (s.kind === "photo-story") return photoStoryActivity(stage, s, back);
-  if (s.kind === "music") return musicMomentsActivity(stage, s, back);
+function startActivity(stage, s, ctx) {
+  if (s.kind === "naming") return namingGame(stage, s, ctx);
+  if (s.kind === "fluency") return fluencyGame(stage, s, ctx);
+  if (s.kind === "word-recall") return wordRecallGame(stage, s, ctx);
+  if (s.kind === "description") return descriptionActivity(stage, s, ctx);
+  if (s.kind === "photo-story") return photoStoryActivity(stage, s, ctx);
+  if (s.kind === "music") return musicMomentsActivity(stage, s, ctx);
 }
 
 // The most recent completion being saved. Going back waits for it, so the
@@ -127,15 +140,41 @@ function record(kind, detail) {
   saving = logActivityCompletion(kind, detail).catch((err) => console.error(err));
 }
 
-/** The end of every activity: one clear way on. */
-function finishButton(back) {
-  const btn = el(`<button class="btn btn-primary btn-large space-above">Back to activities</button>`);
-  btn.addEventListener("click", async () => {
-    btn.disabled = true;
-    await saving;
-    back();
-  });
-  return btn;
+/**
+ * The end of every activity: one button, to whatever comes next.
+ *  - after the first of today's two: straight into the second
+ *  - after the second: the next thing today (a memory visit, or Home)
+ *  - after an extra: back to the activities
+ */
+async function showNext(container, suggestion, ctx) {
+  const holder = el(`<div class="next-step space-above"></div>`);
+  container.appendChild(holder);
+  await saving;
+  if (!holder.isConnected) return;
+  suggestion.doneToday = true;
+  // The small "Back to activities" link at the top would now sit alongside
+  // the big button below: two ways out where one is enough.
+  ctx.topLink?.remove();
+
+  const button = (label, onClick) => {
+    const b = el(`<button class="btn btn-primary btn-large" type="button">${escapeHtml(label)}</button>`);
+    b.addEventListener("click", onClick);
+    return b;
+  };
+
+  if (!suggestion.required || !ctx.navigate) {
+    holder.appendChild(button("Back to activities", ctx.back));
+    return;
+  }
+  const nextOne = ctx.required.find((r) => !r.doneToday);
+  if (nextOne) {
+    const number = ctx.required.indexOf(nextOne) + 1;
+    holder.insertAdjacentHTML("beforeend",
+      guideHtml(`That one is done. Now do activity ${number}: ${nextOne.title}. Tap the button below.`));
+    holder.appendChild(button(`Start activity ${number}`, () => ctx.run(nextOne)));
+    return;
+  }
+  holder.replaceWith(await nextStepBlock(ctx.navigate, "You finished both of today's activities."));
 }
 
 /* ---------- Shared: a small speech button that fills a text input ---------- */
@@ -167,7 +206,7 @@ function attachMicToInput(container, input, { onText } = {}) {
 
 /* ---------- Naming game ---------- */
 
-function namingGame(stage, suggestion, back) {
+function namingGame(stage, suggestion, ctx) {
   const items = [...suggestion.data.items].sort(() => Math.random() - 0.5);
   let index = 0;
   let gotten = 0;
@@ -211,7 +250,7 @@ function namingGame(stage, suggestion, back) {
       card.innerHTML = `
         <h3>All done</h3>
         <p class="lead">You found ${gotten} of ${items.length} words without help.</p>`;
-      card.appendChild(finishButton(back));
+      showNext(card, suggestion, ctx);
       record("naming", {
         contentKey: suggestion.contentKey, theme: suggestion.data.theme,
         gotten, total: items.length,
@@ -235,7 +274,11 @@ function namingGame(stage, suggestion, back) {
   function check() {
     if (waiting) return;
     const guess = answer.value.trim().toLowerCase();
-    if (!guess) return;
+    if (!guess) {
+      feedback.textContent = "Say or type a word first, then tap Check.";
+      feedback.style.color = "#8a4a2e";
+      return;
+    }
     const target = items[index].word.toLowerCase();
     if (guess === target || guess.includes(target) || target.includes(guess)) {
       feedback.textContent = "Yes, that's it.";
@@ -262,7 +305,7 @@ function namingGame(stage, suggestion, back) {
 /* ---------- Category fluency ----------
    One minute, and the timer is the only way it ends. */
 
-function fluencyGame(stage, suggestion, back) {
+function fluencyGame(stage, suggestion, ctx) {
   const DURATION = 60;
   const category = suggestion.data.category.toLowerCase();
   let remaining = DURATION;
@@ -323,7 +366,7 @@ function fluencyGame(stage, suggestion, back) {
       <h3 class="space-above-sm">Time is up</h3>
       <p class="lead">You named ${said.size}.</p>
       ${said.size ? `<p>${[...said].map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}`;
-    result.appendChild(finishButton(back));
+    showNext(result, suggestion, ctx);
     record("fluency", {
       contentKey: suggestion.contentKey,
       category: suggestion.data.category,
@@ -349,7 +392,7 @@ function fluencyGame(stage, suggestion, back) {
 
 /* ---------- Word recall, with a real delay ---------- */
 
-function wordRecallGame(stage, suggestion, back) {
+function wordRecallGame(stage, suggestion, ctx) {
   const words = suggestion.data.words;
   const distractors = suggestion.data.distractors || [];
   const task = INTERFERENCE_TASKS[Math.floor(Math.random() * INTERFERENCE_TASKS.length)];
@@ -445,7 +488,7 @@ function wordRecallGame(stage, suggestion, back) {
       <p class="lead result-line">You remembered ${found.length} of ${words.length} on your own${recognised.length ? `, and spotted ${recognised.length} more` : ""}.</p>
       <p>The 5 words were: ${words.map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>
     `;
-    card.appendChild(finishButton(back));
+    showNext(card, suggestion, ctx);
     record("word-recall", {
       contentKey: suggestion.contentKey,
       found: found.length, recognised: recognised.length, total: words.length,
@@ -457,7 +500,7 @@ function wordRecallGame(stage, suggestion, back) {
 
 /* ---------- Talking activities: a prompt, and an answer ---------- */
 
-function descriptionActivity(stage, suggestion, back) {
+function descriptionActivity(stage, suggestion, ctx) {
   const title = suggestion.data.kind === "procedural" ? "Step by step"
     : suggestion.data.kind === "reminiscence" ? "Looking back"
     : suggestion.data.kind === "open" ? "A question for you"
@@ -482,17 +525,23 @@ function descriptionActivity(stage, suggestion, back) {
   });
   card.querySelector('[data-slot="composer"]').appendChild(composer.root);
 
-  card.querySelector('[data-slot="done"]').addEventListener("click", async (e) => {
+  // Held here, not read from the click event: after the await below the
+  // event no longer points at the button, and reading it there threw, so
+  // "I'm finished" did nothing at all.
+  const doneBtn = card.querySelector('[data-slot="done"]');
+  doneBtn.addEventListener("click", async () => {
     const text = composer.getText();
     if (!text) {
-      toast("Say or type your answer first.");
+      noteAbove(doneBtn, "Say or type your answer first. Then tap I'm finished.");
       return;
     }
+    clearNoteAbove(doneBtn);
+    doneBtn.disabled = true;
     const m = analyzeText(text);
 
     // Compare only to their own previous answers, and only when there are
     // enough to say anything. No praise that the text has not earned.
-    const past = (await db.allActivityLog())
+    const past = (await db.allActivityLog().catch(() => []))
       .filter((r) => r.kind === "description" && typeof r.detail?.wordCount === "number")
       .slice(0, 5)
       .map((r) => r.detail.wordCount);
@@ -508,14 +557,14 @@ function descriptionActivity(stage, suggestion, back) {
           : "That is shorter than your recent answers.";
     }
 
-    e.currentTarget.remove();
+    doneBtn.remove();
     composer.destroy();
     const result = card.querySelector('[data-slot="result"]');
     result.innerHTML = `
       <h3 class="space-above">Saved</h3>
       <p class="lead">You used ${m.wordCount} words.</p>
       ${comparison ? `<p class="muted">${comparison}</p>` : ""}`;
-    result.appendChild(finishButton(back));
+    showNext(result, suggestion, ctx);
     record("description", {
       contentKey: suggestion.contentKey,
       prompt: suggestion.data.prompt,
@@ -526,7 +575,7 @@ function descriptionActivity(stage, suggestion, back) {
 
 /* ---------- Photo story ---------- */
 
-function photoStoryActivity(stage, suggestion, back) {
+function photoStoryActivity(stage, suggestion, ctx) {
   const { entry, prompt } = suggestion.data;
   const photo = entry.photos[0];
   const when = new Date(entry.date).toLocaleDateString(undefined, {
@@ -554,14 +603,15 @@ function photoStoryActivity(stage, suggestion, back) {
   });
   card.querySelector('[data-slot="composer"]').appendChild(composer.root);
 
-  card.querySelector('[data-slot="done"]').addEventListener("click", (e) => {
+  const doneBtn = card.querySelector('[data-slot="done"]');
+  doneBtn.addEventListener("click", () => {
     const text = composer.getText();
     if (!text) {
-      toast("Say or type something about the photo first.");
+      noteAbove(doneBtn, "Say or type something about the photo first. Then tap I'm finished.");
       return;
     }
     const m = analyzeText(text);
-    e.currentTarget.remove();
+    doneBtn.remove();
     composer.destroy();
     const result = card.querySelector('[data-slot="result"]');
     result.innerHTML = `
@@ -575,7 +625,7 @@ function photoStoryActivity(stage, suggestion, back) {
           <p>${escapeHtml(text)}</p>
         </div>
       </div>`;
-    result.appendChild(finishButton(back));
+    showNext(result, suggestion, ctx);
     record("photo-story", {
       contentKey: suggestion.contentKey,
       entryId: entry.id,
@@ -586,7 +636,7 @@ function photoStoryActivity(stage, suggestion, back) {
 
 /* ---------- Music moments ---------- */
 
-function musicMomentsActivity(stage, suggestion, back) {
+function musicMomentsActivity(stage, suggestion, ctx) {
   const era = suggestion.data;
   const prompt = MUSIC_PROMPTS[Math.floor(Math.random() * MUSIC_PROMPTS.length)];
   let chosenCue = null;
@@ -643,14 +693,15 @@ function musicMomentsActivity(stage, suggestion, back) {
       choose();
     });
 
-    card.querySelector('[data-slot="done"]').addEventListener("click", () => {
+    const doneBtn = card.querySelector('[data-slot="done"]');
+    doneBtn.addEventListener("click", () => {
       const text = composer.getText();
       if (!text) {
-        toast("Say or type what it reminds you of first.");
+        noteAbove(doneBtn, "Say or type what it reminds you of first. Then tap I'm finished.");
         return;
       }
       const m = analyzeText(text);
-      card.querySelector('[data-slot="done"]').remove();
+      doneBtn.remove();
       card.querySelector('[data-slot="back"]').remove();
       composer.destroy();
       record("music", {
@@ -662,10 +713,10 @@ function musicMomentsActivity(stage, suggestion, back) {
         <h3 class="space-above">Saved</h3>
         <p class="muted">If you like, you can also keep this in your journal.</p>
         <button class="btn btn-secondary" data-slot="save">Add it to my journal</button>`;
-      result.appendChild(finishButton(back));
+      showNext(result, suggestion, ctx);
 
-      result.querySelector('[data-slot="save"]').addEventListener("click", async (e) => {
-        const btn = e.currentTarget;
+      const btn = result.querySelector('[data-slot="save"]');
+      btn.addEventListener("click", async () => {
         btn.disabled = true;
         try {
           await db.putEntry({

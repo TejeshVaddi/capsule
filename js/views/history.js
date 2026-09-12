@@ -1,8 +1,8 @@
-import { db, isCloudMode } from "../data.js?v=a2bef25b51";
-import { icon } from "../icons.js?v=a2bef25b51";
-import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=a2bef25b51";
-import { formatFriendlyDate } from "../recall.js?v=a2bef25b51";
-import { escapeHtml, el, photoUrl, toast, guideHtml } from "../ui.js?v=a2bef25b51";
+import { db, isCloudMode } from "../data.js?v=c8970c9f30";
+import { icon } from "../icons.js?v=c8970c9f30";
+import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=c8970c9f30";
+import { formatFriendlyDate } from "../recall.js?v=c8970c9f30";
+import { escapeHtml, el, photoUrl, toast, guideHtml } from "../ui.js?v=c8970c9f30";
 
 export async function renderHistoryView(root) {
   root.innerHTML = "";
@@ -26,14 +26,13 @@ export async function renderHistoryView(root) {
           <h2>Your entries</h2>
           <span class="pill">${all.length} total</span>
         </div>
-        ${guideHtml("Here is everything you have saved. Tap any entry to read it again. You do not need to do anything here.")}
+        ${guideHtml("Here is everything you have saved. Tap any entry to read it. Tap Close to fold it away again. You do not need to do anything here.")}
         <p class="muted">${isCloudMode() ? "Saved to your account." : "Stored privately on this device."}</p>
         <div class="button-row">
           <button class="btn btn-secondary" data-slot="export">${icon("download")} Download my data</button>
         </div>
       </div>
       <div class="stack" data-slot="list"></div>
-      <div data-slot="detail"></div>
     </div>
   `);
   root.appendChild(panel);
@@ -41,14 +40,13 @@ export async function renderHistoryView(root) {
   panel.querySelector('[data-slot="export"]').addEventListener("click", () => exportData(all));
 
   const list = panel.querySelector('[data-slot="list"]');
-  const detail = panel.querySelector('[data-slot="detail"]');
 
   const newestFirst = [...all].reverse();
   for (const entry of newestFirst) {
     const isRecall = entry.type === "recall";
     const preview = entry.text.length > 140 ? entry.text.slice(0, 140) + "..." : entry.text;
     const card = el(`
-      <div class="glass-card entry-card">
+      <div class="glass-card entry-card" role="button" tabindex="0" aria-expanded="false">
         <div class="section-title space-below-sm">
           <strong>${escapeHtml(formatFriendlyDate(entry.date))}</strong>
           <span class="pill ${isRecall ? "pill-yellow" : "pill-blue"}">${isRecall ? "Memory visit" : "Journal"}</span>
@@ -71,11 +69,26 @@ export async function renderHistoryView(root) {
       });
     }
 
-    card.addEventListener("click", () => showDetail(detail, entry));
+    // The entry opens right under itself, and closes the same way, so a long
+    // list never loses the person's place.
+    const toggle = () => {
+      const open = card.nextElementSibling?.classList.contains("entry-detail");
+      list.querySelectorAll(".entry-detail").forEach((d) => d.remove());
+      list.querySelectorAll('.entry-card[aria-expanded="true"]').forEach((c) => c.setAttribute("aria-expanded", "false"));
+      if (open) return;
+      const detail = el(`<div class="entry-detail"></div>`);
+      card.after(detail);
+      card.setAttribute("aria-expanded", "true");
+      showDetail(detail, entry, () => { toggle(); card.focus(); });
+    };
+    card.addEventListener("click", toggle);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+    });
   }
 }
 
-async function showDetail(container, entry) {
+async function showDetail(container, entry, close) {
   const photos = await db.getPhotosForEntry(entry.id);
   const m = entry.metrics;
   const isRecall = entry.type === "recall";
@@ -85,6 +98,7 @@ async function showDetail(container, entry) {
 
   container.innerHTML = `
     <div class="glass-panel fade-in">
+      <button class="btn btn-secondary entry-close" type="button" data-slot="close">Close</button>
       <div class="section-title">
         <h3>${escapeHtml(formatFriendlyDate(entry.date))}</h3>
         <span class="pill ${isRecall ? "pill-yellow" : "pill-blue"}">${isRecall ? "Memory visit" : "Journal"}</span>
@@ -113,19 +127,19 @@ async function showDetail(container, entry) {
     </div>
   `;
 
+  container.querySelector('[data-slot="close"]').addEventListener("click", close);
+
   const strip = container.querySelector('[data-slot="photos"]');
   for (const p of photos) {
     const img = document.createElement("img");
-    img.className = "photo-thumb";
-    img.style.width = "120px";
-    img.style.height = "120px";
+    img.className = "photo-thumb entry-photo";
     img.alt = "Entry photo";
     img.src = photoUrl(p.blob);
     strip.appendChild(img);
   }
   if (!photos.length) strip.remove();
 
-  container.scrollIntoView({ behavior: "smooth", block: "start" });
+  container.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function exportData(entries) {

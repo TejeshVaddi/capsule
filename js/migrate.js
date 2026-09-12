@@ -7,8 +7,8 @@
 //
 // Recomputing is lossless here because every entry keeps its original text.
 
-import { db } from "./data.js?v=a2bef25b51";
-import { analyzeText, compareRecallToOriginal, METRICS_VERSION } from "./analysis.js?v=a2bef25b51";
+import { db } from "./data.js?v=c8970c9f30";
+import { analyzeText, compareRecallToOriginal, METRICS_VERSION } from "./analysis.js?v=c8970c9f30";
 
 export async function migrateMetrics(onProgress = () => {}) {
   let entries;
@@ -30,10 +30,10 @@ export async function migrateMetrics(onProgress = () => {}) {
       const original = entries.find((e) => e.id === entry.recallOf);
       if (original?.text) {
         // Keep the hints the visit showed, and keep them out of the score.
-        const { hints, hintWords, hintCount } = entry.recallComparison || {};
+        const { hints, hintWords, hintCount, hintLevel } = entry.recallComparison || {};
         next.recallComparison = {
           ...compareRecallToOriginal(entry.text, original.text, hintWords || []),
-          ...(hintCount ? { hints, hintWords, hintCount } : {}),
+          ...(hintCount || typeof hintLevel === "number" ? { hints, hintWords, hintCount, hintLevel } : {}),
         };
       }
     }

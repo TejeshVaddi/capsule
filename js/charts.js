@@ -5,8 +5,8 @@
 //  - Notes state what changed, factually, whatever the direction.
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
-import { VOCAB_POOL_SIZE, pooledVocabSeries } from "./analysis.js?v=a2bef25b51";
-import { comparableRecalls } from "./recall.js?v=a2bef25b51";
+import { VOCAB_POOL_SIZE, pooledVocabSeries } from "./analysis.js?v=c8970c9f30";
+import { comparableRecalls } from "./recall.js?v=c8970c9f30";
 
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },
@@ -115,7 +115,12 @@ function halfComparison(series, minPoints = 4) {
   const mid = Math.floor(series.length / 2);
   const earlier = series.slice(0, mid).map((p) => p.value);
   const recent = series.slice(mid).map((p) => p.value);
-  const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  // Trimmed means: each half drops its single highest and lowest entry when
+  // it has enough to spare. One unusual day is not a trend, and without
+  // this a single stumble in an otherwise clean month read as "more pauses
+  // than before".
+  const trim = (arr) => (arr.length >= 5 ? [...arr].sort((a, b) => a - b).slice(1, -1) : arr);
+  const mean = (arr) => { const t = trim(arr); return t.reduce((a, b) => a + b, 0) / t.length; };
   const earlierMean = mean(earlier);
   const recentMean = mean(recent);
   if (earlierMean === 0 && recentMean === 0) return null;

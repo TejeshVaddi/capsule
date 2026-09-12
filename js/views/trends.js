@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=a2bef25b51";
-import { icon } from "../icons.js?v=a2bef25b51";
+import { db } from "../data.js?v=c8970c9f30";
+import { icon } from "../icons.js?v=c8970c9f30";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -7,8 +7,8 @@ import {
   renderTrendChart,
   destroyCharts,
   generateTrendNotes,
-} from "../charts.js?v=a2bef25b51";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=a2bef25b51";
+} from "../charts.js?v=c8970c9f30";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=c8970c9f30";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -88,6 +88,7 @@ export async function renderTrendsView(root) {
           <span class="pill pill-yellow">recall</span>
         </div>
         <div class="chart-wrap"><canvas></canvas></div>
+        <p class="muted chart-note">Only visits that had the same amount of help from hints are compared here.</p>
       </div>
     `);
     chartsWrap.appendChild(card);

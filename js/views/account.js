@@ -1,12 +1,12 @@
-import { cloudConfigured } from "../config.js?v=a2bef25b51";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=a2bef25b51";
-import { refreshDataMode, migrateLocalToCloud, localEntryCount, db } from "../data.js?v=a2bef25b51";
-import { toast, escapeHtml, el, guideHtml } from "../ui.js?v=a2bef25b51";
-import { icon } from "../icons.js?v=a2bef25b51";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=a2bef25b51";
-import { startWalkthrough } from "../walkthrough.js?v=a2bef25b51";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=a2bef25b51";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=a2bef25b51";
+import { cloudConfigured } from "../config.js?v=c8970c9f30";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=c8970c9f30";
+import { refreshDataMode, migrateLocalToCloud, localEntryCount, db } from "../data.js?v=c8970c9f30";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c8970c9f30";
+import { icon } from "../icons.js?v=c8970c9f30";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=c8970c9f30";
+import { startWalkthrough } from "../walkthrough.js?v=c8970c9f30";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=c8970c9f30";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=c8970c9f30";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -305,7 +305,9 @@ export function openDeleteFlow({ mode, navigate }) {
       overlay.querySelector('[data-slot="finish"]').addEventListener("click", async () => {
         close();
         await refreshDataMode();
-        navigate("account");
+        // "Start again" begins at Home, the first step of a day; a deleted
+        // account goes back to signing in.
+        navigate(isLocal ? "home" : "account");
       });
       return;
     }
@@ -400,15 +402,16 @@ function renderSignIn(root, navigate) {
 
   sendBtn.addEventListener("click", async (e) => {
     const email = emailInput.value.trim().toLowerCase();
+    const btn = e.currentTarget;
     if (!acceptBox.checked) {
-      toast("Please read and accept the Privacy Policy and Terms of Service first.");
+      noteAbove(btn, "Please read and accept the Privacy Policy and Terms of Service first.");
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast("That doesn't look like an email address. Please check it.");
+      noteAbove(btn, email ? "That doesn't look like an email address. Please check it." : "Type your email address in the box first.");
       return;
     }
-    const btn = e.currentTarget;
+    clearNoteAbove(btn);
     btn.disabled = true;
     btn.textContent = "Sending...";
     try {
@@ -427,7 +430,7 @@ function renderSignIn(root, navigate) {
       codeInput.focus();
     } catch (err) {
       console.error(err);
-      toast("Couldn't send the code. Please try again in a moment.");
+      noteAbove(btn, "Couldn't send the code. Please try again in a moment.");
     } finally {
       btn.disabled = false;
       btn.innerHTML = `${icon("mail")} Email me a code`;
@@ -437,11 +440,12 @@ function renderSignIn(root, navigate) {
   panel.querySelector('[data-slot="verify"]').addEventListener("click", async (e) => {
     const email = emailInput.value.trim().toLowerCase();
     const token = codeInput.value.trim();
+    const btn = e.currentTarget;
     if (token.length < 6) {
-      toast("Please enter the 6-digit code from your email.");
+      noteAbove(btn, "Please type the 6-digit code from your email.");
       return;
     }
-    const btn = e.currentTarget;
+    clearNoteAbove(btn);
     btn.disabled = true;
     btn.textContent = "Checking...";
     try {
@@ -451,7 +455,7 @@ function renderSignIn(root, navigate) {
       navigate("journal");
     } catch (err) {
       console.error(err);
-      toast("That code didn't work. Check it, or request a new one.");
+      noteAbove(btn, "That code didn't work. Check it, or tap Use a different email to get a new one.");
       btn.disabled = false;
       btn.innerHTML = `${icon("check")} Sign in`;
     }

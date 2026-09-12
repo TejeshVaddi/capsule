@@ -421,6 +421,14 @@ textarea:focus, input[type="text"]:focus {
   border-radius: var(--radius-sm); background: #FDFBE8;
   border: 2px solid rgba(74,46,92,0.14);
 }
+/* Why a button did nothing yet, right above it. */
+.need-note { margin: 8px 0; font-weight: 700; color: #8a4a2e; }
+
+/* The end of each of the day's steps: what is next, and one button to it. */
+.next-step { margin-top: 16px; }
+.next-step .btn { width: 100%; }
+@media (min-width: 560px) { .next-step .btn { width: auto; } }
+
 .guide-step { display: block; font-size: 0.9rem; font-weight: 800; color: var(--purple); margin-bottom: 2px; }
 .guide-text { margin: 0; font-size: 1.08rem; font-weight: 600; color: var(--dark-text); line-height: 1.45; }
 .add-btn { flex-shrink: 0; min-height: 56px; }
@@ -432,6 +440,11 @@ textarea:focus, input[type="text"]:focus {
 .chart-wrap { position: relative; height: 240px; }
 
 .entry-card { cursor: pointer; }
+.entry-card:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.entry-card[aria-expanded="true"] { border-color: var(--purple); }
+.entry-detail { margin-top: -4px; }
+.entry-close { float: right; margin: 0 0 8px 12px; }
+.entry-photo { width: 120px; height: 120px; }
 .entry-thumbs { display: flex; gap: 8px; margin-top: 8px; }
 .entry-thumbs img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
 

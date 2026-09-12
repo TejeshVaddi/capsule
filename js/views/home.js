@@ -1,9 +1,9 @@
-import { db } from "../data.js?v=a2bef25b51";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=a2bef25b51";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=a2bef25b51";
-import { celebrateStreak } from "../celebrate.js?v=a2bef25b51";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=a2bef25b51";
-import { icon } from "../icons.js?v=a2bef25b51";
+import { db } from "../data.js?v=c8970c9f30";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=c8970c9f30";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=c8970c9f30";
+import { celebrateStreak } from "../celebrate.js?v=c8970c9f30";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=c8970c9f30";
+import { icon } from "../icons.js?v=c8970c9f30";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;
