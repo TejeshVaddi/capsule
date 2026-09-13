@@ -184,6 +184,23 @@ for (const f of files.filter((x) => /\.(js|html|css|md|sql|ts|json)$/.test(x))) 
   if (/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]*InNlcnZpY2Vfcm9sZSI/.test(src)) fail(rel(f), "contains a service_role key");
 }
 
+/* 8. Every "Name as many as you can" category has a word list, and the check
+      still tells a right answer from a wrong one. Without a list, nothing
+      the person says would count. */
+{
+  const { FLUENCY_CATEGORIES } = await import("../js/activities-content.js");
+  const { FLUENCY_LISTS, FLUENCY_ONE, FLUENCY_EXAMPLE, checkFluencyAnswer } = await import("../js/fluency-words.js");
+  const file = "js/fluency-words.js";
+  for (const { category } of FLUENCY_CATEGORIES) {
+    const key = category.toLowerCase();
+    if (!FLUENCY_LISTS[key] || !FLUENCY_ONE[key] || !FLUENCY_EXAMPLE[key]) fail(file, `no word list or wording for the category "${category}"`);
+  }
+  const counts = (c, t) => checkFluencyAnswer(c, t).added.length > 0;
+  if (!counts("birds", "ducks") || counts("birds", "pond") || counts("animals", "iphone") || !counts("animals", "big brown bear")) {
+    fail(file, "the category check no longer accepts right answers or rejects wrong ones");
+  }
+}
+
 /* Report */
 if (failures.length) {
   console.error(`\n  ${failures.length} problem${failures.length === 1 ? "" : "s"} found:\n`);

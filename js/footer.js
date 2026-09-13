@@ -4,10 +4,10 @@
 // plain language, what Capsule actually does with a person's information,
 // so someone who never opens a policy still knows where they stand.
 
-import { openPrivacyPolicy } from "./privacy.js?v=c8970c9f30";
-import { openTerms } from "./terms.js?v=c8970c9f30";
-import { isCloudMode } from "./data.js?v=c8970c9f30";
-import { LOGO_SVG } from "./icons.js?v=c8970c9f30";
+import { openPrivacyPolicy } from "./privacy.js?v=611e55e30f";
+import { openTerms } from "./terms.js?v=611e55e30f";
+import { isCloudMode } from "./data.js?v=611e55e30f";
+import { LOGO_SVG } from "./icons.js?v=611e55e30f";
 
 export function renderFooter({ navigate, onDeleteData }) {
   const wrap = document.createElement("footer");

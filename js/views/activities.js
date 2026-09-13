@@ -9,15 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=c8970c9f30";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=c8970c9f30";
-import { analyzeText } from "../analysis.js?v=c8970c9f30";
-import { SpeechInput, speechSupported } from "../speech.js?v=c8970c9f30";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js?v=c8970c9f30";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c8970c9f30";
-import { getDailyPlan } from "../daily.js?v=c8970c9f30";
-import { nextStepBlock } from "../next-step.js?v=c8970c9f30";
-import { icon, ICONS } from "../icons.js?v=c8970c9f30";
+import { db, newId } from "../data.js?v=611e55e30f";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=611e55e30f";
+import { analyzeText } from "../analysis.js?v=611e55e30f";
+import { SpeechInput, speechSupported } from "../speech.js?v=611e55e30f";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js?v=611e55e30f";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=611e55e30f";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=611e55e30f";
+import { getDailyPlan } from "../daily.js?v=611e55e30f";
+import { nextStepBlock } from "../next-step.js?v=611e55e30f";
+import { icon, ICONS } from "../icons.js?v=611e55e30f";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -303,14 +304,17 @@ function namingGame(stage, suggestion, ctx) {
 }
 
 /* ---------- Category fluency ----------
-   One minute, and the timer is the only way it ends. */
+   One minute, and the timer is the only way it ends. Only answers that
+   belong to the category are counted; see fluency-words.js. */
 
 function fluencyGame(stage, suggestion, ctx) {
   const DURATION = 60;
   const category = suggestion.data.category.toLowerCase();
+  const one = FLUENCY_ONE[category] || "one of them";
   let remaining = DURATION;
   let timer = null;
-  const said = new Set();
+  const said = new Map(); // key -> label shown
+  let notCounted = 0;
 
   const card = el(`
     <div class="glass-panel">
@@ -326,6 +330,7 @@ function fluencyGame(stage, suggestion, ctx) {
           <input type="text" data-slot="entry" placeholder="Say or type one" autocomplete="off" />
           <button class="btn btn-primary add-btn" type="button" data-slot="add">Add</button>
         </div>
+        <p class="feedback" data-slot="note" role="status" aria-live="polite"></p>
         <p class="sub-label" data-slot="count">You have named 0 so far.</p>
         <div class="fluency-list" data-slot="said"></div>
       </div>
@@ -338,17 +343,40 @@ function fluencyGame(stage, suggestion, ctx) {
   const saidWrap = card.querySelector('[data-slot="said"]');
   const countEl = card.querySelector('[data-slot="count"]');
   const timerEl = card.querySelector('[data-slot="timer"]');
+  const noteEl = card.querySelector('[data-slot="note"]');
+
+  const quoted = (list) => list.map((w) => `"${w}"`).join(" or ");
+  const joined = (list) => list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
 
   function addWord(raw) {
-    const word = (raw || "").trim().toLowerCase();
-    if (word && !said.has(word)) {
-      said.add(word);
-      saidWrap.innerHTML = [...said]
+    const text = (raw || "").trim();
+    entry.value = "";
+    entry.focus();
+    if (!text) return;
+
+    const r = checkFluencyAnswer(category, text, new Set(said.keys()));
+    for (const { key, label } of r.added) said.set(key, label);
+    notCounted += r.rejected.length;
+
+    if (r.added.length) {
+      saidWrap.innerHTML = [...said.values()]
         .map((w) => `<span class="pill pill-blue">${escapeHtml(w)}</span>`).join(" ");
       countEl.textContent = `You have named ${said.size} so far.`;
     }
-    entry.value = "";
-    entry.focus();
+
+    // One plain line saying what happened, so a spoken answer that did not
+    // count is never silently lost.
+    const lines = [];
+    if (r.added.length) lines.push(`Added ${joined(r.added.map((a) => a.label))}.`);
+    if (r.repeats.length) lines.push(`You already named ${joined(r.repeats)}.`);
+    if (r.rejected.length) {
+      lines.push(`Capsule does not know ${quoted(r.rejected)} as ${one}, so ${r.rejected.length === 1 ? "it was" : "they were"} not added.`);
+    }
+    if (r.groupOnly) lines.push(`That is the name of the whole group. Try one kind, like ${FLUENCY_EXAMPLE[category] || "one you know"}.`);
+    if (!r.added.length && (r.rejected.length || r.repeats.length) && !r.groupOnly) lines.push("Try another one.");
+
+    noteEl.textContent = lines.join(" ");
+    noteEl.style.color = r.added.length && !r.rejected.length ? "#2e6b3f" : "#8a4a2e";
   }
 
   const speech = attachMicToInput(card.querySelector(".answer-row"), entry, { onText: (t) => addWord(t) });
@@ -362,15 +390,17 @@ function fluencyGame(stage, suggestion, ctx) {
     if (entry.value.trim()) addWord(entry.value);
     card.querySelector('[data-slot="live"]').hidden = true;
     const result = card.querySelector('[data-slot="result"]');
+    const labels = [...said.values()];
     result.innerHTML = `
       <h3 class="space-above-sm">Time is up</h3>
       <p class="lead">You named ${said.size}.</p>
-      ${said.size ? `<p>${[...said].map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}`;
+      ${labels.length ? `<p>${labels.map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}`;
     showNext(result, suggestion, ctx);
     record("fluency", {
       contentKey: suggestion.contentKey,
       category: suggestion.data.category,
       count: said.size,
+      notCounted,
     });
   }
 

@@ -12,7 +12,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=c8970c9f30";
+import { db, newId } from "./data.js?v=611e55e30f";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -22,9 +22,9 @@ import {
   MUSIC_ERAS,
   OPEN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=c8970c9f30";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=c8970c9f30";
-import { detectSignals, scoreForSignals } from "./signals.js?v=c8970c9f30";
+} from "./activities-content.js?v=611e55e30f";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=611e55e30f";
+import { detectSignals, scoreForSignals } from "./signals.js?v=611e55e30f";
 
 // Nothing the person has done comes back within this many days. An activity
 // with nothing fresh left is not offered until something is.

@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=c8970c9f30";
-import { icon } from "../icons.js?v=c8970c9f30";
+import { db } from "../data.js?v=611e55e30f";
+import { icon } from "../icons.js?v=611e55e30f";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -7,8 +7,8 @@ import {
   renderTrendChart,
   destroyCharts,
   generateTrendNotes,
-} from "../charts.js?v=c8970c9f30";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=c8970c9f30";
+} from "../charts.js?v=611e55e30f";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=611e55e30f";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
