@@ -1,12 +1,12 @@
-import { cloudConfigured } from "../config.js?v=f5fa412c13";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=f5fa412c13";
-import { refreshDataMode, migrateLocalToCloud, localEntryCount, db } from "../data.js?v=f5fa412c13";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=f5fa412c13";
-import { icon } from "../icons.js?v=f5fa412c13";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=f5fa412c13";
-import { startWalkthrough } from "../walkthrough.js?v=f5fa412c13";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=f5fa412c13";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=f5fa412c13";
+import { cloudConfigured } from "../config.js?v=584f5e5ecb";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=584f5e5ecb";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=584f5e5ecb";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=584f5e5ecb";
+import { icon } from "../icons.js?v=584f5e5ecb";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=584f5e5ecb";
+import { startWalkthrough } from "../walkthrough.js?v=584f5e5ecb";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=584f5e5ecb";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=584f5e5ecb";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -43,46 +43,15 @@ function renderSignedIn(root, user, navigate) {
           <button class="btn btn-secondary" data-slot="signout">${icon("signOut")} Sign out</button>
         </div>
       </div>
-      <div class="glass-card" data-slot="migrate-card" hidden>
-        <h3>Entries on this device</h3>
-        <p class="muted" data-slot="migrate-text"></p>
-        <button class="btn btn-accent" data-slot="migrate">${icon("upload")} Copy them to my account</button>
-      </div>
     </div>
   `);
   root.appendChild(panel);
-
-  localEntryCount().then((count) => {
-    if (count > 0) {
-      panel.querySelector('[data-slot="migrate-card"]').hidden = false;
-      panel.querySelector('[data-slot="migrate-text"]').textContent =
-        `This device has ${count} entr${count === 1 ? "y" : "ies"} saved from before you signed in. You can copy them into your account.`;
-    }
-  });
 
   panel.querySelector('[data-slot="signout"]').addEventListener("click", async () => {
     await signOut();
     await refreshDataMode();
     toast("Signed out. Capsule is back to device-only mode.");
     navigate("account");
-  });
-
-  panel.querySelector('[data-slot="migrate"]').addEventListener("click", async (e) => {
-    const btn = e.currentTarget;
-    btn.disabled = true;
-    btn.textContent = "Copying...";
-    try {
-      const moved = await migrateLocalToCloud((done, total) => {
-        btn.textContent = `Copying... ${done} of ${total}`;
-      });
-      toast(`Copied ${moved} entr${moved === 1 ? "y" : "ies"} to your account.`);
-      panel.querySelector('[data-slot="migrate-card"]').hidden = true;
-    } catch (err) {
-      console.error(err);
-      toast("Copying didn't finish. You can try again.");
-      btn.disabled = false;
-      btn.innerHTML = `${icon("upload")} Copy them to my account`;
-    }
   });
 
   appendReminderCard(root);

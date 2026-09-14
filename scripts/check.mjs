@@ -120,6 +120,38 @@ for (const f of jsFiles) {
   }
 }
 
+/* 4b. A function from another module must be imported before it is called.
+      Removing an import while one call to it was left behind in the same
+      file (localEntryCount on the Account page) parsed fine, resolved fine,
+      and then threw "is not defined" as soon as the page opened. */
+{
+  const exportedFunctions = new Set();
+  for (const f of jsFiles) {
+    const src = readFileSync(f, "utf8");
+    for (const m of src.matchAll(/^\s*export\s+(?:async\s+)?function\s+([A-Za-z0-9_$]+)/gm)) exportedFunctions.add(m[1]);
+  }
+  for (const f of jsFiles) {
+    const src = readFileSync(f, "utf8");
+    const known = new Set();
+    for (const m of src.matchAll(/\b(?:function|class|const|let|var)\s+([A-Za-z0-9_$]+)/g)) known.add(m[1]);
+    for (const m of src.matchAll(/\bimport\s*\{([^}]+)\}/g)) {
+      for (const part of m[1].split(",")) known.add(part.trim().split(/\s+as\s+/).pop().trim());
+    }
+    for (const m of src.matchAll(/\bimport\s+(?:\*\s+as\s+)?([A-Za-z0-9_$]+)\s+from/g)) known.add(m[1]);
+    for (const name of exportedFunctions) {
+      if (known.has(name)) continue;
+      // A call on its own, not a method (".name(") or a method definition.
+      const call = new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, "\\$")}\\(`, "m");
+      const hit = src.match(call);
+      if (!hit) continue;
+      const line = src.slice(0, hit.index).split("\n").length;
+      const text = src.split("\n")[line - 1];
+      if (new RegExp(`^\\s*(?:async\\s+)?${name}\\s*\\([^)]*\\)\\s*\\{`).test(text)) continue;
+      fail(rel(f), `calls ${name}() but never imports it (line ${line})`);
+    }
+  }
+}
+
 /* 5. An async function's result must be awaited before it is used.
       suggestActivities became async while one caller still did
       suggestActivities(...).filter(...). It parsed, it imported, and every

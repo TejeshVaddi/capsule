@@ -7,8 +7,8 @@
 //
 // Recomputing is lossless here because every entry keeps its original text.
 
-import { db } from "./data.js?v=f5fa412c13";
-import { analyzeText, compareRecallToOriginal, METRICS_VERSION } from "./analysis.js?v=f5fa412c13";
+import { db } from "./data.js?v=584f5e5ecb";
+import { analyzeText, compareRecallToOriginal, METRICS_VERSION } from "./analysis.js?v=584f5e5ecb";
 
 export async function migrateMetrics(onProgress = () => {}) {
   let entries;

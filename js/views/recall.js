@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=f5fa412c13";
-import { icon } from "../icons.js?v=f5fa412c13";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=f5fa412c13";
-import { SpeechInput, speechSupported } from "../speech.js?v=f5fa412c13";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor } from "../recall.js?v=f5fa412c13";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=f5fa412c13";
-import { nextStepBlock } from "../next-step.js?v=f5fa412c13";
+import { db, newId } from "../data.js?v=584f5e5ecb";
+import { icon } from "../icons.js?v=584f5e5ecb";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=584f5e5ecb";
+import { SpeechInput, speechSupported } from "../speech.js?v=584f5e5ecb";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails } from "../recall.js?v=584f5e5ecb";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=584f5e5ecb";
+import { nextStepBlock } from "../next-step.js?v=584f5e5ecb";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";
@@ -131,29 +131,58 @@ export async function renderRecallView(root, { navigate }) {
   });
 }
 
+const SHOWN_PER_GROUP = 8;
+
 async function showComparison(container, original, recallEntry, navigate) {
   const c = recallEntry.recallComparison;
+  const { shared, onlyThen, onlyNow } = compareDetails(original.text, recallEntry.text, c.hintWords || []);
+  const total = shared.length + onlyThen.length + onlyNow.length;
+  const byThemselves = shared.filter((d) => !d.fromNotes).length;
+
+  // One bar, three colours: only that day, both, only today. Its widths show
+  // the balance at a glance; the chips below say what the details were.
+  const segment = (n, cls) => n ? `<span class="detail-bar-part ${cls}" style="flex-grow:${n}">${n}</span>` : "";
+  const chips = (list, cls) => {
+    const shown = list.slice(0, SHOWN_PER_GROUP);
+    const more = list.length - shown.length;
+    return `<div class="chip-row">${shown.map((d) => typeof d === "string"
+      ? `<span class="detail-chip ${cls}">${escapeHtml(d)}</span>`
+      : `<span class="detail-chip ${cls}${d.fromNotes ? " from-notes" : ""}">${escapeHtml(d.label)}</span>`).join("")}${
+      more > 0 ? `<span class="detail-chip detail-more">and ${more} more</span>` : ""}</div>`;
+  };
+  const group = (title, list, cls, empty) => `
+    <div class="detail-group">
+      <h4><span class="detail-dot ${cls}" aria-hidden="true"></span>${title} <span class="detail-count">${list.length}</span></h4>
+      ${list.length ? chips(list, cls) : `<p class="muted">${empty}</p>`}
+    </div>`;
+
   container.innerHTML = `
     <div class="glass-card fade-in">
       <h3>Then and now</h3>
-      <p class="muted">Here's what you said on the day, next to what you remembered just now.</p>
-      <div class="compare-cols">
-        <div class="compare-col">
-          <span class="pill">On the day</span>
-          <p>${escapeHtml(original.text)}</p>
+      ${guideHtml(byThemselves
+        ? `You brought back ${byThemselves} ${byThemselves === 1 ? "detail" : "details"} from that day by yourself. ${byThemselves === 1 ? "It is" : "They are"} the solid blue ${byThemselves === 1 ? "one" : "ones"} below.`
+        : "Here is what you said on the day, and what you said just now. Every visit counts, however much comes back.")}
+      ${total ? `
+        <div class="detail-bar" role="img" aria-label="${onlyThen.length} only then, ${shared.length} shared, ${onlyNow.length} only now">
+          ${segment(onlyThen.length, "is-then")}${segment(shared.length, "is-shared")}${segment(onlyNow.length, "is-now")}
+        </div>` : ""}
+      ${group("Shared details", shared, "is-shared", "None of the same details came up this time.")}
+      ${shared.some((d) => d.fromNotes) ? `<p class="muted detail-key"><span class="detail-chip is-shared from-notes" aria-hidden="true">outlined</span> were in the notes you read.</p>` : ""}
+      ${group("Only mentioned then", onlyThen, "is-then", "You mentioned everything from that day.")}
+      ${group("Only mentioned now", onlyNow, "is-now", "Nothing new this time.")}
+      <details class="compare-full">
+        <summary>Read both in full</summary>
+        <div class="compare-cols space-above-sm">
+          <div class="compare-col">
+            <span class="pill">On the day</span>
+            <p>${escapeHtml(original.text)}</p>
+          </div>
+          <div class="compare-col">
+            <span class="pill pill-yellow">Today's memory</span>
+            <p>${escapeHtml(recallEntry.text)}</p>
+          </div>
         </div>
-        <div class="compare-col">
-          <span class="pill pill-yellow">Today's memory</span>
-          <p>${escapeHtml(recallEntry.text)}</p>
-        </div>
-      </div>
-      <div class="space-above">
-        <div class="metric-row"><span class="metric-name">Details mentioned then</span><span class="metric-value">${c.originalDistinctContentWords}</span></div>
-        <div class="metric-row"><span class="metric-name">Details remembered now</span><span class="metric-value">${c.recallDistinctContentWords}</span></div>
-        <div class="metric-row"><span class="metric-name">Shared details</span><span class="metric-value">${c.overlapCount}</span></div>
-      </div>
-      ${c.hintCount ? `<p class="muted space-above">Words from the ${c.hintCount === 1 ? "hint" : "hints"} aren't counted here, only what you brought back yourself.</p>` : ""}
-      <p class="muted space-above">This becomes part of your own recall trend over time. You can see it on the Trends page.</p>
+      </details>
     </div>
   `;
   container.firstElementChild.appendChild(await nextStepBlock(navigate, "Your memory visit is saved."));

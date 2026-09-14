@@ -846,6 +846,29 @@ textarea:focus, input[type="text"]:focus {
 @media (min-width: 640px) { .compare-cols { grid-template-columns: 1fr 1fr; } }
 .compare-col { background: rgba(255,255,255,0.4); border-radius: var(--radius-sm); padding: 14px; }
 
+/* After a memory visit: which details came back. One bar for the balance,
+   then the details themselves in the same three colours. */
+.detail-bar { display: flex; gap: 4px; height: 36px; margin: 16px 0 6px; border-radius: 999px; overflow: hidden; }
+.detail-bar-part { display: flex; align-items: center; justify-content: center; min-width: 36px; font-weight: 800; font-size: 0.95rem; }
+.detail-group { margin-top: 16px; }
+.detail-group h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 1.05rem; color: var(--purple); }
+.detail-count { font-weight: 800; color: var(--dark-text); }
+.detail-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+.detail-group .chip-row { gap: 8px; margin: 0; }
+.detail-chip { display: inline-block; padding: 6px 14px; border-radius: 999px; font-weight: 700; overflow-wrap: anywhere; }
+.is-shared { background: var(--blue); color: #fff; }
+.is-then { background: var(--lavender); color: var(--purple); }
+.is-now { background: var(--yellow); color: var(--dark-text); }
+.detail-more { background: rgba(255,255,255,0.6); color: #4A2E5C; }
+.detail-chip.from-notes { background: transparent; color: var(--blue); box-shadow: inset 0 0 0 2px var(--blue); }
+.detail-key { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.detail-key .detail-chip { padding: 2px 10px; font-size: 0.85rem; }
+.compare-full { margin-top: 18px; }
+.compare-full summary { cursor: pointer; font-weight: 700; color: var(--purple); min-height: 44px; display: flex; align-items: center; }
+.compare-full summary::-webkit-details-marker { display: none; }
+.compare-full summary::before { content: ""; width: 8px; height: 8px; margin: 0 12px 0 4px; border-right: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; transform: rotate(-45deg); transition: transform 0.15s ease; }
+.compare-full[open] summary::before { transform: rotate(45deg); }
+
 .stack { display: flex; flex-direction: column; gap: 16px; }
 
 a { color: var(--blue); }

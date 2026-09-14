@@ -6,8 +6,8 @@
 // memory visit when there is one). When everything is done, the button goes
 // Home, which marks the finished day.
 
-import { getDailyPlan } from "./daily.js?v=f5fa412c13";
-import { el, escapeHtml, guideHtml } from "./ui.js?v=f5fa412c13";
+import { getDailyPlan } from "./daily.js?v=584f5e5ecb";
+import { el, escapeHtml, guideHtml } from "./ui.js?v=584f5e5ecb";
 
 const BUTTON = {
   journal: "Tell Capsule about today",

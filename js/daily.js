@@ -10,7 +10,7 @@
 // and feel like a reminder of failure. So one missed day is forgiven per
 // rolling week. The number still means something, and it survives a bad day.
 
-import { db } from "./data.js?v=f5fa412c13";
+import { db } from "./data.js?v=584f5e5ecb";
 
 export const GRACE_PER_WEEK = 1;
 

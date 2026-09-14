@@ -10,9 +10,9 @@
 // phone browsers, which is why the old button seemed to do nothing on an
 // iPhone.
 
-import { db } from "./data.js?v=f5fa412c13";
-import { escapeHtml } from "./ui.js?v=f5fa412c13";
-import { formatFriendlyDate } from "./recall.js?v=f5fa412c13";
+import { db } from "./data.js?v=584f5e5ecb";
+import { escapeHtml } from "./ui.js?v=584f5e5ecb";
+import { formatFriendlyDate } from "./recall.js?v=584f5e5ecb";
 
 const ACTIVITY_NAMES = {
   naming: "Naming game",

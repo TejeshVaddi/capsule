@@ -1,4 +1,4 @@
-import { db } from "./data.js?v=f5fa412c13";
+import { db } from "./data.js?v=584f5e5ecb";
 
 const MIN_AGE_DAYS = 2; // an entry must be at least this old before it can be resurfaced
 
@@ -517,6 +517,81 @@ export function comparableRecalls(recalls) {
   };
   const latest = recalls.reduce((a, b) => (!a || new Date(b.date) > new Date(a.date) ? b : a), null);
   return latest ? recalls.filter((e) => kindOf(e) === kindOf(latest)) : recalls;
+}
+
+/* ---------- After a visit: which details came back ----------
+   The things named on the day (people, places, things), set beside the
+   things named in the visit. Only for showing the person; the recall trend
+   is measured separately, in analysis.js, and is not changed by this. */
+
+// Said on almost any day, so never shown as a detail of one.
+const NOT_A_DETAIL = new Set([...VAGUE, "i", "home", "house", "lots", "loads", "bits", "thanks", "place", "places", "people", "person", "someone", "somewhere", "something", "while", "hours", "hour", "minutes", "minute"]);
+
+/**
+ * The details named in a piece of text: [{ key, label }]. Words that name
+ * one thing together stay together ("garden centre", "Agatha Christie").
+ */
+export function detailsOf(text) {
+  if (!text || !window.nlp) return [];
+  // Ways of saying where, not things that were there.
+  text = text.replace(/\b(?:on the way (?:home|back|there)|next door|at home|back home)\b/gi, " ");
+  const out = [];
+  const seen = new Set();
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    const label = run.map((t) => t.text.replace(/[.,!?;:]+$/, "")).join(" ").replace(/_/g, " ");
+    const proper = /^[A-Z]/.test(label);
+    const head = stem(run[run.length - 1].text);
+    const key = proper ? label.toLowerCase() : head;
+    if (head && !NOT_A_DETAIL.has(bare(run[run.length - 1].text)) && !seen.has(key)) {
+      seen.add(key);
+      out.push({ key, label: proper ? label : label.toLowerCase(), words: run.map((t) => bare(t.text)) });
+    }
+    run = [];
+  };
+  // Things whose last word is also a verb, so they would lose it: "watering can".
+  text = text.replace(/\b(watering|tin|oil) can\b/gi, "$1_can");
+  for (const t of termsOf(text)) {
+    const isNoun = t.tags.includes("Noun") && !t.tags.includes("Pronoun") && !t.tags.includes("Date") &&
+      !t.tags.includes("Possessive") && bare(t.text).length > 1 && !/^(?:there|here)$/i.test(bare(t.text));
+    const capital = /^[A-Z]/.test(t.text) && t.text !== "I";
+    // A name and a common word next to each other are two details:
+    // "daughter" and "Susan", not "daughter Susan".
+    if (isNoun && (!run.length || /^[A-Z]/.test(run[0].text) === capital) && !/[.,!?;:]$/.test(run[run.length - 1]?.text || "")) run.push(t);
+    else { flush(); if (isNoun) run.push(t); }
+  }
+  flush();
+  return out;
+}
+
+/**
+ * Details from the day set beside details from the visit:
+ *   shared    [{ label, fromNotes }] named both times. `fromNotes` marks the
+ *             ones the notes had shown: saying a hint back is fine, but it is
+ *             not the same as bringing a detail back unprompted.
+ *   onlyThen  [label] named on the day but not now
+ *   onlyNow   [label] named now but not on the day
+ */
+export function compareDetails(originalText, recallText, hintWords = []) {
+  const hinted = new Set(hintWords.map((w) => stem(w)));
+  const given = (d) => d.words.some((w) => hinted.has(stem(w)));
+  const then = detailsOf(originalText);
+  const now = detailsOf(recallText);
+  // One detail matches another when their main words match ("the market"
+  // and "market"), or when one is part of the other ("blood pressure" and
+  // "blood pressure check").
+  const stems = (d) => d.words.map(stem);
+  const within = (a, b) => stems(a).every((w) => stems(b).includes(w));
+  const matches = (a, b) => a.key === b.key || stem(a.words[a.words.length - 1]) === stem(b.words[b.words.length - 1]) ||
+    within(a, b) || within(b, a);
+  const shared = then.filter((d) => now.some((n) => matches(d, n)));
+  return {
+    // What they brought back by themselves first.
+    shared: shared.map((d) => ({ label: d.label, fromNotes: given(d) })).sort((a, b) => a.fromNotes - b.fromNotes),
+    onlyThen: then.filter((d) => !shared.includes(d)).map((d) => d.label),
+    onlyNow: now.filter((n) => !then.some((d) => matches(d, n))).map((d) => d.label),
+  };
 }
 
 export function daysBetween(isoA, isoB) {

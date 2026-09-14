@@ -67,7 +67,7 @@ Views never branch on this. They import `db` from `js/data.js`, which routes to 
 2. **SQL Editor → New query** → paste all of `supabase-schema.sql` → Run. This creates the tables, turns on row-level security, and creates the private `photos` bucket.
 3. **Project Settings → API** → copy the *Project URL* and the *anon public* key into `js/config.js`.
 4. **Authentication → Providers → Email**: make sure Email is enabled. To get 6-digit codes rather than magic links, set the "Magic Link" email template body to include `{{ .Token }}`.
-5. Reload. The Account tab now offers sign-in, and anyone with existing device-only entries gets a one-click "copy them to my account" migration.
+5. Reload. The Account tab now offers sign-in.
 
 The anon key is meant to be public, it grants no data access on its own. Every row is gated by the RLS policies in the schema, which restrict reads and writes to `auth.uid() = user_id`. Photos are in a **private** bucket with policies keyed to a per-user folder, so one user cannot enumerate or fetch another's images.
 

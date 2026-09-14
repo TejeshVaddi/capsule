@@ -4,9 +4,9 @@
 // Meta (disclaimer acknowledgment, mode choice) always stays local, it's
 // about this device, not the account.
 
-import { db as localDb, newId } from "./db.js?v=f5fa412c13";
-import { cloudDb, getSession } from "./cloud.js?v=f5fa412c13";
-import { cloudConfigured } from "./config.js?v=f5fa412c13";
+import { db as localDb, newId } from "./db.js?v=584f5e5ecb";
+import { cloudDb, getSession } from "./cloud.js?v=584f5e5ecb";
+import { cloudConfigured } from "./config.js?v=584f5e5ecb";
 
 export { newId };
 
@@ -43,20 +43,7 @@ export const db = {
   getMeta: (key) => localDb.getMeta(key),
 };
 
-/** Copies device-only entries (and photos) into the signed-in account. */
-export async function migrateLocalToCloud(onProgress = () => {}) {
-  const localEntries = await localDb.allEntries();
-  let done = 0;
-  for (const entry of localEntries) {
-    await cloudDb.putEntry(entry);
-    const photos = await localDb.getPhotosForEntry(entry.id);
-    for (const p of photos) await cloudDb.putPhoto(p);
-    done++;
-    onProgress(done, localEntries.length);
-  }
-  return done;
-}
-
+/** How many entries this device holds, whoever is signed in. */
 export async function localEntryCount() {
   const entries = await localDb.allEntries();
   return entries.length;
