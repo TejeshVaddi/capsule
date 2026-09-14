@@ -1,8 +1,9 @@
-import { db, isCloudMode } from "../data.js?v=611e55e30f";
-import { icon } from "../icons.js?v=611e55e30f";
-import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=611e55e30f";
-import { formatFriendlyDate } from "../recall.js?v=611e55e30f";
-import { escapeHtml, el, photoUrl, toast, guideHtml } from "../ui.js?v=611e55e30f";
+import { db, isCloudMode } from "../data.js?v=f5fa412c13";
+import { icon } from "../icons.js?v=f5fa412c13";
+import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=f5fa412c13";
+import { formatFriendlyDate } from "../recall.js?v=f5fa412c13";
+import { escapeHtml, el, photoUrl, guideHtml } from "../ui.js?v=f5fa412c13";
+import { buildExport } from "../export.js?v=f5fa412c13";
 
 export async function renderHistoryView(root) {
   root.innerHTML = "";
@@ -29,15 +30,17 @@ export async function renderHistoryView(root) {
         ${guideHtml("Here is everything you have saved. Tap any entry to read it. Tap Close to fold it away again. You do not need to do anything here.")}
         <p class="muted">${isCloudMode() ? "Saved to your account." : "Stored privately on this device."}</p>
         <div class="button-row">
-          <button class="btn btn-secondary" data-slot="export">${icon("download")} Download my data</button>
+          <button class="btn btn-secondary" type="button" data-slot="export">${icon("download")} Download my data</button>
         </div>
+        <div data-slot="export-area"></div>
       </div>
       <div class="stack" data-slot="list"></div>
     </div>
   `);
   root.appendChild(panel);
 
-  panel.querySelector('[data-slot="export"]').addEventListener("click", () => exportData(all));
+  const exportBtn = panel.querySelector('[data-slot="export"]');
+  exportBtn.addEventListener("click", () => prepareDownload(exportBtn, panel.querySelector('[data-slot="export-area"]')));
 
   const list = panel.querySelector('[data-slot="list"]');
 
@@ -142,24 +145,52 @@ async function showDetail(container, entry, close) {
   container.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function exportData(entries) {
+// The last file made, so its address can be let go when a new one is made.
+let lastFileUrl = null;
+
+/**
+ * Step 1 makes the file; step 2 is the person tapping "Save the file". The
+ * save has to be their own tap on a real link: phone browsers refuse a
+ * download that the app starts by itself after a wait.
+ */
+async function prepareDownload(button, area) {
+  button.disabled = true;
+  const status = el(`<p class="feedback" role="status" aria-live="polite">Getting your file ready...</p>`);
+  area.replaceChildren(status);
   try {
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      app: "Capsule",
-      note: "Personal journaling data. Photos are not included in this export.",
-      entries,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `capsule-export-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast("Your data file is downloading.");
+    const { blob, fileName, counts } = await buildExport({ onProgress: (m) => { status.textContent = m; } });
+    if (lastFileUrl) URL.revokeObjectURL(lastFileUrl);
+    lastFileUrl = URL.createObjectURL(blob);
+
+    const photos = counts.photos ? ` and ${counts.photos} photo${counts.photos === 1 ? "" : "s"}` : "";
+    area.replaceChildren(el(`
+      <div class="download-ready space-above-sm">
+        ${guideHtml(`Your file is ready. It has all ${counts.entries} of your entries${photos}. Tap Save the file to keep a copy. It opens in any web browser.`)}
+        <div class="button-row">
+          <a class="btn btn-primary" data-slot="save" href="${lastFileUrl}" download="${escapeHtml(fileName)}">${icon("download")} Save the file</a>
+        </div>
+      </div>`));
+    const save = area.querySelector('[data-slot="save"]');
+
+    // Phones can also hand the file to another app: Files, Mail, Messages.
+    const file = typeof File === "function" ? new File([blob], fileName, { type: "text/html" }) : null;
+    if (file && navigator.canShare?.({ files: [file] }) && matchMedia("(pointer: coarse)").matches) {
+      const share = el(`<button class="btn btn-secondary" type="button">Send it to another app</button>`);
+      share.addEventListener("click", () => {
+        navigator.share({ files: [file], title: "My Capsule journal" }).catch(() => {});
+      });
+      save.after(share);
+    }
+    save.addEventListener("click", () => {
+      status.textContent = "";
+      area.querySelector(".guide-text").textContent =
+        "Saving. On a phone, look in your Downloads or Files. You can tap Save the file again if you need to.";
+    });
+    save.focus();
   } catch (err) {
     console.error(err);
-    toast("Export failed. Please try again.");
+    area.replaceChildren(el(`<p class="need-note" role="alert">The file could not be made. Please tap Download my data again.</p>`));
+  } finally {
+    button.disabled = false;
   }
 }

@@ -4,8 +4,8 @@
 // large type, plain language, an always-visible way out, and no jargon.
 // It never implies the app assesses or diagnoses anything.
 
-import { db } from "./data.js?v=611e55e30f";
-import { ICONS } from "./icons.js?v=611e55e30f";
+import { db } from "./data.js?v=f5fa412c13";
+import { ICONS } from "./icons.js?v=f5fa412c13";
 
 const SEEN_KEY = "walkthroughSeen";
 
@@ -31,7 +31,7 @@ const STEPS = [
   {
     icon: "clock",
     title: "Recall: revisit an older day",
-    body: "After a while, Capsule brings back an earlier day and asks what you remember about it. To help, it shows a sentence or two from what you said that day, and a photo if you added one.",
+    body: "After a while, Capsule brings back an earlier day and asks what you remember about it. To help, it shows a few short notes from what you said that day, and a photo if you added one.",
     tab: "recall",
   },
   {

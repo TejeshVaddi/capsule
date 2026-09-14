@@ -196,7 +196,8 @@ for (const f of files.filter((x) => /\.(js|html|css|md|sql|ts|json)$/.test(x))) 
     if (!FLUENCY_LISTS[key] || !FLUENCY_ONE[key] || !FLUENCY_EXAMPLE[key]) fail(file, `no word list or wording for the category "${category}"`);
   }
   const counts = (c, t) => checkFluencyAnswer(c, t).added.length > 0;
-  if (!counts("birds", "ducks") || counts("birds", "pond") || counts("animals", "iphone") || !counts("animals", "big brown bear")) {
+  if (!counts("birds", "ducks") || counts("birds", "pond") || counts("animals", "iphone") || !counts("animals", "big brown bear")
+    || counts("birds", "parakete") || checkFluencyAnswer("birds", "parakete").suggestion?.label !== "parakeet") {
     fail(file, "the category check no longer accepts right answers or rejects wrong ones");
   }
 }

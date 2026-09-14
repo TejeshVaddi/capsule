@@ -6,8 +6,8 @@
 // recent entries against the 14 before them, and only reports a shift that is
 // both proportionally large AND larger than the person's own day-to-day spread.
 
-import { pooledVocabSeries } from "./analysis.js?v=611e55e30f";
-import { comparableRecalls } from "./recall.js?v=611e55e30f";
+import { pooledVocabSeries } from "./analysis.js?v=f5fa412c13";
+import { comparableRecalls } from "./recall.js?v=f5fa412c13";
 
 // Nothing is claimed until there is enough history to claim it from.
 export const MIN_HISTORY = 12;

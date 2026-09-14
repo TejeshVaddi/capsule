@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=611e55e30f";
-import { icon } from "../icons.js?v=611e55e30f";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=611e55e30f";
-import { SpeechInput, speechSupported } from "../speech.js?v=611e55e30f";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor } from "../recall.js?v=611e55e30f";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=611e55e30f";
-import { nextStepBlock } from "../next-step.js?v=611e55e30f";
+import { db, newId } from "../data.js?v=f5fa412c13";
+import { icon } from "../icons.js?v=f5fa412c13";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=f5fa412c13";
+import { SpeechInput, speechSupported } from "../speech.js?v=f5fa412c13";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor } from "../recall.js?v=f5fa412c13";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=f5fa412c13";
+import { nextStepBlock } from "../next-step.js?v=f5fa412c13";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";
@@ -29,13 +29,17 @@ export async function renderRecallView(root, { navigate }) {
   const photos = await db.getPhotosForEntry(target.id).catch(() => []) || [];
   const age = daysBetween(target.date, new Date().toISOString());
   // How much of the day to reveal follows the person's own recent visits.
-  const level = hintLevelFor(await db.allEntries());
-  const { glimpses, hidden } = recallHints(target.text, level);
+  const everything = await db.allEntries();
+  const level = hintLevelFor(everything);
+  // The person's other days, so the notes pick what was unusual about this one.
+  const otherDays = everything.filter((e) => e.type === "journal" && e.id !== target.id).map((e) => e.text);
+  const { glimpses, hidden } = recallHints(target.text, level, otherDays);
+  const notes = glimpses.length === 1 ? "the note" : `the ${glimpses.length} notes`;
   const guide = !glimpses.length
     ? "Think back to this day. Tap the microphone and say anything you remember, or type it in the box. Then tap I've said what I remember."
     : hidden
-      ? `Read ${glimpses.length === 1 ? "the sentence" : "the sentences"} below. One detail is left out on purpose. Say or type what you think it was, and anything else you remember. Then tap I've said what I remember.`
-      : `Read ${glimpses.length === 1 ? "the sentence" : "the 2 sentences"} below. ${glimpses.length === 1 ? "It is" : "They are"} from what you said that day. Then say or type anything else you remember, and tap I've said what I remember.`;
+      ? `Read ${notes} below. In ${glimpses.length === 1 ? "it" : "each one"}, one detail is left out on purpose, marked someone, somewhere or something. Say or type what you think it was, and anything else you remember. Then tap I've said what I remember.`
+      : `Read ${notes} below. ${glimpses.length === 1 ? "It is" : "They are"} from what you said that day. Then say or type what else you remember, and tap I've said what I remember.`;
 
   const panel = el(`
     <div class="stack">

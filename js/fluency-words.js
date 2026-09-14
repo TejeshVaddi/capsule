@@ -9,8 +9,10 @@
 //  - plurals and "a", "the", "um" are ignored ("the ducks" is duck)
 //  - describing words are fine ("big brown bear" is bear)
 //  - one spoken line can hold several answers ("robin sparrow and eagle")
-//  - a small typo in a long word is corrected ("parakete" is parakeet), but
-//    only when the typo is not itself a real word from another list
+//  - a misspelling is never counted by itself. Capsule offers the nearest
+//    answer ("Did you mean parakeet?") and counts it only if the person taps
+//    it. Guessing on their behalf once counted real words that were wrong:
+//    "current" as currant, "blunder" as blender.
 //
 // The lists are generous on purpose. When a real answer is missing, the
 // message says Capsule does not know it, never that the person was wrong.
@@ -576,7 +578,8 @@ football, bicycle, bike, toys, pool, swimming pool, hot tub, jacuzzi, patio heat
 wind chime, wind chimes, doormat, letterbox, mailbox, drain, drainpipe, gutter, edging, plant label,
 label, pesticide, fertiliser, fertilizer, weedkiller, slug pellets, grass seed, turf, meadow,
 orchard, nettle, stinging nettle, bramble, tulsi, tulsi plant, well, bird bath, lawn chair,
-garden hose, garden shed, garden path, allotment, raised bed, vegetable bed, flower border
+garden hose, garden shed, garden path, allotment, raised bed, vegetable bed, flower border,
+tree, fruit tree, vegetable, herbs, fruit, fruit bush, sapling, hedgerow, lawn chair
 `);
 
 // Answers that name the category itself rather than something in it.
@@ -768,21 +771,26 @@ function distance(a, b, max) {
 }
 
 /**
- * A typo fix, only when it is safe: the word is long enough that one wrong
- * letter cannot turn it into a different real word, it is not itself a word
- * from any list ("carrot" is never read as "parrot"), and only one list entry
- * is that close.
+ * The list entry a misspelling was most likely meant to be, to offer as
+ * "Did you mean ...?". Nothing is counted until the person taps it. No offer
+ * when the word is itself an answer somewhere else ("carrot" is not offered
+ * as parrot), or when two entries are equally close.
  */
-function closeMatch(index, word) {
-  if (word.length < 6 || knownAnywhere(word)) return null;
-  const max = word.length >= 9 ? 2 : 1;
-  let found = null;
+function nearestEntry(index, word) {
+  if (word.length < 4 || knownAnywhere(word)) return null;
+  const max = word.length >= 7 ? 2 : 1;
+  let best = null;
+  let bestDistance = max + 1;
+  let tie = false;
   for (const [k, label] of index.map) {
-    if (k[0] !== word[0] || distance(word, k, max) > max) continue;
-    if (found && found.label !== label) return null; // two candidates: do not guess
-    found = { key: tokens(label).join(""), label };
+    if (k[0] !== word[0]) continue;
+    const d = distance(word, k, max);
+    if (d > max) continue;
+    const key = tokens(label).join("");
+    if (d < bestDistance) { best = { key, label }; bestDistance = d; tie = false; }
+    else if (d === bestDistance && best.key !== key) tie = true;
   }
-  return found;
+  return tie ? null : best;
 }
 
 function lookup(index, toks) {
@@ -801,9 +809,11 @@ function lookup(index, toks) {
  *   repeats   [label]        items already named this round
  *   rejected  [text]         words that are not in the category
  *   groupOnly true when the answer was only the category name ("bird")
+ *   suggestion {key, label}  what a misspelling probably meant, or null.
+ *                            Not counted unless the person says yes.
  */
 export function checkFluencyAnswer(category, text, alreadyNamed = new Set()) {
-  const out = { added: [], repeats: [], rejected: [], groupOnly: false };
+  const out = { added: [], repeats: [], rejected: [], groupOnly: false, suggestion: null };
   const index = indexFor(category);
   if (!index) return out;
   const group = new Set((GROUP_WORDS[category] || []).flatMap((g) => tokens(g)));
@@ -849,10 +859,6 @@ export function checkFluencyAnswer(category, text, alreadyNamed = new Set()) {
       const hit = lookup(index, run);
       if (hit) { found = { hit, n }; break; }
     }
-    if (!found && !FILLER.has(t)) {
-      const fix = closeMatch(index, t);
-      if (fix) found = { hit: fix, n: 1 };
-    }
 
     if (found) {
       // Words just before an answer describe it ("brown bear", "school
@@ -873,5 +879,10 @@ export function checkFluencyAnswer(category, text, alreadyNamed = new Set()) {
     }
   }
   flush();
+
+  for (const text of out.rejected) {
+    const near = nearestEntry(index, text.replace(/\s+/g, ""));
+    if (near && !seen.has(near.key)) { out.suggestion = near; break; }
+  }
   return out;
 }

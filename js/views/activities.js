@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=611e55e30f";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=611e55e30f";
-import { analyzeText } from "../analysis.js?v=611e55e30f";
-import { SpeechInput, speechSupported } from "../speech.js?v=611e55e30f";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js?v=611e55e30f";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=611e55e30f";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=611e55e30f";
-import { getDailyPlan } from "../daily.js?v=611e55e30f";
-import { nextStepBlock } from "../next-step.js?v=611e55e30f";
-import { icon, ICONS } from "../icons.js?v=611e55e30f";
+import { db, newId } from "../data.js?v=f5fa412c13";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=f5fa412c13";
+import { analyzeText } from "../analysis.js?v=f5fa412c13";
+import { SpeechInput, speechSupported } from "../speech.js?v=f5fa412c13";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js?v=f5fa412c13";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=f5fa412c13";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=f5fa412c13";
+import { getDailyPlan } from "../daily.js?v=f5fa412c13";
+import { nextStepBlock } from "../next-step.js?v=f5fa412c13";
+import { icon, ICONS } from "../icons.js?v=f5fa412c13";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -41,12 +41,15 @@ export async function renderActivitiesView(root, { navigate } = {}) {
   if (next) {
     // Today's two, and nothing else to choose from.
     const doneCount = required.filter((s) => s.doneToday).length;
+    // Name the one actually left: it can be number 1 if number 2 was done first.
+    const nextNumber = required.indexOf(next) + 1;
+    const doneNumber = nextNumber === 1 ? 2 : 1;
     page.appendChild(el(`
       <div class="glass-panel">
         <h2>Today's 2 activities</h2>
         ${guideHtml(doneCount === 0
           ? "Do these 2 activities. Start with number 1. Tap the Start button under it."
-          : "Number 1 is done. Now do number 2. Tap the Start button under it.")}
+          : `Number ${doneNumber} is done. Now do number ${nextNumber}. Tap the Start button under it.`)}
       </div>`));
     required.forEach((s, i) => page.appendChild(requiredCard(s, i + 1, s === next, () => run(s))));
   } else {
@@ -331,6 +334,7 @@ function fluencyGame(stage, suggestion, ctx) {
           <button class="btn btn-primary add-btn" type="button" data-slot="add">Add</button>
         </div>
         <p class="feedback" data-slot="note" role="status" aria-live="polite"></p>
+        <button class="btn btn-secondary" type="button" data-slot="suggest" hidden></button>
         <p class="sub-label" data-slot="count">You have named 0 so far.</p>
         <div class="fluency-list" data-slot="said"></div>
       </div>
@@ -344,9 +348,23 @@ function fluencyGame(stage, suggestion, ctx) {
   const countEl = card.querySelector('[data-slot="count"]');
   const timerEl = card.querySelector('[data-slot="timer"]');
   const noteEl = card.querySelector('[data-slot="note"]');
+  const suggestBtn = card.querySelector('[data-slot="suggest"]');
+  let offered = null; // what "Did you mean ...?" would add
 
   const quoted = (list) => list.map((w) => `"${w}"`).join(" or ");
   const joined = (list) => list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+
+  function showSaid() {
+    saidWrap.innerHTML = [...said.values()]
+      .map((w) => `<span class="pill pill-blue">${escapeHtml(w)}</span>`).join(" ");
+    countEl.textContent = `You have named ${said.size} so far.`;
+  }
+
+  function offer(suggestion) {
+    offered = suggestion;
+    suggestBtn.hidden = !suggestion;
+    if (suggestion) suggestBtn.textContent = `Yes, add ${suggestion.label}`;
+  }
 
   function addWord(raw) {
     const text = (raw || "").trim();
@@ -357,12 +375,7 @@ function fluencyGame(stage, suggestion, ctx) {
     const r = checkFluencyAnswer(category, text, new Set(said.keys()));
     for (const { key, label } of r.added) said.set(key, label);
     notCounted += r.rejected.length;
-
-    if (r.added.length) {
-      saidWrap.innerHTML = [...said.values()]
-        .map((w) => `<span class="pill pill-blue">${escapeHtml(w)}</span>`).join(" ");
-      countEl.textContent = `You have named ${said.size} so far.`;
-    }
+    if (r.added.length) showSaid();
 
     // One plain line saying what happened, so a spoken answer that did not
     // count is never silently lost.
@@ -373,11 +386,28 @@ function fluencyGame(stage, suggestion, ctx) {
       lines.push(`Capsule does not know ${quoted(r.rejected)} as ${one}, so ${r.rejected.length === 1 ? "it was" : "they were"} not added.`);
     }
     if (r.groupOnly) lines.push(`That is the name of the whole group. Try one kind, like ${FLUENCY_EXAMPLE[category] || "one you know"}.`);
-    if (!r.added.length && (r.rejected.length || r.repeats.length) && !r.groupOnly) lines.push("Try another one.");
+    if (r.suggestion) lines.push(`Did you mean ${r.suggestion.label}? If so, tap the button below.`);
+    else if (!r.added.length && (r.rejected.length || r.repeats.length) && !r.groupOnly) lines.push("Try another one.");
 
     noteEl.textContent = lines.join(" ");
     noteEl.style.color = r.added.length && !r.rejected.length ? "#2e6b3f" : "#8a4a2e";
+    offer(r.suggestion);
   }
+
+  // Only a tap here counts a misspelled answer; Capsule never guesses.
+  suggestBtn.addEventListener("click", () => {
+    if (!offered) return;
+    const { key, label } = offered;
+    offer(null);
+    if (!said.has(key)) {
+      said.set(key, label);
+      notCounted = Math.max(0, notCounted - 1);
+      showSaid();
+    }
+    noteEl.textContent = `Added ${label}.`;
+    noteEl.style.color = "#2e6b3f";
+    entry.focus();
+  });
 
   const speech = attachMicToInput(card.querySelector(".answer-row"), entry, { onText: (t) => addWord(t) });
   card.querySelector('[data-slot="add"]').addEventListener("click", () => addWord(entry.value));
@@ -388,6 +418,7 @@ function fluencyGame(stage, suggestion, ctx) {
     if (speech) speech.stop();
     // Whatever is still in the box when time runs out counts too.
     if (entry.value.trim()) addWord(entry.value);
+    offer(null);
     card.querySelector('[data-slot="live"]').hidden = true;
     const result = card.querySelector('[data-slot="result"]');
     const labels = [...said.values()];

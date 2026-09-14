@@ -156,6 +156,8 @@ button { font-family: var(--font); }
 }
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* A link that looks like a button, such as "Save the file". */
+a.btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-sizing: border-box; }
 
 .btn-primary {
   background: var(--purple);
