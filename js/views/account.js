@@ -1,13 +1,13 @@
-import { cloudConfigured } from "../config.js?v=e81ccc62e1";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=e81ccc62e1";
-import { refreshDataMode, localEntryCount, db } from "../data.js?v=e81ccc62e1";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=e81ccc62e1";
-import { icon } from "../icons.js?v=e81ccc62e1";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=e81ccc62e1";
-import { startWalkthrough } from "../walkthrough.js?v=e81ccc62e1";
-import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=e81ccc62e1";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=e81ccc62e1";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=e81ccc62e1";
+import { cloudConfigured } from "../config.js?v=bad5e1f123";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=bad5e1f123";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=bad5e1f123";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=bad5e1f123";
+import { icon } from "../icons.js?v=bad5e1f123";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=bad5e1f123";
+import { startWalkthrough } from "../walkthrough.js?v=bad5e1f123";
+import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=bad5e1f123";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=bad5e1f123";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=bad5e1f123";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";

@@ -15,7 +15,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=e81ccc62e1";
+import { db, newId } from "./data.js?v=bad5e1f123";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -28,11 +28,11 @@ import {
   SWITCH_PAIRS,
   CHAIN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=e81ccc62e1";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=e81ccc62e1";
-import { detectSignals, scoreForSignals } from "./signals.js?v=e81ccc62e1";
-import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=e81ccc62e1";
-import { currentRhythm } from "./rhythm.js?v=e81ccc62e1";
+} from "./activities-content.js?v=bad5e1f123";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=bad5e1f123";
+import { detectSignals, scoreForSignals } from "./signals.js?v=bad5e1f123";
+import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=bad5e1f123";
+import { currentRhythm } from "./rhythm.js?v=bad5e1f123";
 
 // Nothing the person has done comes back within this many days. An activity
 // with nothing fresh left is not offered until something is.
@@ -272,6 +272,7 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     // lately. Both are shown so nothing about the choosing is hidden.
     const main = mainAreaOf(slotOf(s));
     s.helpsWith = main ? FOCUS_AREAS[main].helps : null;
+    s.helpsTerm = main ? FOCUS_AREAS[main].term : null;
     s.helpsLabel = main ? FOCUS_AREAS[main].label : null;
     s.isWeakSpot = Boolean(main && (focus.areas[main] || 0) >= NOTABLE_NEED);
     // A clear shift also carries the reason, stated as a change in the

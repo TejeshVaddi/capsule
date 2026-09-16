@@ -186,6 +186,100 @@ export function explain(key, direction) {
 }
 
 /**
+ * Each chart on the Trends page, explained the same way as the changes:
+ *   what   what the line is measuring
+ *   how    how Capsule works it out, so the number is not a black box
+ *   better which way is the better direction, or null when neither is
+ *   note   anything that stops the line being read too simply
+ */
+export const CHART_GUIDES = {
+  wordCount: {
+    what: "How many words you put into each entry.",
+    how: "Every word in the entry is counted, including the short ones.",
+    better: "higher",
+    note: "A quiet day is genuinely shorter than a busy one, so a single low point means nothing on its own. It is the run of them that is worth reading.",
+  },
+  nounRate: {
+    what: "How much of your speech is naming words: nouns, meaning the people, places, things and ideas in a day.",
+    how: "Out of every hundred content words in an entry, this is how many are nouns. Counting a share rather than a total means a long entry is not flattered by its length.",
+    better: "higher",
+    note: null,
+  },
+  pronounRate: {
+    what: "How much of your speech is stand-in words: pronouns like it, they, that and them.",
+    how: "Out of every hundred content words, this is how many are pronouns.",
+    better: "lower",
+    note: "Some pronouns are normal in any sentence. It is a rise over weeks that says names are being replaced.",
+  },
+  adverbRate: {
+    what: "How much of your speech is describing words for how something was done: quickly, quietly, often.",
+    how: "Out of every hundred content words, this is how many are adverbs.",
+    better: null,
+    note: "Neither direction is better. It is here because a change in it is worth seeing, not because one end is good.",
+  },
+  vocabRichness: {
+    what: "How many different words you draw on, rather than the same few.",
+    how: "Capsule slides a window of 25 words along your last few entries together and counts how many words in each window are different, then averages them. One entry is too short to measure this fairly, which is why several are pooled.",
+    better: "higher",
+    note: null,
+  },
+  graphDensity: {
+    what: "How tightly the words of one entry link to one another. Each word is a point, and each step from one word to the next is a line between two points.",
+    how: "The lines that exist, divided by all the lines that could exist between those words.",
+    better: null,
+    note: "This one falls as an entry gets longer, because a longer entry has far more possible pairs. Read it beside entry length rather than on its own.",
+  },
+  graphLinksBack: {
+    what: "How much your words come back round to one another, which is what ties the parts of a day together instead of listing them.",
+    how: "In each stretch of 30 words, Capsule finds the words you can get from one to another and back again by the route your speech took, and reports what share of the stretch they are. Same-length stretches mean a long entry cannot raise it by itself.",
+    better: "higher",
+    note: null,
+  },
+  graphRepetition: {
+    what: "How often the same step from one word to the next comes round again inside an entry.",
+    how: "Each step between two words is counted, and this is the average number of times a step repeats.",
+    better: "lower",
+    note: "Some repetition is ordinary speech. A rise over weeks means fewer of the day's own words are getting in.",
+  },
+  graphHub: {
+    what: "How much one word acts as a hub that everything else runs through.",
+    how: "The number of different words that lead into the busiest word of the entry.",
+    better: null,
+    note: "The hub is usually a small word like the or and, so no direction is simply better. A sharp change is what to look at.",
+  },
+  disfluencyRate: {
+    what: "How often ums, uhs and words said twice in a row turn up.",
+    how: "Those are counted and given per hundred words, so a long entry is not penalised.",
+    better: "lower",
+    note: "Capsule counts this itself and it is not a research-backed measure, so it carries less weight than the other lines here.",
+  },
+  recallDetail: {
+    what: "How much you say in a memory visit: the words you bring back about an earlier day.",
+    how: "The words in your answer, plus how many different naming words it holds. Only visits that had the same amount of help from the notes are compared, so a change here is you and not the hints.",
+    better: "higher",
+    note: null,
+  },
+};
+
+/**
+ * Which way a chart is going for this person, and whether that is the
+ * better direction for that particular line.
+ */
+export function chartDirection(key, relChange) {
+  const guide = CHART_GUIDES[key];
+  if (!guide || typeof relChange !== "number") return null;
+  const steady = Math.abs(relChange) < 0.15;
+  const up = relChange > 0;
+  const moved = steady ? "holding about steady" : up ? "going up" : "going down";
+  if (steady) return `Right now: ${moved}.`;
+  if (!guide.better) return `Right now: ${moved}. Neither direction is better for this line.`;
+  const good = (up && guide.better === "higher") || (!up && guide.better === "lower");
+  return good
+    ? `Right now: ${moved}, which is the better direction for this line.`
+    : `Right now: ${moved}, which is the harder direction for this line. Capsule leans your activities towards it.`;
+}
+
+/**
  * The word a person should see on a change before they read anything else:
  * is this one going well, or is it one to work on? Said in the plainest
  * words available, and never as a verdict on the person.

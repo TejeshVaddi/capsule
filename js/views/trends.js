@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=e81ccc62e1";
-import { icon } from "../icons.js?v=e81ccc62e1";
+import { db } from "../data.js?v=bad5e1f123";
+import { icon } from "../icons.js?v=bad5e1f123";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -7,11 +7,12 @@ import {
   renderTrendChart,
   destroyCharts,
   generateTrendNotes,
-} from "../charts.js?v=e81ccc62e1";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=e81ccc62e1";
-import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=e81ccc62e1";
-import { currentRhythm } from "../rhythm.js?v=e81ccc62e1";
-import { closingLine, TONE_WORDS } from "../meaning.js?v=e81ccc62e1";
+  seriesTrend,
+} from "../charts.js?v=bad5e1f123";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=bad5e1f123";
+import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=bad5e1f123";
+import { currentRhythm } from "../rhythm.js?v=bad5e1f123";
+import { closingLine, TONE_WORDS, CHART_GUIDES, chartDirection } from "../meaning.js?v=bad5e1f123";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -96,6 +97,7 @@ export async function renderTrendsView(root) {
           ${def.researchBacked ? "" : `<span class="pill" title="Tracked by Capsule; not a research-validated measure">app metric</span>`}
         </div>
         <div class="chart-wrap"><canvas></canvas></div>
+        ${chartExplainer(def.key, series)}
         ${def.note ? `<p class="muted chart-note">${escapeHtml(def.note)}</p>` : ""}
       </div>
     `);
@@ -112,7 +114,7 @@ export async function renderTrendsView(root) {
           <span class="pill pill-yellow">recall</span>
         </div>
         <div class="chart-wrap"><canvas></canvas></div>
-        <p class="muted chart-note">Only visits that had the same amount of help from hints are compared here.</p>
+        ${chartExplainer("recallDetail", recallSeries, 3)}
       </div>
     `);
     chartsWrap.appendChild(card);
@@ -125,6 +127,31 @@ export async function renderTrendsView(root) {
  * and one bar per kind of activity. Everything comes from their own entries,
  * visits and games (see focus.js), and none of it is presented as a finding.
  */
+/**
+ * Under each chart: what the line is, how it is worked out, which way is
+ * the better direction, and which way it is going for this person. Folded
+ * behind the same chevron as everything else on this page.
+ */
+function chartExplainer(key, series, minPoints = 4) {
+  const guide = CHART_GUIDES[key];
+  if (!guide) return "";
+  const now = chartDirection(key, seriesTrend(series, minPoints));
+  const better = guide.better === "higher" ? "Higher is the better direction on this line."
+    : guide.better === "lower" ? "Lower is the better direction on this line."
+    : "Neither higher nor lower is better on this line.";
+  return `
+    <details class="explain">
+      <summary>What this chart means</summary>
+      <div class="explain-body">
+        <p><span class="explain-tag">What it is</span>${escapeHtml(guide.what)}</p>
+        <p><span class="explain-tag">How it is measured</span>${escapeHtml(guide.how)}</p>
+        <p><span class="explain-tag">Which way is better</span>${escapeHtml(better)}</p>
+        ${now ? `<p><span class="explain-tag">Where you are</span>${escapeHtml(now)}</p>` : ""}
+        ${guide.note ? `<p class="muted">${escapeHtml(guide.note)}</p>` : ""}
+      </div>
+    </details>`;
+}
+
 function planCard(entries, activityLog, rhythm) {
   const focus = buildFocus(entries, activityLog, { rhythm });
   // Photo stories need a photo; without one they are never offered.

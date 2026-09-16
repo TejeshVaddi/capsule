@@ -1,11 +1,11 @@
-import { db } from "../data.js?v=e81ccc62e1";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=e81ccc62e1";
-import { currentRhythm } from "../rhythm.js?v=e81ccc62e1";
-import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=e81ccc62e1";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=e81ccc62e1";
-import { celebrateStreak } from "../celebrate.js?v=e81ccc62e1";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=e81ccc62e1";
-import { icon } from "../icons.js?v=e81ccc62e1";
+import { db } from "../data.js?v=bad5e1f123";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=bad5e1f123";
+import { currentRhythm } from "../rhythm.js?v=bad5e1f123";
+import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=bad5e1f123";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=bad5e1f123";
+import { celebrateStreak } from "../celebrate.js?v=bad5e1f123";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=bad5e1f123";
+import { icon } from "../icons.js?v=bad5e1f123";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;

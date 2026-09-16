@@ -5,9 +5,9 @@
 //  - Notes state what changed, factually, whatever the direction.
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
-import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=e81ccc62e1";
-import { comparableRecalls } from "./recall.js?v=e81ccc62e1";
-import { explain } from "./meaning.js?v=e81ccc62e1";
+import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=bad5e1f123";
+import { comparableRecalls } from "./recall.js?v=bad5e1f123";
+import { explain } from "./meaning.js?v=bad5e1f123";
 
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },
@@ -135,6 +135,12 @@ function halfComparison(series, minPoints = 4) {
 }
 
 const CHANGE_THRESHOLD = 0.15;
+
+/** How a line has moved overall, for the explanation under its chart. */
+export function seriesTrend(series, minPoints = 4) {
+  const cmp = halfComparison(series, minPoints);
+  return cmp ? cmp.relChange : null;
+}
 
 /**
  * Generates neutral, factual, non-diagnostic notes about the person's own

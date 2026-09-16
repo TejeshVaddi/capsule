@@ -7,7 +7,7 @@
 // the streak, the turn-taking between activities, and the wording all follow
 // it. Nothing asks for more often than their own rhythm.
 
-import { db } from "./data.js?v=e81ccc62e1";
+import { db } from "./data.js?v=bad5e1f123";
 
 // Kept here rather than imported from daily.js: daily.js reads the rhythm,
 // and a module cannot wait on one that is waiting on it.

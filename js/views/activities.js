@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=e81ccc62e1";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=e81ccc62e1";
-import { analyzeText } from "../analysis.js?v=e81ccc62e1";
-import { SpeechInput, speechSupported } from "../speech.js?v=e81ccc62e1";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=e81ccc62e1";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=e81ccc62e1";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=e81ccc62e1";
-import { getDailyPlan } from "../daily.js?v=e81ccc62e1";
-import { nextStepBlock } from "../next-step.js?v=e81ccc62e1";
-import { icon, ICONS } from "../icons.js?v=e81ccc62e1";
+import { db, newId } from "../data.js?v=bad5e1f123";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=bad5e1f123";
+import { analyzeText } from "../analysis.js?v=bad5e1f123";
+import { SpeechInput, speechSupported } from "../speech.js?v=bad5e1f123";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=bad5e1f123";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=bad5e1f123";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=bad5e1f123";
+import { getDailyPlan } from "../daily.js?v=bad5e1f123";
+import { nextStepBlock } from "../next-step.js?v=bad5e1f123";
+import { icon, ICONS } from "../icons.js?v=bad5e1f123";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -127,8 +127,9 @@ function helpsLine(s) {
   if (!s.helpsWith) return "";
   return `
     <p class="activity-helps">
-      <span class="helps-label">Helps with:</span> ${escapeHtml(s.helpsWith)}.
-      ${s.isWeakSpot ? `<span class="helps-focus">This has been a harder one for you lately, so it comes up more often.</span>` : ""}
+      <span class="helps-label">Helps with:</span>
+      <strong>${escapeHtml(s.helpsTerm || "")}</strong>, ${escapeHtml(s.helpsWith)}.
+      ${s.isWeakSpot ? `<span class="helps-focus">This is one that has been harder for you lately, so it comes up more often.</span>` : ""}
     </p>`;
 }
 
