@@ -1,10 +1,10 @@
-import { db } from "./data.js?v=4ac42d002e";
-import { summarizeDay, bulletCountFor } from "./summary.js?v=4ac42d002e";
+import { db } from "./data.js?v=2c10b0dede";
+import { summarizeDay, bulletCountFor } from "./summary.js?v=2c10b0dede";
 import {
   KIN, PLACE_WORDS, VAGUE, LEAD_IN, MOMENT_BREAK, TIME_WORDS, DANGLING, SOFTENERS, SIDE_CLAUSE,
   OPENERS, NEGATIVE, PIECE_BREAK, toSecondPerson, tidy, asNote, termsOf, subjectIfAlone,
   lastPersonIn, bare, stem, rarityAmong, weightOf,
-} from "./text.js?v=4ac42d002e";
+} from "./text.js?v=2c10b0dede";
 
 
 const MIN_AGE_DAYS = 2; // an entry must be at least this old before it can be resurfaced
@@ -280,6 +280,49 @@ export function compareDetails(originalText, recallText, hintWords = []) {
     onlyThen: then.filter((d) => !shared.includes(d)).map((d) => d.label),
     onlyNow: now.filter((n) => !then.some((d) => matches(d, n))).map((d) => d.label),
   };
+}
+
+/**
+ * The day's own entry, split into the parts that came back today and the
+ * parts that did not: [{ text, recalled }].
+ *
+ * Anything mentioned again is marked, however briefly and however few times
+ * it came up. A detail that surfaced once is still a detail that surfaced,
+ * and the point of showing the entry this way is to let someone see what
+ * they brought back inside the day they wrote, rather than as a list of
+ * words beside it.
+ */
+export function recalledInEntry(originalText, recallText) {
+  const text = String(originalText || "");
+  if (!text || !window.nlp) return [{ text, recalled: false }];
+
+  const now = detailsOf(recallText);
+  if (!now.length) return [{ text, recalled: false }];
+  const stems = (d) => d.words.map(stem);
+  const within = (a, b) => stems(a).every((w) => stems(b).includes(w));
+  const matches = (a, b) => a.key === b.key || stem(a.words[a.words.length - 1]) === stem(b.words[b.words.length - 1]) ||
+    within(a, b) || within(b, a);
+
+  // The phrases to mark: every detail of that day that came up again today.
+  const phrases = detailsOf(text)
+    .filter((d) => now.some((n) => matches(d, n)))
+    .map((d) => d.label)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+  if (!phrases.length) return [{ text, recalled: false }];
+
+  const escaped = phrases.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  // Also catch the plural or possessive form the entry happens to use.
+  const finder = new RegExp(`\\b(?:${escaped.join("|")})(?:'s|s|es)?\\b`, "gi");
+  const parts = [];
+  let at = 0;
+  for (const hit of text.matchAll(finder)) {
+    if (hit.index > at) parts.push({ text: text.slice(at, hit.index), recalled: false });
+    parts.push({ text: hit[0], recalled: true });
+    at = hit.index + hit[0].length;
+  }
+  if (at < text.length) parts.push({ text: text.slice(at), recalled: false });
+  return parts;
 }
 
 export function daysBetween(isoA, isoB) {

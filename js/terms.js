@@ -7,8 +7,8 @@
 //
 // House style: no em dashes in user-facing text.
 
-import { openLegalModal, sectionsToHTML } from "./legal.js?v=4ac42d002e";
-import { CONTACT_EMAIL } from "./privacy.js?v=4ac42d002e";
+import { openLegalModal, sectionsToHTML } from "./legal.js?v=2c10b0dede";
+import { CONTACT_EMAIL } from "./privacy.js?v=2c10b0dede";
 
 export const TERMS_VERSION = "2026-08-20";
 export const TERMS_UPDATED = "20 August 2026";

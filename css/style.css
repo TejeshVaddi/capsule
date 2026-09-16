@@ -888,6 +888,12 @@ textarea:focus, input[type="text"]:focus {
 .week-move .week-means { font-weight: 500; }
 .week-move .week-work { font-weight: 700; color: var(--purple); }
 
+/* After a visit: the day's own entry, with everything that came back today
+   marked inside it. Even one mention is marked; it happened. */
+.recalled-title { margin: 20px 0 8px; font-size: 1.05rem; color: var(--purple); }
+.recalled-entry { margin: 0; line-height: 1.7; background: rgba(255,255,255,0.45); border-radius: var(--radius-sm); padding: 14px 16px; }
+mark.recalled { background: var(--blue); color: #fff; border-radius: 6px; padding: 1px 4px; font-weight: 700; }
+
 /* The monthly note, on Home. Only ever shown after a good month. */
 .month-note h2 { display: flex; align-items: center; gap: 10px; }
 .month-note h2 svg { width: 26px; height: 26px; }

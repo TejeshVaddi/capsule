@@ -4,8 +4,8 @@
 // large type, plain language, an always-visible way out, and no jargon.
 // It never implies the app assesses or diagnoses anything.
 
-import { db } from "./data.js?v=4ac42d002e";
-import { ICONS } from "./icons.js?v=4ac42d002e";
+import { db } from "./data.js?v=2c10b0dede";
+import { ICONS } from "./icons.js?v=2c10b0dede";
 
 const SEEN_KEY = "walkthroughSeen";
 

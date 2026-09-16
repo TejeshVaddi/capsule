@@ -197,7 +197,7 @@ export const CHART_GUIDES = {
     what: "How many words you put into each entry.",
     how: "Every word in the entry is counted, including the short ones.",
     better: "higher",
-    note: "A quiet day is genuinely shorter than a busy one, so a single low point means nothing on its own. It is the run of them that is worth reading.",
+    note: "A quiet day is genuinely shorter than a busy one, so a single low point means nothing on its own. Read the run of weeks, not one day.",
   },
   nounRate: {
     what: "How much of your speech is naming words: nouns, meaning the people, places, things and ideas in a day.",
@@ -251,7 +251,7 @@ export const CHART_GUIDES = {
     better: null,
     betterText: "Neither end is better by itself. Every piece of speech has a busiest word, and it is almost always a small one like the or and.",
     readWith: "word-graph repetition",
-    note: "What is worth seeing is a sharp move. A hub growing while repetition rises means more of an entry is circling through the same few words.",
+    note: "A sharp move is the thing to look at: a hub growing while repetition rises means more of an entry is circling through the same few words.",
   },
   disfluencyRate: {
     what: "How often ums, uhs and words said twice in a row turn up.",

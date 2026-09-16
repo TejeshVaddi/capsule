@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=4ac42d002e";
-import { icon } from "../icons.js?v=4ac42d002e";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=4ac42d002e";
-import { SpeechInput, speechSupported } from "../speech.js?v=4ac42d002e";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails } from "../recall.js?v=4ac42d002e";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=4ac42d002e";
-import { nextStepBlock } from "../next-step.js?v=4ac42d002e";
+import { db, newId } from "../data.js?v=2c10b0dede";
+import { icon } from "../icons.js?v=2c10b0dede";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=2c10b0dede";
+import { SpeechInput, speechSupported } from "../speech.js?v=2c10b0dede";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails, recalledInEntry } from "../recall.js?v=2c10b0dede";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=2c10b0dede";
+import { nextStepBlock } from "../next-step.js?v=2c10b0dede";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";
@@ -170,17 +170,14 @@ async function showComparison(container, original, recallEntry, navigate) {
       ${shared.some((d) => d.fromNotes) ? `<p class="muted detail-key"><span class="detail-chip is-shared from-notes" aria-hidden="true">outlined</span> were in the notes you read.</p>` : ""}
       ${group("Only mentioned then", onlyThen, "is-then", "You mentioned everything from that day.")}
       ${group("Only mentioned now", onlyNow, "is-now", "Nothing new this time.")}
-      <details class="compare-full">
-        <summary>Read both in full</summary>
-        <div class="compare-cols space-above-sm">
-          <div class="compare-col">
-            <span class="pill">On the day</span>
-            <p>${escapeHtml(original.text)}</p>
-          </div>
-          <div class="compare-col">
-            <span class="pill pill-yellow">Today's memory</span>
-            <p>${escapeHtml(recallEntry.text)}</p>
-          </div>
+      <h4 class="recalled-title">That day, with what you brought back in blue</h4>
+      <p class="recalled-entry">${recalledInEntry(original.text, recallEntry.text)
+        .map((part) => (part.recalled ? `<mark class="recalled">${escapeHtml(part.text)}</mark>` : escapeHtml(part.text)))
+        .join("")}</p>
+      <details class="explain">
+        <summary>What you said just now</summary>
+        <div class="explain-body">
+          <p>${escapeHtml(recallEntry.text)}</p>
         </div>
       </details>
     </div>
