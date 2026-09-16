@@ -5,9 +5,9 @@
 //  - Notes state what changed, factually, whatever the direction.
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
-import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=9bbaea5e28";
-import { comparableRecalls } from "./recall.js?v=9bbaea5e28";
-import { explain } from "./meaning.js?v=9bbaea5e28";
+import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=e81ccc62e1";
+import { comparableRecalls } from "./recall.js?v=e81ccc62e1";
+import { explain } from "./meaning.js?v=e81ccc62e1";
 
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },
@@ -205,7 +205,8 @@ export function generateTrendNotes(journalEntries, recallEntries) {
   // See meaning.js.
   const note = (key, text, direction) => {
     if (!text) return;
-    notes.push({ key, text, direction, ...(explain(key, direction) || { tone: "steady", means: null, work: null }) });
+    const e = explain(key, direction) || { tone: "steady", what: null, means: null, helps: null, work: null };
+    notes.push({ key, text, direction, tone: e.tone, whatIs: e.what, means: e.means, helps: e.helps, work: e.work });
   };
 
   for (const obs of observations) {

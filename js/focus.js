@@ -20,12 +20,12 @@
 // become too easy comes up less, and a kind not tried for a while gets a
 // turn. With no history yet, every kind gets an equal turn.
 
-import { windowSamples } from "./analysis.js?v=9bbaea5e28";
-import { topicsPer100Words } from "./summary.js?v=9bbaea5e28";
-import { comparableRecalls } from "./recall.js?v=9bbaea5e28";
-import { dateKey } from "./daily.js?v=9bbaea5e28";
-import { RHYTHMS } from "./rhythm.js?v=9bbaea5e28";
-import { DESCRIPTION_PROMPTS } from "./activities-content.js?v=9bbaea5e28";
+import { windowSamples } from "./analysis.js?v=e81ccc62e1";
+import { topicsPer100Words } from "./summary.js?v=e81ccc62e1";
+import { comparableRecalls } from "./recall.js?v=e81ccc62e1";
+import { dateKey } from "./daily.js?v=e81ccc62e1";
+import { RHYTHMS } from "./rhythm.js?v=e81ccc62e1";
+import { DESCRIPTION_PROMPTS } from "./activities-content.js?v=e81ccc62e1";
 
 /**
  * The areas an activity can give more practice in, and how well each kind
@@ -35,37 +35,37 @@ export const FOCUS_AREAS = {
   // Reaching a particular word: the points of the graph.
   naming: {
     label: "Finding the names of things",
-    helps: "reaching for the names of people, places and things",
+    helps: "finding the exact word for a person, a place or a thing",
     fits: { naming: 1, fluency: 0.5, bridge: 0.5 },
   },
   // How many different words get used, and how often the same ones come
   // back: the spread of the graph, and its repeated steps.
   variety: {
     label: "Using a wide range of words",
-    helps: "reaching for a wider range of words, instead of the same few",
+    helps: "using different words instead of the same few over and over",
     fits: { fluency: 1, switching: 0.8, scene: 0.5, open: 0.4, naming: 0.3 },
   },
   // Ideas tied to one another rather than listed: the graph's links back.
   linking: {
     label: "Linking one idea to the next",
-    helps: "tying one idea to the next, so a day holds together as a story",
+    helps: "telling something in order, so one part leads into the next",
     fits: { chain: 1, procedural: 1, scene: 0.8, "photo-story": 0.7, open: 0.6, reminiscence: 0.5, music: 0.4 },
   },
   // Crossing from one patch of meaning to another, and the distance
   // between two ideas: switching, and the path across the graph.
   crossing: {
     label: "Moving between different subjects",
-    helps: "moving from one subject to another and back again",
+    helps: "switching from one subject to a different one and back",
     fits: { switching: 1, bridge: 0.9, fluency: 0.3, procedural: 0.3 },
   },
   detail: {
     label: "Saying more about each thing",
-    helps: "saying more about each thing, so more of a day is kept",
+    helps: "describing one thing fully: who was there, where it was, what happened",
     fits: { reminiscence: 0.9, "photo-story": 0.9, music: 0.8, open: 0.7, scene: 0.6, chain: 0.6, procedural: 0.5 },
   },
   memory: {
     label: "Holding on to new things",
-    helps: "holding on to something new for a few minutes, then bringing it back",
+    helps: "holding new words in mind for a few minutes, then bringing them back",
     fits: { "word-recall": 1, "photo-story": 0.6, music: 0.3, reminiscence: 0.3 },
   },
 };

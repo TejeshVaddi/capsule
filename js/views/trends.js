@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=9bbaea5e28";
-import { icon } from "../icons.js?v=9bbaea5e28";
+import { db } from "../data.js?v=e81ccc62e1";
+import { icon } from "../icons.js?v=e81ccc62e1";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -7,11 +7,11 @@ import {
   renderTrendChart,
   destroyCharts,
   generateTrendNotes,
-} from "../charts.js?v=9bbaea5e28";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=9bbaea5e28";
-import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=9bbaea5e28";
-import { currentRhythm } from "../rhythm.js?v=9bbaea5e28";
-import { closingLine, TONE_WORDS } from "../meaning.js?v=9bbaea5e28";
+} from "../charts.js?v=e81ccc62e1";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=e81ccc62e1";
+import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=e81ccc62e1";
+import { currentRhythm } from "../rhythm.js?v=e81ccc62e1";
+import { closingLine, TONE_WORDS } from "../meaning.js?v=e81ccc62e1";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -66,8 +66,16 @@ export async function renderTrendsView(root) {
           <div class="trend-note trend-${escapeHtml(n.tone || "steady")}">
             <span class="trend-verdict">${escapeHtml(TONE_WORDS[n.tone] || TONE_WORDS.steady)}</span>
             <p class="trend-what">${escapeHtml(n.text)}</p>
-            ${n.means ? `<p class="trend-means">${escapeHtml(n.means)}</p>` : ""}
-            ${n.work ? `<p class="trend-work">${escapeHtml(n.work)}</p>` : ""}
+            ${n.means || n.helps ? `
+              <details class="explain">
+                <summary>What this means</summary>
+                <div class="explain-body">
+                  ${n.whatIs ? `<p><span class="explain-tag">What it is</span>${escapeHtml(n.whatIs)}</p>` : ""}
+                  ${n.means ? `<p><span class="explain-tag">What the change means</span>${escapeHtml(n.means)}</p>` : ""}
+                  ${n.helps ? `<p><span class="explain-tag">Why it is worth it</span>${escapeHtml(n.helps)}</p>` : ""}
+                  ${n.work ? `<p class="trend-work">${escapeHtml(n.work)}</p>` : ""}
+                </div>
+              </details>` : ""}
           </div>`).join("")}
       </div>
       ${closing ? `<p class="muted space-above-sm">${escapeHtml(closing)}</p>` : ""}

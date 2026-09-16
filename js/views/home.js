@@ -1,11 +1,11 @@
-import { db } from "../data.js?v=9bbaea5e28";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=9bbaea5e28";
-import { currentRhythm } from "../rhythm.js?v=9bbaea5e28";
-import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=9bbaea5e28";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=9bbaea5e28";
-import { celebrateStreak } from "../celebrate.js?v=9bbaea5e28";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=9bbaea5e28";
-import { icon } from "../icons.js?v=9bbaea5e28";
+import { db } from "../data.js?v=e81ccc62e1";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=e81ccc62e1";
+import { currentRhythm } from "../rhythm.js?v=e81ccc62e1";
+import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=e81ccc62e1";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=e81ccc62e1";
+import { celebrateStreak } from "../celebrate.js?v=e81ccc62e1";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=e81ccc62e1";
+import { icon } from "../icons.js?v=e81ccc62e1";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;
@@ -189,8 +189,16 @@ async function buildWeeklyCard(mount, s) {
             <div class="week-move week-move-${m.direction}">
               <strong>${escapeHtml(m.label)}</strong>
               <span>${escapeHtml(m.text)}</span>
-              ${m.means ? `<span class="week-means">${escapeHtml(m.means)}</span>` : ""}
-              ${m.work ? `<span class="week-work">${escapeHtml(m.work)}</span>` : ""}
+              ${m.means || m.helps ? `
+                <details class="explain">
+                  <summary>What this means</summary>
+                  <div class="explain-body">
+                    ${m.whatIs ? `<p><span class="explain-tag">What it is</span>${escapeHtml(m.whatIs)}</p>` : ""}
+                    ${m.means ? `<p><span class="explain-tag">What the change means</span>${escapeHtml(m.means)}</p>` : ""}
+                    ${m.helps ? `<p><span class="explain-tag">Why it is worth it</span>${escapeHtml(m.helps)}</p>` : ""}
+                    ${m.work ? `<p class="trend-work">${escapeHtml(m.work)}</p>` : ""}
+                  </div>
+                </details>` : ""}
             </div>`).join("")}
         </div>
         <p class="muted week-footnote">Compared with the week before.</p>

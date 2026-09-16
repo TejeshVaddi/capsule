@@ -4,9 +4,9 @@
 // visits, plus snippets and photos), and how their metrics moved compared with
 // the week before. Movement is reported in whichever direction it went.
 
-import { db } from "./data.js?v=9bbaea5e28";
-import { dateKey } from "./daily.js?v=9bbaea5e28";
-import { explain } from "./meaning.js?v=9bbaea5e28";
+import { db } from "./data.js?v=e81ccc62e1";
+import { dateKey } from "./daily.js?v=e81ccc62e1";
+import { explain } from "./meaning.js?v=e81ccc62e1";
 
 export function startOfWeek(d = new Date()) {
   const c = new Date(d);
@@ -49,7 +49,8 @@ export async function buildWeeklySummary(weekStart = startOfWeek()) {
     const change = (now - before) / Math.max(Math.abs(before), 0.0001);
     const direction = Math.abs(change) < 0.12 ? "steady" : change > 0 ? "up" : "down";
     const text = direction === "steady" ? "About the same as last week." : change > 0 ? higherWord : lowerWord;
-    return { key, label, text, direction, ...(explain(key, direction) || { tone: "steady", means: null, work: null }) };
+    const e = explain(key, direction) || { tone: "steady", what: null, means: null, helps: null, work: null };
+    return { key, label, text, direction, tone: e.tone, whatIs: e.what, means: e.means, helps: e.helps, work: e.work };
   };
 
   const movements = [

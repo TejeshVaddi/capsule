@@ -871,6 +871,16 @@ textarea:focus, input[type="text"]:focus {
 .trend-hard .trend-verdict { background: var(--purple); color: #fff; }
 .trend-what { font-weight: 800; margin: 0; }
 .trend-means { margin: 0; font-weight: 500; }
+
+/* The explanation, folded away behind a chevron until it is wanted. */
+.explain { margin-top: 4px; }
+.explain summary { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-weight: 700; color: var(--purple); list-style: none; }
+.explain summary::-webkit-details-marker { display: none; }
+.explain summary::after { content: ""; width: 9px; height: 9px; border-right: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor; transform: translateY(-3px) rotate(45deg); transition: transform 0.15s ease; }
+.explain[open] summary::after { transform: translateY(1px) rotate(-135deg); }
+.explain-body { display: grid; gap: 10px; padding: 4px 0 6px; }
+.explain-body p { margin: 0; font-weight: 500; line-height: 1.55; }
+.explain-tag { display: block; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--purple); opacity: 0.75; }
 .trend-work { margin: 0; font-weight: 700; color: var(--purple); }
 .trend-note.trend-good { border-left: 5px solid var(--blue); }
 .trend-note.trend-hard { border-left: 5px solid var(--purple); }

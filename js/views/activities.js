@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=9bbaea5e28";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=9bbaea5e28";
-import { analyzeText } from "../analysis.js?v=9bbaea5e28";
-import { SpeechInput, speechSupported } from "../speech.js?v=9bbaea5e28";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=9bbaea5e28";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=9bbaea5e28";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=9bbaea5e28";
-import { getDailyPlan } from "../daily.js?v=9bbaea5e28";
-import { nextStepBlock } from "../next-step.js?v=9bbaea5e28";
-import { icon, ICONS } from "../icons.js?v=9bbaea5e28";
+import { db, newId } from "../data.js?v=e81ccc62e1";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=e81ccc62e1";
+import { analyzeText } from "../analysis.js?v=e81ccc62e1";
+import { SpeechInput, speechSupported } from "../speech.js?v=e81ccc62e1";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=e81ccc62e1";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=e81ccc62e1";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=e81ccc62e1";
+import { getDailyPlan } from "../daily.js?v=e81ccc62e1";
+import { nextStepBlock } from "../next-step.js?v=e81ccc62e1";
+import { icon, ICONS } from "../icons.js?v=e81ccc62e1";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";

@@ -1,10 +1,10 @@
-import { db } from "./data.js?v=9bbaea5e28";
-import { summarizeDay, bulletCountFor } from "./summary.js?v=9bbaea5e28";
+import { db } from "./data.js?v=e81ccc62e1";
+import { summarizeDay, bulletCountFor } from "./summary.js?v=e81ccc62e1";
 import {
   KIN, PLACE_WORDS, VAGUE, LEAD_IN, MOMENT_BREAK, TIME_WORDS, DANGLING, SOFTENERS, SIDE_CLAUSE,
   OPENERS, NEGATIVE, PIECE_BREAK, toSecondPerson, tidy, asNote, termsOf, subjectIfAlone,
   lastPersonIn, bare, stem, rarityAmong, weightOf,
-} from "./text.js?v=9bbaea5e28";
+} from "./text.js?v=e81ccc62e1";
 
 
 const MIN_AGE_DAYS = 2; // an entry must be at least this old before it can be resurfaced
