@@ -115,6 +115,102 @@ export const NAMING_SETS = [
     { word: "spectacles", clue: "You wear them to read the newspaper." },
     { word: "walking stick", clue: "It helps you keep your balance." },
   ]},
+  { theme: "The living room", items: [
+    { word: "sofa", clue: "A long soft seat for two or three people." },
+    { word: "curtains", clue: "You draw them across the window at night." },
+    { word: "fireplace", clue: "Where a fire burns to warm the room." },
+    { word: "clock", clue: "It has hands and tells you the time." },
+    { word: "cushion", clue: "A soft pillow you lean on in a chair." },
+    { word: "lamp", clue: "It gives you light to read by." },
+  ]},
+  { theme: "Breakfast", items: [
+    { word: "toast", clue: "Bread made crisp and brown under the grill." },
+    { word: "egg", clue: "Hens lay it. You can boil it or fry it." },
+    { word: "marmalade", clue: "An orange spread for your toast." },
+    { word: "porridge", clue: "Warm oats cooked with milk." },
+    { word: "teapot", clue: "You pour tea from it into cups." },
+    { word: "cereal", clue: "Flakes in a bowl with cold milk." },
+  ]},
+  { theme: "Birds", items: [
+    { word: "robin", clue: "A small bird with a red chest, often on Christmas cards." },
+    { word: "owl", clue: "A bird that comes out at night and says twit twoo." },
+    { word: "swan", clue: "A large white bird with a long neck, on lakes." },
+    { word: "duck", clue: "A bird on the pond that says quack." },
+    { word: "seagull", clue: "A noisy white bird at the seaside." },
+    { word: "pigeon", clue: "A grey bird you see in town squares." },
+  ]},
+  { theme: "At the shops", items: [
+    { word: "purse", clue: "You keep your money in it." },
+    { word: "trolley", clue: "You push it round the supermarket." },
+    { word: "receipt", clue: "The slip of paper that shows what you paid." },
+    { word: "butcher", clue: "The shop where you buy meat." },
+    { word: "baker", clue: "The person who makes bread and cakes." },
+    { word: "queue", clue: "A line of people waiting their turn." },
+  ]},
+  { theme: "Trees and flowers", items: [
+    { word: "oak", clue: "A big tree that grows acorns." },
+    { word: "daffodil", clue: "A yellow flower that comes up in spring." },
+    { word: "sunflower", clue: "A very tall flower with a big yellow face." },
+    { word: "holly", clue: "A prickly green plant with red berries at Christmas." },
+    { word: "willow", clue: "A tree whose branches hang down by the river." },
+    { word: "tulip", clue: "A cup-shaped spring flower, often from Holland." },
+  ]},
+  { theme: "On the farm", items: [
+    { word: "tractor", clue: "A big machine that pulls a plough." },
+    { word: "barn", clue: "A large building where hay and animals are kept." },
+    { word: "sheep", clue: "An animal with a woolly coat." },
+    { word: "cow", clue: "The animal that gives us milk." },
+    { word: "scarecrow", clue: "A figure in the field to keep birds away." },
+    { word: "haystack", clue: "A big pile of dried grass." },
+  ]},
+  { theme: "Sewing and knitting", items: [
+    { word: "needle", clue: "A thin pointed thing with an eye for thread." },
+    { word: "thimble", clue: "You wear it on your finger to push a needle." },
+    { word: "button", clue: "A small round thing that fastens a coat." },
+    { word: "wool", clue: "You knit a jumper with it." },
+    { word: "scissors", clue: "You cut paper or cloth with them." },
+    { word: "zip", clue: "It closes a bag with teeth that join together." },
+  ]},
+  { theme: "Games and sport", items: [
+    { word: "football", clue: "A game where two teams kick a ball into a goal." },
+    { word: "cricket", clue: "A summer game with a bat, a ball and wickets." },
+    { word: "chess", clue: "A board game with kings, queens and knights." },
+    { word: "golf", clue: "You hit a small ball into a hole on a green." },
+    { word: "tennis", clue: "Two players hit a ball over a net with rackets." },
+    { word: "dominoes", clue: "A game with small tiles covered in dots." },
+  ]},
+  { theme: "Getting around", items: [
+    { word: "bicycle", clue: "Two wheels and pedals." },
+    { word: "train", clue: "It runs on rails from station to station." },
+    { word: "ferry", clue: "A boat that carries people and cars across the water." },
+    { word: "taxi", clue: "A car you pay to take you somewhere." },
+    { word: "aeroplane", clue: "It flies people through the sky." },
+    { word: "bus stop", clue: "Where you wait to get on the bus." },
+  ]},
+  { theme: "People at work", items: [
+    { word: "postman", clue: "The person who brings your letters." },
+    { word: "nurse", clue: "The person who looks after you in hospital." },
+    { word: "farmer", clue: "The person who grows crops and keeps animals." },
+    { word: "teacher", clue: "The person who helps children learn at school." },
+    { word: "firefighter", clue: "The person who puts out fires." },
+    { word: "hairdresser", clue: "The person who cuts and styles your hair." },
+  ]},
+  { theme: "Bedtime", items: [
+    { word: "pillow", clue: "You rest your head on it in bed." },
+    { word: "blanket", clue: "It keeps you warm on the bed." },
+    { word: "pyjamas", clue: "The clothes you wear to sleep." },
+    { word: "alarm clock", clue: "It rings to wake you up in the morning." },
+    { word: "slippers", clue: "Soft shoes you wear indoors." },
+    { word: "hot water bottle", clue: "A rubber bag you fill to warm the bed." },
+  ]},
+  { theme: "In the sky", items: [
+    { word: "moon", clue: "It shines at night and changes shape through the month." },
+    { word: "rainbow", clue: "Colours in an arch after the rain." },
+    { word: "cloud", clue: "White and fluffy, it floats above us." },
+    { word: "star", clue: "A tiny point of light in the night sky." },
+    { word: "sunset", clue: "When the sun goes down in the evening." },
+    { word: "kite", clue: "You fly it on a string on a windy day." },
+  ]},
 ];
 
 /* ---------------------------------------------------------------
@@ -373,6 +469,74 @@ export const PHOTO_PROMPTS = [
  * been done in that time: the activity is then simply not offered, rather
  * than offered again too soon.
  */
+/* ---------------------------------------------------------------
+   WORD BRIDGES: get from one word to another, a step at a time.
+   In a semantic graph this is the path between two points. Saying the
+   steps out loud is the work: "bread, baker, flour, field, farmer".
+   ---------------------------------------------------------------- */
+
+export const BRIDGE_PAIRS = [
+  { from: "bread", to: "farmer" },
+  { from: "kettle", to: "cow" },
+  { from: "shoe", to: "sheep" },
+  { from: "letter", to: "tree" },
+  { from: "sand", to: "window" },
+  { from: "cat", to: "piano" },
+  { from: "rain", to: "umbrella" },
+  { from: "apple", to: "cake" },
+  { from: "wool", to: "jumper" },
+  { from: "river", to: "electricity" },
+  { from: "bee", to: "toast" },
+  { from: "coal", to: "train" },
+  { from: "seed", to: "salad" },
+  { from: "clock", to: "church" },
+  { from: "wave", to: "salt" },
+  { from: "candle", to: "birthday" },
+];
+
+/* ---------------------------------------------------------------
+   TWO AT A TIME: name one from each of two categories, turn about.
+   Semantic fluency measures how far someone travels inside one patch
+   of meaning; this asks them to cross between two patches and back,
+   which is the switching half of the same picture.
+   ---------------------------------------------------------------- */
+
+export const SWITCH_PAIRS = [
+  { a: "animals", b: "fruits and vegetables" },
+  { a: "birds", b: "things you wear" },
+  { a: "things in a kitchen", b: "musical instruments" },
+  { a: "flowers and trees", b: "jobs people do" },
+  { a: "towns and cities", b: "things at the seaside" },
+  { a: "things in a garden", b: "birds" },
+  { a: "fruits and vegetables", b: "musical instruments" },
+  { a: "animals", b: "things you wear" },
+  { a: "jobs people do", b: "things in a kitchen" },
+  { a: "things at the seaside", b: "flowers and trees" },
+];
+
+/* ---------------------------------------------------------------
+   START TO FINISH: one thing told in order, in four steps.
+   This is the part a word graph shows as ideas that link back to one
+   another rather than a list of separate remarks.
+   ---------------------------------------------------------------- */
+
+export const CHAIN_PROMPTS = [
+  { prompt: "Making a cup of tea" },
+  { prompt: "Getting ready to go out in the morning" },
+  { prompt: "A Sunday roast, from the shopping to the washing up" },
+  { prompt: "Posting a letter" },
+  { prompt: "Planting something in the garden" },
+  { prompt: "Changing the sheets on a bed" },
+  { prompt: "Getting a bus into town" },
+  { prompt: "Wrapping a present" },
+  { prompt: "Making a sandwich for two people" },
+  { prompt: "Washing and drying the dishes by hand" },
+  { prompt: "Putting up a Christmas tree" },
+  { prompt: "Baking a cake you have made before" },
+];
+
+export const CHAIN_STEPS = ["First", "Then", "After that", "In the end"];
+
 export function pickFresh(list, recentKeys, keyOf, seed = Date.now()) {
   if (!list.length) return null;
   const seen = new Set(recentKeys);

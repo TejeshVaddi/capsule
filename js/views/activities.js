@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=584f5e5ecb";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=584f5e5ecb";
-import { analyzeText } from "../analysis.js?v=584f5e5ecb";
-import { SpeechInput, speechSupported } from "../speech.js?v=584f5e5ecb";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS } from "../activities-content.js?v=584f5e5ecb";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=584f5e5ecb";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=584f5e5ecb";
-import { getDailyPlan } from "../daily.js?v=584f5e5ecb";
-import { nextStepBlock } from "../next-step.js?v=584f5e5ecb";
-import { icon, ICONS } from "../icons.js?v=584f5e5ecb";
+import { db, newId } from "../data.js?v=6fe1a667df";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=6fe1a667df";
+import { analyzeText } from "../analysis.js?v=6fe1a667df";
+import { SpeechInput, speechSupported } from "../speech.js?v=6fe1a667df";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=6fe1a667df";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=6fe1a667df";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=6fe1a667df";
+import { getDailyPlan } from "../daily.js?v=6fe1a667df";
+import { nextStepBlock } from "../next-step.js?v=6fe1a667df";
+import { icon, ICONS } from "../icons.js?v=6fe1a667df";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -129,6 +129,9 @@ function extraCard(s, onStart) {
 }
 
 function startActivity(stage, s, ctx) {
+  if (s.kind === "bridge") return bridgeGame(stage, s, ctx);
+  if (s.kind === "switching") return switchingGame(stage, s, ctx);
+  if (s.kind === "chain") return chainActivity(stage, s, ctx);
   if (s.kind === "naming") return namingGame(stage, s, ctx);
   if (s.kind === "fluency") return fluencyGame(stage, s, ctx);
   if (s.kind === "word-recall") return wordRecallGame(stage, s, ctx);
@@ -386,12 +389,13 @@ function fluencyGame(stage, suggestion, ctx) {
       lines.push(`Capsule does not know ${quoted(r.rejected)} as ${one}, so ${r.rejected.length === 1 ? "it was" : "they were"} not added.`);
     }
     if (r.groupOnly) lines.push(`That is the name of the whole group. Try one kind, like ${FLUENCY_EXAMPLE[category] || "one you know"}.`);
-    if (r.suggestion) lines.push(`Did you mean ${r.suggestion.label}? If so, tap the button below.`);
+    if (r.suggestion?.already) lines.push(`Did you mean ${r.suggestion.label}? You have named that one already.`);
+    else if (r.suggestion) lines.push(`Did you mean ${r.suggestion.label}? If so, tap the button below.`);
     else if (!r.added.length && (r.rejected.length || r.repeats.length) && !r.groupOnly) lines.push("Try another one.");
 
     noteEl.textContent = lines.join(" ");
     noteEl.style.color = r.added.length && !r.rejected.length ? "#2e6b3f" : "#8a4a2e";
-    offer(r.suggestion);
+    offer(r.suggestion?.already ? null : r.suggestion);
   }
 
   // Only a tap here counts a misspelled answer; Capsule never guesses.
@@ -448,6 +452,246 @@ function fluencyGame(stage, suggestion, ctx) {
       timerEl.textContent = `${m}:${s}`;
       if (remaining <= 0) finish();
     }, 1000);
+  });
+}
+
+/* ---------- Word bridges ----------
+   Two words, and the steps from one to the other. In a word graph this is
+   the path between two points: the further apart they feel, the more of
+   the map has to be crossed to join them. Nothing here is marked right or
+   wrong; the steps are the whole point. */
+
+function bridgeGame(stage, suggestion, ctx) {
+  const { from, to } = suggestion.data;
+  const card = el(`
+    <div class="glass-panel">
+      <h3>Word bridges</h3>
+      ${guideHtml(`Start at ${from}. Get to ${to}. Say the words in between, one at a time, and how each one leads to the next. There is no right answer. Then tap I'm finished.`)}
+      <div class="bridge-ends">
+        <span class="pill pill-blue">${escapeHtml(from)}</span>
+        <span class="bridge-arrow" aria-hidden="true">${icon("arrowRight")}</span>
+        <span class="pill pill-yellow">${escapeHtml(to)}</span>
+      </div>
+      <div data-slot="composer"></div>
+      <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
+      <div data-slot="result"></div>
+    </div>
+  `);
+  stage.appendChild(card);
+
+  const composer = createSpeechComposer({
+    placeholder: `For example: ${from}, then something it makes you think of, and on to ${to}.`,
+    SpeechInputClass: SpeechInput,
+    speechSupported,
+  });
+  card.querySelector('[data-slot="composer"]').appendChild(composer.root);
+
+  const doneBtn = card.querySelector('[data-slot="done"]');
+  doneBtn.addEventListener("click", () => {
+    const text = composer.getText();
+    if (!text) {
+      noteAbove(doneBtn, "Say or type your steps first. Then tap I'm finished.");
+      return;
+    }
+    clearNoteAbove(doneBtn);
+    doneBtn.disabled = true;
+    composer.destroy();
+    const m = analyzeText(text);
+    // The steps are the words along the way, whichever way they were said.
+    const steps = new Set(text.toLowerCase().match(/[a-z']+/g) || []);
+    const result = card.querySelector('[data-slot="result"]');
+    result.innerHTML = `
+      <h3 class="space-above-sm">Saved</h3>
+      <p class="lead">You crossed from ${escapeHtml(from)} to ${escapeHtml(to)} in your own words.</p>`;
+    showNext(result, suggestion, ctx);
+    record("bridge", {
+      contentKey: suggestion.contentKey, from, to,
+      wordCount: m.wordCount, distinctWords: steps.size,
+    });
+  });
+}
+
+/* ---------- Two at a time ----------
+   One from each of two categories, turn about. Category fluency shows how
+   far someone travels inside one patch of meaning; crossing between two
+   patches and back is the other half of the same picture. The timer ends
+   it; there is no stop button. */
+
+function switchingGame(stage, suggestion, ctx) {
+  const DURATION = 60;
+  const { a, b } = suggestion.data;
+  const names = { a: FLUENCY_ONE[a] || a, b: FLUENCY_ONE[b] || b };
+  let remaining = DURATION;
+  let timer = null;
+  let turn = "a";
+  let switches = 0;
+  let lastSide = null; // a crossing is an answer from the other side of the pair
+  const said = new Map();
+  let notCounted = 0;
+
+  const card = el(`
+    <div class="glass-panel">
+      <h3>Two at a time</h3>
+      <div data-slot="pre">
+        ${guideHtml(`You will have 1 minute. Say ${names.a}, then ${names.b}, then ${names.a} again, taking turns. Tap Begin when you are ready.`)}
+        <button class="btn btn-primary btn-large" data-slot="begin">Begin</button>
+      </div>
+      <div data-slot="live" hidden>
+        ${guideHtml("Say or type one, then tap Add. The line below says which one comes next. It stops by itself.")}
+        <div class="fluency-timer" data-slot="timer" role="timer" aria-live="off">1:00</div>
+        <p class="lead" data-slot="turn"></p>
+        <div class="answer-row has-add">
+          <input type="text" data-slot="entry" placeholder="Say or type one" autocomplete="off" />
+          <button class="btn btn-primary add-btn" type="button" data-slot="add">Add</button>
+        </div>
+        <p class="feedback" data-slot="note" role="status" aria-live="polite"></p>
+        <p class="sub-label" data-slot="count">You have named 0 so far.</p>
+        <div class="fluency-list" data-slot="said"></div>
+      </div>
+      <div data-slot="result"></div>
+    </div>
+  `);
+  stage.appendChild(card);
+
+  const entry = card.querySelector('[data-slot="entry"]');
+  const saidWrap = card.querySelector('[data-slot="said"]');
+  const countEl = card.querySelector('[data-slot="count"]');
+  const timerEl = card.querySelector('[data-slot="timer"]');
+  const noteEl = card.querySelector('[data-slot="note"]');
+  const turnEl = card.querySelector('[data-slot="turn"]');
+
+  const paintTurn = () => { turnEl.textContent = `Next: ${turn === "a" ? names.a : names.b}.`; };
+
+  function addWord(raw) {
+    const text = (raw || "").trim();
+    entry.value = "";
+    entry.focus();
+    if (!text) return;
+
+    const wanted = turn === "a" ? a : b;
+    const other = turn === "a" ? b : a;
+    const here = checkFluencyAnswer(wanted, text, new Set(said.keys()));
+    const there = here.added.length ? { added: [] } : checkFluencyAnswer(other, text, new Set(said.keys()));
+
+    const crossed = (side) => { if (lastSide && side !== lastSide) switches++; lastSide = side; };
+
+    if (here.added.length) {
+      for (const { key, label } of here.added) said.set(key, { label, side: turn });
+      crossed(turn);
+      turn = turn === "a" ? "b" : "a";
+      noteEl.textContent = `Added ${here.added.map((x) => x.label).join(" and ")}.`;
+      noteEl.style.color = "#2e6b3f";
+    } else if (there.added.length) {
+      // The right kind of thing, the other way round. It still counts, and
+      // the turn simply moves on from there.
+      const side = turn === "a" ? "b" : "a";
+      for (const { key, label } of there.added) said.set(key, { label, side });
+      crossed(side);
+      noteEl.textContent = `Added ${there.added.map((x) => x.label).join(" and ")}. That was ${side === "a" ? names.a : names.b}, which is fine.`;
+      noteEl.style.color = "#2e6b3f";
+      // Carry on from whichever side they actually said.
+      turn = side === "a" ? "b" : "a";
+    } else {
+      notCounted += here.rejected.length;
+      noteEl.textContent = here.repeats.length
+        ? `You already named ${here.repeats.join(" and ")}. Try another one.`
+        : `Capsule does not know ${here.rejected.map((w) => `"${w}"`).join(" or ")} as ${names.a} or ${names.b}. Try another one.`;
+      noteEl.style.color = "#8a4a2e";
+    }
+    saidWrap.innerHTML = [...said.values()]
+      .map((w) => `<span class="pill ${w.side === "a" ? "pill-blue" : "pill-yellow"}">${escapeHtml(w.label)}</span>`).join(" ");
+    countEl.textContent = `You have named ${said.size} so far.`;
+    paintTurn();
+  }
+
+  const speech = attachMicToInput(card.querySelector(".answer-row"), entry, { onText: (t) => addWord(t) });
+  card.querySelector('[data-slot="add"]').addEventListener("click", () => addWord(entry.value));
+  entry.addEventListener("keydown", (e) => { if (e.key === "Enter") addWord(entry.value); });
+
+  function finish() {
+    clearInterval(timer);
+    if (speech) speech.stop();
+    if (entry.value.trim()) addWord(entry.value);
+    card.querySelector('[data-slot="live"]').hidden = true;
+    const labels = [...said.values()].map((w) => w.label);
+    const result = card.querySelector('[data-slot="result"]');
+    result.innerHTML = `
+      <h3 class="space-above-sm">Time is up</h3>
+      <p class="lead">You named ${said.size}, crossing between the two ${switches} time${switches === 1 ? "" : "s"}.</p>
+      ${labels.length ? `<p>${labels.map((w) => `<span class="pill">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}`;
+    showNext(result, suggestion, ctx);
+    record("switching", {
+      contentKey: suggestion.contentKey, categories: [a, b],
+      count: said.size, switches, notCounted,
+    });
+  }
+
+  card.querySelector('[data-slot="begin"]').addEventListener("click", () => {
+    card.querySelector('[data-slot="pre"]').hidden = true;
+    card.querySelector('[data-slot="live"]').hidden = false;
+    paintTurn();
+    entry.focus();
+    timer = setInterval(() => {
+      if (!card.isConnected) { clearInterval(timer); if (speech) speech.stop(); return; }
+      remaining--;
+      const m = Math.floor(remaining / 60);
+      const sec = String(remaining % 60).padStart(2, "0");
+      timerEl.textContent = `${m}:${sec}`;
+      if (remaining <= 0) finish();
+    }, 1000);
+  });
+}
+
+/* ---------- Start to finish ----------
+   One everyday thing, told in order. Four words on screen hold the shape:
+   first, then, after that, in the end. Speech that ties its parts to one
+   another is what a word graph shows as links back, and telling something
+   in order is the plainest way to practise it. */
+
+function chainActivity(stage, suggestion, ctx) {
+  const card = el(`
+    <div class="glass-panel">
+      <h3>Start to finish</h3>
+      ${guideHtml("Tell it in order, in your own words. The four words below are there to lean on. Say as much as you like, then tap I'm finished.")}
+      <p class="prompt">${escapeHtml(suggestion.data.prompt)}</p>
+      <div class="chip-row">
+        ${CHAIN_STEPS.map((w) => `<span class="pill pill-yellow">${escapeHtml(w)}...</span>`).join("")}
+      </div>
+      <div data-slot="composer"></div>
+      <button class="btn btn-primary btn-large" data-slot="done">I'm finished</button>
+      <div data-slot="result"></div>
+    </div>
+  `);
+  stage.appendChild(card);
+
+  const composer = createSpeechComposer({
+    placeholder: "First... then... after that... in the end...",
+    SpeechInputClass: SpeechInput,
+    speechSupported,
+  });
+  card.querySelector('[data-slot="composer"]').appendChild(composer.root);
+
+  const doneBtn = card.querySelector('[data-slot="done"]');
+  doneBtn.addEventListener("click", () => {
+    const text = composer.getText();
+    if (!text) {
+      noteAbove(doneBtn, "Say or type how it goes first. Then tap I'm finished.");
+      return;
+    }
+    clearNoteAbove(doneBtn);
+    doneBtn.disabled = true;
+    composer.destroy();
+    const m = analyzeText(text);
+    const stepsUsed = CHAIN_STEPS.filter((w) => new RegExp(`\\b${w}\\b`, "i").test(text)).length;
+    const result = card.querySelector('[data-slot="result"]');
+    result.innerHTML = `
+      <h3 class="space-above-sm">Saved</h3>
+      <p class="lead">${m.wordCount} word${m.wordCount === 1 ? "" : "s"}, start to finish.</p>`;
+    showNext(result, suggestion, ctx);
+    record("chain", {
+      contentKey: suggestion.contentKey, prompt: suggestion.data.prompt,
+      wordCount: m.wordCount, stepsUsed,
+    });
   });
 }
 
@@ -623,7 +867,7 @@ function descriptionActivity(stage, suggestion, ctx) {
     const result = card.querySelector('[data-slot="result"]');
     result.innerHTML = `
       <h3 class="space-above">Saved</h3>
-      <p class="lead">You used ${m.wordCount} words.</p>
+      <p class="lead">You used ${m.wordCount} word${m.wordCount === 1 ? "" : "s"}.</p>
       ${comparison ? `<p class="muted">${comparison}</p>` : ""}`;
     showNext(result, suggestion, ctx);
     record("description", {
@@ -815,6 +1059,9 @@ async function renderHistory(mount) {
   const LABELS = {
     naming: "Naming game",
     fluency: "How many can you name",
+    switching: "Two at a time",
+    bridge: "Word bridges",
+    chain: "Start to finish",
     "word-recall": "Five-word memory game",
     description: "A question or description",
     "photo-story": "Photo story",

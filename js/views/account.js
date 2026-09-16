@@ -1,12 +1,13 @@
-import { cloudConfigured } from "../config.js?v=584f5e5ecb";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=584f5e5ecb";
-import { refreshDataMode, localEntryCount, db } from "../data.js?v=584f5e5ecb";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=584f5e5ecb";
-import { icon } from "../icons.js?v=584f5e5ecb";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=584f5e5ecb";
-import { startWalkthrough } from "../walkthrough.js?v=584f5e5ecb";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=584f5e5ecb";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=584f5e5ecb";
+import { cloudConfigured } from "../config.js?v=6fe1a667df";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=6fe1a667df";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=6fe1a667df";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=6fe1a667df";
+import { icon } from "../icons.js?v=6fe1a667df";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=6fe1a667df";
+import { startWalkthrough } from "../walkthrough.js?v=6fe1a667df";
+import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=6fe1a667df";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=6fe1a667df";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=6fe1a667df";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -19,6 +20,7 @@ export async function renderAccountView(root, { navigate }) {
         <p class="muted">Accounts and cloud sync are available once the app is connected to its cloud service. If you're the person running this app, see the "Going live" section of the README to switch it on.</p>
       </div>
     `));
+    appendRhythmCard(root);
     appendTourCard(root, navigate);
     appendLocalDangerZone(root, navigate);
     return;
@@ -55,6 +57,7 @@ function renderSignedIn(root, user, navigate) {
   });
 
   appendReminderCard(root);
+  appendRhythmCard(root);
   appendTourCard(root, navigate);
   appendCloudDangerZone(root, navigate);
 }
@@ -99,6 +102,55 @@ function appendReminderCard(root) {
 }
 
 /* ---------- Replayable tour ---------- */
+
+/**
+ * How often Capsule is used. Everything that counts time follows this: the
+ * streak, how soon an activity comes round again, and the wording. Capsule
+ * works it out from the entries by itself; this is for saying so outright.
+ */
+const RHYTHM_CHOICES = [
+  { value: "auto", label: "Let Capsule work it out" },
+  { value: "daily", label: "Most days" },
+  { value: "weekly", label: "Once a week" },
+];
+
+async function appendRhythmCard(root) {
+  const setting = await getRhythmSetting();
+  const detected = rhythmFrom(await db.allEntries().catch(() => []), "auto");
+  const card = el(`
+    <div class="glass-card space-above">
+      <h3>How often you use Capsule</h3>
+      <p class="muted">Capsule fits itself around this. Once a week is a perfectly good way to use it, and the streak then counts weeks instead of days.</p>
+      <div class="button-row" data-slot="choices"></div>
+      <p class="muted" data-slot="note"></p>
+    </div>
+  `);
+  const note = card.querySelector('[data-slot="note"]');
+  const choices = card.querySelector('[data-slot="choices"]');
+
+  const paint = (value) => {
+    choices.querySelectorAll("button").forEach((b) => {
+      const on = b.dataset.value === value;
+      b.className = `btn ${on ? "btn-primary" : "btn-secondary"}`;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    note.textContent = value === "auto"
+      ? `Capsule is going by your entries, and right now it reads them as ${detected.unit === "week" ? "about once a week" : "most days"}.`
+      : "";
+  };
+
+  for (const c of RHYTHM_CHOICES) {
+    const b = el(`<button class="btn btn-secondary" type="button" data-value="${c.value}">${escapeHtml(c.label)}</button>`);
+    b.addEventListener("click", async () => {
+      await setRhythmSetting(c.value);
+      paint(c.value);
+      toast(c.value === "weekly" ? "Capsule will count weeks." : c.value === "daily" ? "Capsule will count days." : "Capsule will work it out from your entries.");
+    });
+    choices.appendChild(b);
+  }
+  paint(setting);
+  root.appendChild(card);
+}
 
 function appendTourCard(root, navigate) {
   const card = el(`
@@ -436,6 +488,7 @@ function renderSignIn(root, navigate) {
     emailInput.focus();
   });
 
+  appendRhythmCard(root);
   appendTourCard(root, navigate);
 
   // Someone signed out can still have journal entries on this device. Without

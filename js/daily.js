@@ -1,4 +1,4 @@
-// The daily rhythm: what today asks of you, in order, and the streak.
+// What a session asks of you, in order, and the streak.
 //
 // Order is deliberate and fixed: journal first (it is the thing the rest is
 // built from), then activities, then a recall visit if there is enough
@@ -7,10 +7,16 @@
 // On streaks: simulated use at a realistic 85% adherence produced longest
 // streaks of only 5 to 8 days over 90 days. A streak that resets the instant
 // someone misses a day would, for this audience, mostly display small numbers
-// and feel like a reminder of failure. So one missed day is forgiven per
-// rolling week. The number still means something, and it survives a bad day.
+// and feel like a reminder of failure. So one missed turn is forgiven per
+// seven, and the number still survives a bad day.
+//
+// A streak counts whole periods, and a period is a day for someone who uses
+// Capsule most days and a week for someone who uses it once a week. Counting
+// days for a weekly user would show a broken streak forever, which is the
+// opposite of what a streak is for. See rhythm.js.
 
-import { db } from "./data.js?v=584f5e5ecb";
+import { db } from "./data.js?v=6fe1a667df";
+import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=6fe1a667df";
 
 export const GRACE_PER_WEEK = 1;
 
@@ -81,7 +87,7 @@ export async function getDailyPlan() {
     {
       key: "activities",
       title: "Do today's 2 activities",
-      detail: "Two short games or questions. They change every day.",
+      detail: "Two short games or questions. They change each time.",
       view: "activities",
       done: requiredKeys.length > 0 && requiredDone >= requiredKeys.length,
       progress: requiredDone ? `${requiredDone} of ${ACTIVITY_TARGET} done` : null,
@@ -109,48 +115,61 @@ export async function getDailyPlan() {
 /* ---------------- Streak ---------------- */
 
 async function readStreak() {
-  return (await db.getMeta("streak")) || { count: 0, lastCompleted: null, graceUsed: [] };
+  return (await db.getMeta("streak")) || { count: 0, lastCompleted: null, unit: "day", graceUsed: [] };
 }
 
-/** Recomputes the streak from the completion history, forgiving one gap a week. */
-export async function getStreak() {
+const GRACE_WINDOW = 7; // periods
+
+/**
+ * Recomputes the streak from the completion history, forgiving one gap in
+ * seven. `rhythm` decides what a period is; without one it is read from the
+ * person's own entries.
+ */
+export async function getStreak(rhythm = null) {
+  const r = rhythm || (await currentRhythm(await db.allEntries().catch(() => [])));
   const s = await readStreak();
-  if (!s.lastCompleted) return { count: 0, lastCompleted: null, atRisk: false };
+  const unit = r.unit;
+  if (!s.lastCompleted) return { count: 0, lastCompleted: null, atRisk: false, unit };
 
-  const today = dateKey();
-  const gap = daysBetween(s.lastCompleted, today);
-
-  // Completed today, or yesterday and still in progress: streak stands.
-  if (gap <= 1) return { ...s, atRisk: gap === 1 };
-
-  // A single forgiven gap keeps the streak alive.
-  if (gap === 2 && (s.graceUsed || []).filter((g) => daysBetween(g, today) <= 7).length < GRACE_PER_WEEK) {
-    return { ...s, atRisk: true, graceAvailable: true };
+  // The rhythm changed (by hand or because their use changed). A count of
+  // days does not mean the same thing as a count of weeks, so it starts
+  // again from this period rather than showing a number that is not true.
+  const now = periodKey(new Date(), r);
+  if ((s.unit || "day") !== unit) {
+    return { count: s.lastCompleted === now ? 1 : 0, lastCompleted: s.lastCompleted, atRisk: false, unit };
   }
 
-  return { count: 0, lastCompleted: s.lastCompleted, atRisk: false, broken: true };
+  const gap = periodsBetween(s.lastCompleted, now, r);
+  if (gap <= 1) return { ...s, unit, atRisk: gap === 1 };
+
+  if (gap === 2 && (s.graceUsed || []).filter((g) => periodsBetween(g, now, r) <= GRACE_WINDOW).length < GRACE_PER_WEEK) {
+    return { ...s, unit, atRisk: true, graceAvailable: true };
+  }
+
+  return { count: 0, lastCompleted: s.lastCompleted, atRisk: false, broken: true, unit };
 }
 
-/** Called when every required task for today is finished. Returns the new count. */
-export async function completeToday() {
+/** Called when every required task is finished. Returns the new count. */
+export async function completeToday(rhythm = null) {
+  const r = rhythm || (await currentRhythm(await db.allEntries().catch(() => [])));
   const s = await readStreak();
-  const today = dateKey();
-  if (s.lastCompleted === today) return s.count; // already counted
+  const now = periodKey(new Date(), r);
+  if (s.lastCompleted === now && (s.unit || "day") === r.unit) return s.count; // already counted
 
-  const gap = s.lastCompleted ? daysBetween(s.lastCompleted, today) : null;
+  const sameUnit = (s.unit || "day") === r.unit;
+  const gap = s.lastCompleted && sameUnit ? periodsBetween(s.lastCompleted, now, r) : null;
+  let graceUsed = (s.graceUsed || []).filter((g) => periodsBetween(g, now, r) <= GRACE_WINDOW);
   let count;
-  let graceUsed = (s.graceUsed || []).filter((g) => daysBetween(g, today) <= 7);
 
   if (gap === null) count = 1;
   else if (gap === 1) count = s.count + 1;
   else if (gap === 2 && graceUsed.length < GRACE_PER_WEEK) {
-    // Forgive the single missed day and carry on.
-    graceUsed.push(dateKey(new Date(Date.now() - 86400000)));
+    // Forgive the single missed turn and carry on.
+    graceUsed.push(periodKey(new Date(Date.now() - r.periodDays * 86400000), r));
     count = s.count + 1;
   } else count = 1;
 
-  const next = { count, lastCompleted: today, graceUsed };
-  await db.setMeta("streak", next);
+  await db.setMeta("streak", { count, lastCompleted: now, unit: r.unit, graceUsed });
   return count;
 }
 

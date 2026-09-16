@@ -274,6 +274,103 @@ export function pooledVocabSeries(entries, pool = VOCAB_POOL_SIZE) {
   return out;
 }
 
+/* ---------- Speech graphs, measured fairly ----------
+   Each word is a point and each step from one word to the next is an arrow.
+   Two graph-theory measures from speech-graph research:
+     links back  the share of words in the largest strongly connected
+                 component: words the speech keeps returning to by other
+                 routes, which is how ideas get tied to one another
+     links per word  average total degree: arrows in and out per word
+   Both grow with the amount of text, so a raw value would mostly show how
+   long an entry was. Instead each is taken inside a window of a fixed number
+   of words, slid along the text and averaged, and the text is pooled across
+   recent entries (as for vocabulary variety) because one entry is too short. */
+
+export const GRAPH_WINDOW = 30;
+const GRAPH_STEP = 10;
+
+/** Largest strongly connected component (Tarjan) and degree of one window. */
+function windowGraph(words) {
+  const index = new Map();
+  words.forEach((w) => { if (!index.has(w)) index.set(w, index.size); });
+  const n = index.size;
+  const out = Array.from({ length: n }, () => new Set());
+  let edges = 0;
+  for (let i = 0; i < words.length - 1; i++) {
+    const a = index.get(words[i]);
+    const b = index.get(words[i + 1]);
+    if (a === b || out[a].has(b)) continue;
+    out[a].add(b);
+    edges++;
+  }
+  let counter = 0;
+  let largest = 0;
+  const order = new Array(n).fill(-1);
+  const low = new Array(n).fill(0);
+  const onStack = new Array(n).fill(false);
+  const stack = [];
+  const visit = (v) => {
+    order[v] = low[v] = counter++;
+    stack.push(v);
+    onStack[v] = true;
+    for (const w of out[v]) {
+      if (order[w] === -1) { visit(w); low[v] = Math.min(low[v], low[w]); }
+      else if (onStack[w]) low[v] = Math.min(low[v], order[w]);
+    }
+    if (low[v] === order[v]) {
+      let size = 0;
+      let w;
+      do { w = stack.pop(); onStack[w] = false; size++; } while (w !== v);
+      largest = Math.max(largest, size);
+    }
+  };
+  for (let v = 0; v < n; v++) if (order[v] === -1) visit(v);
+  return { linksBack: n ? largest / n : 0, linksPerWord: n ? (2 * edges) / n : 0 };
+}
+
+/** Both measures for a stretch of speech, or null when it is shorter than one window. */
+export function speechGraphMeasures(tokens, window = GRAPH_WINDOW) {
+  if (!tokens || tokens.length < window) return null;
+  let linksBack = 0;
+  let linksPerWord = 0;
+  let windows = 0;
+  for (let i = 0; i + window <= tokens.length; i += GRAPH_STEP) {
+    const g = windowGraph(tokens.slice(i, i + window));
+    linksBack += g.linksBack;
+    linksPerWord += g.linksPerWord;
+    windows++;
+  }
+  return { linksBack: linksBack / windows, linksPerWord: linksPerWord / windows };
+}
+
+/**
+ * Separate, same-length stretches of the given texts (joined in order), each
+ * with its graph measures and its share of different words. Stretches do not
+ * overlap, so each is its own sample: two groups of them can be compared
+ * fairly, whatever the length of the entries they came from.
+ */
+export function windowSamples(texts, window = GRAPH_WINDOW) {
+  const tokens = texts.flatMap((t) => tokenize(t || ""));
+  const out = [];
+  for (let i = 0; i + window <= tokens.length; i += window) {
+    const words = tokens.slice(i, i + window);
+    out.push({ ...windowGraph(words), variety: new Set(words).size / window });
+  }
+  return out;
+}
+
+/** The two measures over each run of VOCAB_POOL_SIZE consecutive entries. */
+export function pooledGraphSeries(entries, pool = VOCAB_POOL_SIZE) {
+  const withText = entries.filter((e) => e.text).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const out = [];
+  for (let i = pool - 1; i < withText.length; i++) {
+    const tokens = withText.slice(i - pool + 1, i + 1).flatMap((e) => tokenize(e.text));
+    const m = speechGraphMeasures(tokens);
+    if (m) out.push({ date: withText[i].date, ...m });
+  }
+  return out;
+}
+
 /**
  * Compares a recall attempt's text against the original entry's text for that same day.
  *

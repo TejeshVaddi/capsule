@@ -5,8 +5,8 @@
 //  - Notes state what changed, factually, whatever the direction.
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
-import { VOCAB_POOL_SIZE, pooledVocabSeries } from "./analysis.js?v=584f5e5ecb";
-import { comparableRecalls } from "./recall.js?v=584f5e5ecb";
+import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=6fe1a667df";
+import { comparableRecalls } from "./recall.js?v=6fe1a667df";
 
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },
@@ -17,6 +17,9 @@ export const METRIC_DEFS = [
     format: (v) => `${(v * 100).toFixed(0)}%`,
     note: `Measured across your last ${VOCAB_POOL_SIZE} entries together, not one at a time. A single short entry does not contain enough words to judge variety fairly, so this line begins once you have ${VOCAB_POOL_SIZE} entries.` },
   { key: "graphDensity", label: "Word-graph connectedness", researchBacked: true, format: (v) => v.toFixed(3) },
+  { key: "graphLinksBack", label: "Word-graph links back", researchBacked: true, pooled: true,
+    format: (v) => `${(v * 100).toFixed(0)}%`,
+    note: `The share of words your speech comes back to by another route, which is how ideas get tied together. Measured in stretches of the same length across your last ${VOCAB_POOL_SIZE} entries, so a longer entry does not raise it by itself.` },
   { key: "graphRepetition", label: "Word-graph repetition (mean edge weight)", researchBacked: true, format: (v) => v.toFixed(2) },
   { key: "graphHub", label: "Word-graph hub strength (max in-degree)", researchBacked: true, format: (v) => Math.round(v) },
   { key: "disfluencyRate", label: "Hesitations per 100 words", researchBacked: false, format: (v) => v.toFixed(1) },
@@ -26,6 +29,7 @@ export function metricSeriesFromEntries(entries, key) {
   // Vocabulary variety is pooled across entries, because a single one is too
   // short to measure. See pooledVocabSeries for why.
   if (key === "vocabRichness") return pooledVocabSeries(entries);
+  if (key === "graphLinksBack") return pooledGraphSeries(entries).map((p) => ({ date: p.date, value: p.linksBack }));
 
   return entries
     .filter((e) => e.metrics)

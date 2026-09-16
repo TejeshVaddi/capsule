@@ -24,7 +24,8 @@ const fail = (file, msg) => failures.push({ file, msg });
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
-    if (name === ".git" || name === "node_modules" || name === "scripts") continue;
+    // .claude holds local, git-ignored tooling that never ships.
+    if (name === ".git" || name === "node_modules" || name === "scripts" || name === ".claude") continue;
     const full = join(dir, name);
     if (statSync(full).isDirectory()) walk(full, out);
     else out.push(full);
@@ -134,6 +135,9 @@ for (const f of jsFiles) {
     const src = readFileSync(f, "utf8");
     const known = new Set();
     for (const m of src.matchAll(/\b(?:function|class|const|let|var)\s+([A-Za-z0-9_$]+)/g)) known.add(m[1]);
+    for (const m of src.matchAll(/\b(?:const|let|var)\s*\{([^}]+)\}/g)) {
+      for (const part of m[1].split(",")) known.add(part.trim().split(/\s*:\s*/).pop().split("=")[0].trim());
+    }
     for (const m of src.matchAll(/\bimport\s*\{([^}]+)\}/g)) {
       for (const part of m[1].split(",")) known.add(part.trim().split(/\s+as\s+/).pop().trim());
     }

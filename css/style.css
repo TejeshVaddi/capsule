@@ -863,6 +863,25 @@ textarea:focus, input[type="text"]:focus {
 .detail-chip.from-notes { background: transparent; color: var(--blue); box-shadow: inset 0 0 0 2px var(--blue); }
 .detail-key { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .detail-key .detail-chip { padding: 2px 10px; font-size: 0.85rem; }
+/* The monthly note, on Home. Only ever shown after a good month. */
+.month-note h2 { display: flex; align-items: center; gap: 10px; }
+.month-note h2 svg { width: 26px; height: 26px; }
+.month-list { margin: 12px 0; padding-left: 22px; display: grid; gap: 8px; }
+.month-list li { font-weight: 600; }
+
+/* Word bridges: the two ends of the bridge, with the way across between. */
+.bridge-ends { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0; font-size: 1.1rem; }
+.bridge-ends .pill { font-size: 1.05rem; padding: 8px 18px; }
+.bridge-arrow { display: inline-flex; color: var(--purple); }
+.bridge-arrow svg { width: 26px; height: 26px; }
+
+/* Trends: how the day's activities are chosen. */
+.plan-bars { display: grid; gap: 10px; margin: 14px 0 6px; }
+.plan-row { display: grid; grid-template-columns: minmax(8.5em, 12em) 1fr; align-items: center; gap: 12px; }
+.plan-name { font-weight: 700; color: var(--purple); }
+.plan-track { height: 14px; border-radius: 999px; background: rgba(255,255,255,0.55); overflow: hidden; }
+.plan-fill { display: block; height: 100%; border-radius: 999px; background: var(--blue); }
+@media (max-width: 480px) { .plan-row { grid-template-columns: 1fr; gap: 4px; } }
 .compare-full { margin-top: 18px; }
 .compare-full summary { cursor: pointer; font-weight: 700; color: var(--purple); min-height: 44px; display: flex; align-items: center; }
 .compare-full summary::-webkit-details-marker { display: none; }

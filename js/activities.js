@@ -7,12 +7,15 @@
 //   description a prompt to describe something, out loud or typed
 //   photo-story one of your own photos, and the story behind it
 //   music       a song title or era cue, and what it brings back (no audio)
+//   bridge      the steps from one word to another (a path through meaning)
+//   switching   one from each of two categories, turn about
+//   chain       one everyday thing told in order, start to finish
 //
 // The set is seeded by the calendar date so it is stable through the day and
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=584f5e5ecb";
+import { db, newId } from "./data.js?v=6fe1a667df";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -21,10 +24,15 @@ import {
   PHOTO_PROMPTS,
   MUSIC_ERAS,
   OPEN_PROMPTS,
+  BRIDGE_PAIRS,
+  SWITCH_PAIRS,
+  CHAIN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=584f5e5ecb";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=584f5e5ecb";
-import { detectSignals, scoreForSignals } from "./signals.js?v=584f5e5ecb";
+} from "./activities-content.js?v=6fe1a667df";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=6fe1a667df";
+import { detectSignals, scoreForSignals } from "./signals.js?v=6fe1a667df";
+import { buildFocus, weightFor } from "./focus.js?v=6fe1a667df";
+import { currentRhythm } from "./rhythm.js?v=6fe1a667df";
 
 // Nothing the person has done comes back within this many days. An activity
 // with nothing fresh left is not offered until something is.
@@ -51,7 +59,7 @@ async function recentKeys() {
 
 // Today's two required activities come from different families, so a day is
 // never two word games or two questions.
-const FAMILY = { naming: "words", fluency: "words", "word-recall": "memory", description: "talk", "photo-story": "talk", music: "talk" };
+const FAMILY = { naming: "words", fluency: "words", switching: "words", bridge: "words", "word-recall": "memory", description: "talk", "photo-story": "talk", music: "talk", chain: "talk" };
 
 export async function suggestActivities(latestMetrics, recentEntries) {
   const seen = await recentKeys();
@@ -62,8 +70,9 @@ export async function suggestActivities(latestMetrics, recentEntries) {
 
   // What has already been finished today, so it can be shown as done.
   const today = dateKey();
+  const activityLog = await db.allActivityLog().catch(() => []);
   const doneToday = new Set(
-    (await db.allActivityLog().catch(() => []))
+    activityLog
       .filter((r) => dateKey(new Date(r.date)) === today)
       .map((r) => r.detail?.contentKey)
       .filter(Boolean)
@@ -81,6 +90,11 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     if (s.key === "variety" || s.key === "repetition") reasons.add("variety");
     if (s.key === "elaboration") reasons.add("detail");
   }
+
+  // How strongly each kind should come up for this person, from their own
+  // speech, word graphs, memory visits and game scores. See focus.js.
+  const rhythm = await currentRhythm(recentEntries);
+  const focus = buildFocus(recentEntries, activityLog, { rhythm });
 
   /* --- Naming family --- */
 
@@ -127,7 +141,16 @@ export async function suggestActivities(latestMetrics, recentEntries) {
 
   /* --- Description family --- */
 
-  const prompt = pickFresh(DESCRIPTION_PROMPTS, seen, (p) => `desc:${p.prompt}`, seed + 3);
+  // The kind of question (step by step, describe a scene, looking back) that
+  // fits this person best right now, among the ones not asked lately.
+  const freshPrompts = DESCRIPTION_PROMPTS.filter((p) => !seen.includes(`desc:${p.prompt}`));
+  // Ties go round by day, so with nothing to lean on every kind takes turns.
+  const kinds = [...new Set(freshPrompts.map((p) => p.kind))];
+  const turn = daySeed() % Math.max(1, kinds.length);
+  const bestKind = [...kinds.slice(turn), ...kinds.slice(0, turn)]
+    .map((kind) => ({ kind, w: weightFor({ kind: "description", data: { kind } }, focus).weight }))
+    .sort((a, b) => b.w - a.w)[0]?.kind;
+  const prompt = pickFresh(freshPrompts.filter((p) => p.kind === bestKind), seen, (p) => `desc:${p.prompt}`, seed + 3);
   const descTailored = reasons.has("detail") || reasons.has("variety");
   if (prompt) suggestions.push({
     id: "description",
@@ -178,6 +201,51 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     real: true,
   });
 
+  /* --- Word bridges: the way from one word to another --- */
+
+  const bridge = pickFresh(BRIDGE_PAIRS, seen, (b) => `bridge:${b.from}-${b.to}`, seed + 6);
+  if (bridge) suggestions.push({
+    id: "bridge",
+    kind: "bridge",
+    title: `Word bridges: ${bridge.from} to ${bridge.to}`,
+    tag: "Word finding",
+    tailored: false,
+    why: `Get from ${bridge.from} to ${bridge.to}, a step at a time.`,
+    contentKey: `bridge:${bridge.from}-${bridge.to}`,
+    data: bridge,
+    real: true,
+  });
+
+  /* --- Two at a time: crossing between two kinds of thing --- */
+
+  const pair = pickFresh(SWITCH_PAIRS, seen, (p) => `switch:${p.a}|${p.b}`, seed + 7);
+  if (pair) suggestions.push({
+    id: "switching",
+    kind: "switching",
+    title: "Two at a time",
+    tag: "Word finding",
+    tailored: false,
+    why: `Name ${pair.a} and ${pair.b}, turn about, for 1 minute.`,
+    contentKey: `switch:${pair.a}|${pair.b}`,
+    data: pair,
+    real: true,
+  });
+
+  /* --- Start to finish: one thing told in order --- */
+
+  const chain = pickFresh(CHAIN_PROMPTS, seen, (c) => `chain:${c.prompt}`, seed + 8);
+  if (chain) suggestions.push({
+    id: "chain",
+    kind: "chain",
+    title: "Start to finish",
+    tag: "Storytelling",
+    tailored: false,
+    why: `Tell how it goes, in order: ${chain.prompt.toLowerCase()}.`,
+    contentKey: `chain:${chain.prompt}`,
+    data: chain,
+    real: true,
+  });
+
   /* --- An open question, with no right answer --- */
 
   const open = pickFresh(OPEN_PROMPTS, seen, (p) => `open:${p.prompt}`, seed + 5);
@@ -193,18 +261,18 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     real: true,
   });
 
-  // Score every activity against the detected shifts. An activity that
-  // addresses the strongest shift rises to the top and carries the reason it
-  // was chosen, stated as a change in the person's own patterns.
+  // This is what orders the list and picks today's two.
   for (const s of suggestions) {
     s.doneToday = doneToday.has(s.contentKey);
-    if (!ready || !signals.length || !s.real) {
-      s.matchScore = 0;
-      continue;
+    const { weight, area } = weightFor(s, focus);
+    s.matchScore = weight;
+    s.focusArea = area;
+    // A clear shift also carries the reason, stated as a change in the
+    // person's own patterns (kept for the record; the list does not show it).
+    if (ready && signals.length && s.real) {
+      const { score, reason } = scoreForSignals(s.kind, signals);
+      s.pendingReason = score > 0 ? reason : null;
     }
-    const { score, reason } = scoreForSignals(s.kind, signals);
-    s.matchScore = score;
-    s.pendingReason = score > 0 ? reason : null;
   }
 
   // Only the best-matched few are marked as chosen for a reason. Tagging most

@@ -809,8 +809,9 @@ function lookup(index, toks) {
  *   repeats   [label]        items already named this round
  *   rejected  [text]         words that are not in the category
  *   groupOnly true when the answer was only the category name ("bird")
- *   suggestion {key, label}  what a misspelling probably meant, or null.
- *                            Not counted unless the person says yes.
+ *   suggestion {key, label, already}  what a misspelling probably meant, or
+ *                            null. Not counted unless the person says yes;
+ *                            `already` marks one they have named already.
  */
 export function checkFluencyAnswer(category, text, alreadyNamed = new Set()) {
   const out = { added: [], repeats: [], rejected: [], groupOnly: false, suggestion: null };
@@ -882,7 +883,11 @@ export function checkFluencyAnswer(category, text, alreadyNamed = new Set()) {
 
   for (const text of out.rejected) {
     const near = nearestEntry(index, text.replace(/\s+/g, ""));
-    if (near && !seen.has(near.key)) { out.suggestion = near; break; }
+    if (!near) continue;
+    // The nearest answer is one they have already given: say that, rather
+    // than leaving them to wonder what was wrong with the word.
+    out.suggestion = seen.has(near.key) ? { ...near, already: true } : near;
+    break;
   }
   return out;
 }

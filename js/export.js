@@ -10,13 +10,16 @@
 // phone browsers, which is why the old button seemed to do nothing on an
 // iPhone.
 
-import { db } from "./data.js?v=584f5e5ecb";
-import { escapeHtml } from "./ui.js?v=584f5e5ecb";
-import { formatFriendlyDate } from "./recall.js?v=584f5e5ecb";
+import { db } from "./data.js?v=6fe1a667df";
+import { escapeHtml } from "./ui.js?v=6fe1a667df";
+import { formatFriendlyDate } from "./recall.js?v=6fe1a667df";
 
 const ACTIVITY_NAMES = {
   naming: "Naming game",
   fluency: "How many can you name",
+  switching: "Two at a time",
+  bridge: "Word bridges",
+  chain: "Start to finish",
   "word-recall": "Five-word memory game",
   description: "A question or description",
   "photo-story": "Photo story",

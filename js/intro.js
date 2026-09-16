@@ -27,7 +27,7 @@ const EDGES = [
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** Plays the opening. Resolves when finished or skipped. */
-export function playIntro({ streak = 0, atRisk = false } = {}) {
+export function playIntro({ streak = 0, atRisk = false, unit = "day", units = "days" } = {}) {
   return new Promise((resolve) => {
     const el = document.createElement("div");
     el.className = "intro-screen";
@@ -45,7 +45,7 @@ export function playIntro({ streak = 0, atRisk = false } = {}) {
         <p class="intro-word">Capsule</p>
         <div class="intro-streak">
           ${streak > 0
-            ? `<span class="intro-streak-num">${streak}</span><span class="intro-streak-label">day${streak === 1 ? "" : "s"} in a row${atRisk ? ", keep it going today" : ""}</span>`
+            ? `<span class="intro-streak-num">${streak}</span><span class="intro-streak-label">${streak === 1 ? unit : units} in a row${atRisk ? ", keep it going today" : ""}</span>`
             : `<span class="intro-streak-label">Let's begin today</span>`}
         </div>
       </div>`;

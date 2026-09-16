@@ -1,24 +1,25 @@
-import { db, refreshDataMode } from "./data.js?v=584f5e5ecb";
-import { onAuthChange } from "./cloud.js?v=584f5e5ecb";
-import { cloudConfigured } from "./config.js?v=584f5e5ecb";
-import { revokePhotoUrls } from "./ui.js?v=584f5e5ecb";
-import { ICONS, LOGO_SVG } from "./icons.js?v=584f5e5ecb";
-import { renderHomeView } from "./views/home.js?v=584f5e5ecb";
-import { renderJournalView } from "./views/journal.js?v=584f5e5ecb";
-import { playIntro } from "./intro.js?v=584f5e5ecb";
-import { getStreak } from "./daily.js?v=584f5e5ecb";
-import { renderRecallView } from "./views/recall.js?v=584f5e5ecb";
-import { renderActivitiesView } from "./views/activities.js?v=584f5e5ecb";
-import { renderTrendsView } from "./views/trends.js?v=584f5e5ecb";
-import { renderHistoryView } from "./views/history.js?v=584f5e5ecb";
-import { renderAccountView, openDeleteFlow } from "./views/account.js?v=584f5e5ecb";
-import { renderFooter } from "./footer.js?v=584f5e5ecb";
-import { isCloudMode } from "./data.js?v=584f5e5ecb";
-import { destroyCharts } from "./charts.js?v=584f5e5ecb";
-import { shouldShowWalkthrough, startWalkthrough } from "./walkthrough.js?v=584f5e5ecb";
-import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=584f5e5ecb";
-import { openTerms, TERMS_VERSION } from "./terms.js?v=584f5e5ecb";
-import { migrateMetrics } from "./migrate.js?v=584f5e5ecb";
+import { db, refreshDataMode } from "./data.js?v=6fe1a667df";
+import { onAuthChange } from "./cloud.js?v=6fe1a667df";
+import { cloudConfigured } from "./config.js?v=6fe1a667df";
+import { revokePhotoUrls } from "./ui.js?v=6fe1a667df";
+import { ICONS, LOGO_SVG } from "./icons.js?v=6fe1a667df";
+import { renderHomeView } from "./views/home.js?v=6fe1a667df";
+import { renderJournalView } from "./views/journal.js?v=6fe1a667df";
+import { playIntro } from "./intro.js?v=6fe1a667df";
+import { getStreak } from "./daily.js?v=6fe1a667df";
+import { currentRhythm } from "./rhythm.js?v=6fe1a667df";
+import { renderRecallView } from "./views/recall.js?v=6fe1a667df";
+import { renderActivitiesView } from "./views/activities.js?v=6fe1a667df";
+import { renderTrendsView } from "./views/trends.js?v=6fe1a667df";
+import { renderHistoryView } from "./views/history.js?v=6fe1a667df";
+import { renderAccountView, openDeleteFlow } from "./views/account.js?v=6fe1a667df";
+import { renderFooter } from "./footer.js?v=6fe1a667df";
+import { isCloudMode } from "./data.js?v=6fe1a667df";
+import { destroyCharts } from "./charts.js?v=6fe1a667df";
+import { shouldShowWalkthrough, startWalkthrough } from "./walkthrough.js?v=6fe1a667df";
+import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=6fe1a667df";
+import { openTerms, TERMS_VERSION } from "./terms.js?v=6fe1a667df";
+import { migrateMetrics } from "./migrate.js?v=6fe1a667df";
 
 const VIEWS = {
   home: renderHomeView,
@@ -258,8 +259,9 @@ async function boot() {
   if (acknowledged) {
     app.hidden = false;
     // The opening sequence plays before the first paint of the home screen.
-    const streak = await getStreak().catch(() => ({ count: 0 }));
-    await playIntro({ streak: streak.count || 0, atRisk: streak.atRisk });
+    const rhythm = await currentRhythm(await db.allEntries().catch(() => []));
+    const streak = await getStreak(rhythm).catch(() => ({ count: 0 }));
+    await playIntro({ streak: streak.count || 0, atRisk: streak.atRisk, unit: rhythm.unit, units: rhythm.units });
     await navigate("home");
     await maybeRunWalkthrough();
   } else {

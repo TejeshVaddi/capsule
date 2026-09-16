@@ -1,9 +1,11 @@
-import { db } from "../data.js?v=584f5e5ecb";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=584f5e5ecb";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=584f5e5ecb";
-import { celebrateStreak } from "../celebrate.js?v=584f5e5ecb";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=584f5e5ecb";
-import { icon } from "../icons.js?v=584f5e5ecb";
+import { db } from "../data.js?v=6fe1a667df";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=6fe1a667df";
+import { currentRhythm } from "../rhythm.js?v=6fe1a667df";
+import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=6fe1a667df";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=6fe1a667df";
+import { celebrateStreak } from "../celebrate.js?v=6fe1a667df";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=6fe1a667df";
+import { icon } from "../icons.js?v=6fe1a667df";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;
@@ -13,7 +15,8 @@ const MIN_SNIPPETS = 2;
 export async function renderHomeView(root, { navigate }) {
   root.innerHTML = "";
 
-  const [plan, streak] = await Promise.all([getDailyPlan(), getStreak()]);
+  const rhythm = await currentRhythm(await db.allEntries().catch(() => []));
+  const [plan, streak] = await Promise.all([getDailyPlan(), getStreak(rhythm)]);
 
   const panel = el(`
     <div class="stack">
@@ -23,8 +26,8 @@ export async function renderHomeView(root, { navigate }) {
             <span class="home-streak-num">${streak.count}</span>
           </div>
           <div>
-            <p class="home-streak-label">${streak.count === 1 ? "day" : "days"} in a row</p>
-            <p class="muted home-streak-sub">${streakLine(streak, plan)}</p>
+            <p class="home-streak-label">${streak.count === 1 ? rhythm.unit : rhythm.units} in a row</p>
+            <p class="muted home-streak-sub">${streakLine(streak, plan, rhythm)}</p>
           </div>
         </div>
         <div class="home-progress">
@@ -41,6 +44,7 @@ export async function renderHomeView(root, { navigate }) {
         <ol class="today-list" data-slot="tasks"></ol>
       </div>
 
+      <div data-slot="monthly"></div>
       <div data-slot="weekly"></div>
     </div>
   `);
@@ -68,18 +72,50 @@ export async function renderHomeView(root, { navigate }) {
   if (plan.allDone && !(await celebratedToday())) {
     const count = await completeToday();
     await markCelebrated();
-    await celebrateStreak(count);
+    await celebrateStreak(count, rhythm.unit);
     return navigate("home");
   }
 
+  await mountMonthly(panel.querySelector('[data-slot="monthly"]'));
   await mountWeekly(panel.querySelector('[data-slot="weekly"]'), navigate);
 }
 
-function streakLine(streak, plan) {
-  if (plan.allDone) return "Everything is done for today.";
-  if (!streak.count) return "Finish today's list to begin a streak.";
-  if (streak.atRisk) return "Finish today's list to keep it going.";
+function streakLine(streak, plan, rhythm) {
+  const each = rhythm.unit === "week" ? "this week" : "today";
+  if (plan.allDone) return `Everything is done for today.${rhythm.unit === "week" ? " That is this week counted." : ""}`;
+  if (!streak.count) return `Finish today's list to begin a streak of ${rhythm.units}.`;
+  if (streak.atRisk) return `Finish a list ${each} to keep it going.`;
   return "Keep it going with today's list.";
+}
+
+/* ---------------- The monthly note ----------------
+   Only ever appears after a month in which most measures moved the good
+   way. A month that went the other way says nothing at all; see
+   monthly.js for why. */
+
+async function mountMonthly(mount) {
+  const entries = await db.allEntries().catch(() => []);
+  const log = await db.allActivityLog().catch(() => []);
+  const review = await shouldShowMonthly(entries, log);
+  if (!review) return;
+
+  const card = el(`
+    <div class="glass-panel month-note">
+      <h2>${icon("trend")} A good month</h2>
+      <p>Comparing this past month with the month before it, more of what Capsule keeps track of has moved the way you would want.</p>
+      <ul class="month-list">
+        ${review.good.slice(0, 4).map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+      </ul>
+      <p class="muted">This is about your own entries and games, compared only with your own month before. It is not a health result, and Capsule cannot say what caused it.</p>
+      <button class="btn btn-secondary" data-slot="close">Thank you</button>
+    </div>
+  `);
+  mount.appendChild(card);
+  card.querySelector('[data-slot="close"]').addEventListener("click", async () => {
+    await markMonthlyShown();
+    card.remove();
+  });
+  await markMonthlyShown();
 }
 
 /* ---------------- Weekly look back ---------------- */

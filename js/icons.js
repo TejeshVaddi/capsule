@@ -40,6 +40,7 @@ export const ICONS = {
   upload: stroke(`<path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M4 21h16"/>`),
   mail: stroke(`<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>`),
   check: stroke(`<path d="m4 12.5 5.5 5.5L20 6.5"/>`),
+  arrowRight: stroke(`<path d="M4 12h15"/><path d="m13 6 6 6-6 6"/>`),
   sprout: stroke(`<path d="M12 22v-8"/><path d="M12 14c0-4.5-3.5-8-8-8 0 4.5 3.5 8 8 8Z"/><path d="M12 12c0-3.5 2.7-6 6-6 0 3.5-2.7 6-6 6Z"/>`),
   signOut: stroke(`<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>`),
   cloud: stroke(`<path d="M17.5 19a4.5 4.5 0 0 0 .4-9A7 7 0 0 0 4.3 12.5 4 4 0 0 0 6 19.9Z"/>`),

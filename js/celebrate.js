@@ -10,7 +10,7 @@
 const OPEN_DISTANCE = 190;  // pill starts opening
 const DROP_DISTANCE = 96;   // close enough to count as dropped
 
-export function celebrateStreak(streakCount) {
+export function celebrateStreak(streakCount, unit = "day") {
   return new Promise((resolve) => {
     const el = document.createElement("div");
     el.className = "celebrate-screen";
@@ -18,7 +18,7 @@ export function celebrateStreak(streakCount) {
     el.setAttribute("aria-modal", "true");
     el.innerHTML = `
       <div class="celebrate-inner">
-        <p class="celebrate-title"><span class="celebrate-num">${streakCount}</span> day streak of Capsule!</p>
+        <p class="celebrate-title"><span class="celebrate-num">${streakCount}</span> ${unit} streak of Capsule!</p>
         <p class="celebrate-hint" data-slot="hint">Drag the circle into the capsule.</p>
 
         <div class="celebrate-stage" data-slot="stage">

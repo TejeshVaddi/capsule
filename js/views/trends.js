@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=584f5e5ecb";
-import { icon } from "../icons.js?v=584f5e5ecb";
+import { db } from "../data.js?v=6fe1a667df";
+import { icon } from "../icons.js?v=6fe1a667df";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -7,8 +7,10 @@ import {
   renderTrendChart,
   destroyCharts,
   generateTrendNotes,
-} from "../charts.js?v=584f5e5ecb";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=584f5e5ecb";
+} from "../charts.js?v=6fe1a667df";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=6fe1a667df";
+import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES } from "../focus.js?v=6fe1a667df";
+import { currentRhythm } from "../rhythm.js?v=6fe1a667df";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -43,10 +45,12 @@ export async function renderTrendsView(root) {
         </p>
         <div data-slot="notes"></div>
       </div>
+      <div data-slot="plan"></div>
       <div class="grid grid-2" data-slot="charts"></div>
     </div>
   `);
   root.appendChild(panel);
+  panel.querySelector('[data-slot="plan"]').appendChild(planCard(all, await db.allActivityLog().catch(() => []), await currentRhythm(all)));
 
   const notesWrap = panel.querySelector('[data-slot="notes"]');
   if (notes.length) {
@@ -94,4 +98,45 @@ export async function renderTrendsView(root) {
     chartsWrap.appendChild(card);
     renderTrendChart(card.querySelector("canvas"), recallSeries, "Recall detail", "#4483B0");
   }
+}
+
+/**
+ * How the day's activities are being chosen for this person, in plain words
+ * and one bar per kind of activity. Everything comes from their own entries,
+ * visits and games (see focus.js), and none of it is presented as a finding.
+ */
+function planCard(entries, activityLog, rhythm) {
+  const focus = buildFocus(entries, activityLog, { rhythm });
+  // Photo stories need a photo; without one they are never offered.
+  const hasPhoto = entries.some((e) => e.type === "journal" && e.photoIds?.length);
+  const slots = Object.keys(SLOT_NAMES).filter((slot) => slot !== "photo-story" || hasPhoto);
+  const sample = (slot) => ["procedural", "scene", "reminiscence", "open"].includes(slot)
+    ? { kind: "description", data: { kind: slot } }
+    : { kind: slot, data: {} };
+  const rows = slots.map((slot) => ({ slot, weight: weightFor(sample(slot), focus, { steady: true }).weight }))
+    .sort((a, b) => b.weight - a.weight);
+  const most = Math.max(...rows.map((r) => r.weight));
+
+  const areas = focus.top.slice(0, 2).map((k) => FOCUS_AREAS[k].label.toLowerCase());
+  const lead = !focus.ready
+    ? "Capsule is still getting to know you. Until it has more to go on, every kind of activity gets an equal turn."
+    : areas.length
+      ? `Right now Capsule gives a little more room to activities for ${areas.join(" and ")}. It keeps a mix of everything, and it changes as you go.`
+      : "Nothing stands out right now, so every kind of activity gets a fair turn, and ones you have not done lately come up first.";
+  const easy = [...focus.easy].map((k) => SLOT_NAMES[k]).filter(Boolean);
+
+  return el(`
+    <div class="glass-panel">
+      <h2>How your activities are chosen</h2>
+      <p>${escapeHtml(lead)}</p>
+      ${easy.length ? `<p class="muted">${escapeHtml(easy.join(" and "))} ${easy.length === 1 ? "has" : "have"} been going very well lately, so ${easy.length === 1 ? "it comes" : "they come"} up a little less.</p>` : ""}
+      <div class="plan-bars" role="list">
+        ${rows.map((r) => `
+          <div class="plan-row" role="listitem">
+            <span class="plan-name">${escapeHtml(SLOT_NAMES[r.slot])}</span>
+            <span class="plan-track" aria-hidden="true"><span class="plan-fill" style="width:${Math.round((r.weight / most) * 100)}%"></span></span>
+          </div>`).join("")}
+      </div>
+      <p class="muted chart-note">A longer bar means that kind comes up more often. This is worked out only from your own entries, memory visits and games, compared with your own earlier weeks.</p>
+    </div>`);
 }
