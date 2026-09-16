@@ -4,9 +4,9 @@
 // Meta (disclaimer acknowledgment, mode choice) always stays local, it's
 // about this device, not the account.
 
-import { db as localDb, newId } from "./db.js?v=bad5e1f123";
-import { cloudDb, getSession } from "./cloud.js?v=bad5e1f123";
-import { cloudConfigured } from "./config.js?v=bad5e1f123";
+import { db as localDb, newId } from "./db.js?v=4ac42d002e";
+import { cloudDb, getSession } from "./cloud.js?v=4ac42d002e";
+import { cloudConfigured } from "./config.js?v=4ac42d002e";
 
 export { newId };
 

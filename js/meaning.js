@@ -212,10 +212,12 @@ export const CHART_GUIDES = {
     note: "Some pronouns are normal in any sentence. It is a rise over weeks that says names are being replaced.",
   },
   adverbRate: {
-    what: "How much of your speech is describing words for how something was done: quickly, quietly, often.",
-    how: "Out of every hundred content words, this is how many are adverbs.",
+    what: "How much of your speech is adverbs: the words for how, when or how much something happened, like slowly, often, really and quite.",
+    how: "Out of every hundred content words in an entry, this is how many are adverbs.",
     better: null,
-    note: "Neither direction is better. It is here because a change in it is worth seeing, not because one end is good.",
+    betterText: "Neither end is better by itself. Some adverbs make a day vivid: we walked slowly, she rang twice, the hall was nearly full. A lot of them can mean words like really and quite are filling the place where a name or a detail would have gone.",
+    readWith: "naming words",
+    note: "The pairing is what tells you something. Adverbs rising while naming words fall usually means more of a day is being described by how it felt and less by what was actually in it.",
   },
   vocabRichness: {
     what: "How many different words you draw on, rather than the same few.",
@@ -227,7 +229,9 @@ export const CHART_GUIDES = {
     what: "How tightly the words of one entry link to one another. Each word is a point, and each step from one word to the next is a line between two points.",
     how: "The lines that exist, divided by all the lines that could exist between those words.",
     better: null,
-    note: "This one falls as an entry gets longer, because a longer entry has far more possible pairs. Read it beside entry length rather than on its own.",
+    betterText: "Neither end is better by itself, because this line moves with the length of an entry as much as with anything else.",
+    readWith: "entry length",
+    note: "A longer entry has far more possible pairs of words, so this falls as entries get longer. A drop here while entry length rises is the line doing what it always does, not a change in you.",
   },
   graphLinksBack: {
     what: "How much your words come back round to one another, which is what ties the parts of a day together instead of listing them.",
@@ -245,7 +249,9 @@ export const CHART_GUIDES = {
     what: "How much one word acts as a hub that everything else runs through.",
     how: "The number of different words that lead into the busiest word of the entry.",
     better: null,
-    note: "The hub is usually a small word like the or and, so no direction is simply better. A sharp change is what to look at.",
+    betterText: "Neither end is better by itself. Every piece of speech has a busiest word, and it is almost always a small one like the or and.",
+    readWith: "word-graph repetition",
+    note: "What is worth seeing is a sharp move. A hub growing while repetition rises means more of an entry is circling through the same few words.",
   },
   disfluencyRate: {
     what: "How often ums, uhs and words said twice in a row turn up.",
@@ -272,7 +278,11 @@ export function chartDirection(key, relChange) {
   const up = relChange > 0;
   const moved = steady ? "holding about steady" : up ? "going up" : "going down";
   if (steady) return `Right now: ${moved}.`;
-  if (!guide.better) return `Right now: ${moved}. Neither direction is better for this line.`;
+  if (!guide.better) {
+    return guide.readWith
+      ? `Right now: ${moved}. On its own that is neither good nor bad, so read it beside ${guide.readWith}.`
+      : `Right now: ${moved}, which is neither good nor bad on this line.`;
+  }
   const good = (up && guide.better === "higher") || (!up && guide.better === "lower");
   return good
     ? `Right now: ${moved}, which is the better direction for this line.`

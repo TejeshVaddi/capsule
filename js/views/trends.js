@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=bad5e1f123";
-import { icon } from "../icons.js?v=bad5e1f123";
+import { db } from "../data.js?v=4ac42d002e";
+import { icon } from "../icons.js?v=4ac42d002e";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -8,11 +8,11 @@ import {
   destroyCharts,
   generateTrendNotes,
   seriesTrend,
-} from "../charts.js?v=bad5e1f123";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=bad5e1f123";
-import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=bad5e1f123";
-import { currentRhythm } from "../rhythm.js?v=bad5e1f123";
-import { closingLine, TONE_WORDS, CHART_GUIDES, chartDirection } from "../meaning.js?v=bad5e1f123";
+} from "../charts.js?v=4ac42d002e";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=4ac42d002e";
+import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=4ac42d002e";
+import { currentRhythm } from "../rhythm.js?v=4ac42d002e";
+import { closingLine, TONE_WORDS, CHART_GUIDES, chartDirection } from "../meaning.js?v=4ac42d002e";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -136,9 +136,10 @@ function chartExplainer(key, series, minPoints = 4) {
   const guide = CHART_GUIDES[key];
   if (!guide) return "";
   const now = chartDirection(key, seriesTrend(series, minPoints));
-  const better = guide.better === "higher" ? "Higher is the better direction on this line."
-    : guide.better === "lower" ? "Lower is the better direction on this line."
-    : "Neither higher nor lower is better on this line.";
+  const better = guide.betterText
+    || (guide.better === "higher" ? "Higher is the better direction on this line."
+      : guide.better === "lower" ? "Lower is the better direction on this line."
+      : "Neither higher nor lower is better on this line.");
   return `
     <details class="explain">
       <summary>What this chart means</summary>
