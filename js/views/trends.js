@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=6fe1a667df";
-import { icon } from "../icons.js?v=6fe1a667df";
+import { db } from "../data.js?v=9bbaea5e28";
+import { icon } from "../icons.js?v=9bbaea5e28";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -7,10 +7,11 @@ import {
   renderTrendChart,
   destroyCharts,
   generateTrendNotes,
-} from "../charts.js?v=6fe1a667df";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=6fe1a667df";
-import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES } from "../focus.js?v=6fe1a667df";
-import { currentRhythm } from "../rhythm.js?v=6fe1a667df";
+} from "../charts.js?v=9bbaea5e28";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=9bbaea5e28";
+import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=9bbaea5e28";
+import { currentRhythm } from "../rhythm.js?v=9bbaea5e28";
+import { closingLine, TONE_WORDS } from "../meaning.js?v=9bbaea5e28";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -54,11 +55,22 @@ export async function renderTrendsView(root) {
 
   const notesWrap = panel.querySelector('[data-slot="notes"]');
   if (notes.length) {
+    // Each change says what it means for your entries, and a change that
+    // makes looking back harder says what Capsule does about it.
+    const counts = { hard: notes.filter((n) => n.tone === "hard").length, good: notes.filter((n) => n.tone === "good").length };
+    const closing = closingLine(counts);
     notesWrap.innerHTML = `
       <h3 class="space-below-sm">What's changed</h3>
       <div class="stack stack-tight">
-        ${notes.map((n) => `<div class="trend-note">${escapeHtml(n)}</div>`).join("")}
+        ${notes.map((n) => `
+          <div class="trend-note trend-${escapeHtml(n.tone || "steady")}">
+            <span class="trend-verdict">${escapeHtml(TONE_WORDS[n.tone] || TONE_WORDS.steady)}</span>
+            <p class="trend-what">${escapeHtml(n.text)}</p>
+            ${n.means ? `<p class="trend-means">${escapeHtml(n.means)}</p>` : ""}
+            ${n.work ? `<p class="trend-work">${escapeHtml(n.work)}</p>` : ""}
+          </div>`).join("")}
       </div>
+      ${closing ? `<p class="muted space-above-sm">${escapeHtml(closing)}</p>` : ""}
     `;
   } else {
     notesWrap.innerHTML = `<p class="muted">Not enough entries yet for a change summary. It appears after a handful of entries spread over time.</p>`;
@@ -117,18 +129,31 @@ function planCard(entries, activityLog, rhythm) {
     .sort((a, b) => b.weight - a.weight);
   const most = Math.max(...rows.map((r) => r.weight));
 
-  const areas = focus.top.slice(0, 2).map((k) => FOCUS_AREAS[k].label.toLowerCase());
+  const areas = focus.top.slice(0, 2);
   const lead = !focus.ready
     ? "Capsule is still getting to know you. Until it has more to go on, every kind of activity gets an equal turn."
     : areas.length
-      ? `Right now Capsule gives a little more room to activities for ${areas.join(" and ")}. It keeps a mix of everything, and it changes as you go.`
+      ? `Right now Capsule gives a little more room to activities for ${areas.map((k) => FOCUS_AREAS[k].label.toLowerCase()).join(" and ")}. It keeps a mix of everything, and it changes as you go.`
       : "Nothing stands out right now, so every kind of activity gets a fair turn, and ones you have not done lately come up first.";
   const easy = [...focus.easy].map((k) => SLOT_NAMES[k]).filter(Boolean);
+
+  // Where each lean came from, in the person's own terms, so the choosing
+  // can be checked rather than taken on trust.
+  const why = areas.map((key) => {
+    const sources = focus.evidence
+      .filter((e) => e.area === key)
+      .map((e) => EVIDENCE_WORDS[e.source] || e.source)
+      .filter((x, i, all) => all.indexOf(x) === i)
+      .slice(0, 2);
+    if (!sources.length) return null;
+    return `<li><strong>${escapeHtml(FOCUS_AREAS[key].label)}:</strong> noticed in ${escapeHtml(sources.join(", and in "))}. These activities are practice at ${escapeHtml(FOCUS_AREAS[key].helps)}.</li>`;
+  }).filter(Boolean);
 
   return el(`
     <div class="glass-panel">
       <h2>How your activities are chosen</h2>
       <p>${escapeHtml(lead)}</p>
+      ${why.length ? `<ul class="plan-why">${why.join("")}</ul>` : ""}
       ${easy.length ? `<p class="muted">${escapeHtml(easy.join(" and "))} ${easy.length === 1 ? "has" : "have"} been going very well lately, so ${easy.length === 1 ? "it comes" : "they come"} up a little less.</p>` : ""}
       <div class="plan-bars" role="list">
         ${rows.map((r) => `

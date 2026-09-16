@@ -1,11 +1,11 @@
-import { db } from "../data.js?v=6fe1a667df";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=6fe1a667df";
-import { currentRhythm } from "../rhythm.js?v=6fe1a667df";
-import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=6fe1a667df";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=6fe1a667df";
-import { celebrateStreak } from "../celebrate.js?v=6fe1a667df";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=6fe1a667df";
-import { icon } from "../icons.js?v=6fe1a667df";
+import { db } from "../data.js?v=9bbaea5e28";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=9bbaea5e28";
+import { currentRhythm } from "../rhythm.js?v=9bbaea5e28";
+import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=9bbaea5e28";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=9bbaea5e28";
+import { celebrateStreak } from "../celebrate.js?v=9bbaea5e28";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=9bbaea5e28";
+import { icon } from "../icons.js?v=9bbaea5e28";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;
@@ -104,7 +104,7 @@ async function mountMonthly(mount) {
       <h2>${icon("trend")} A good month</h2>
       <p>Comparing this past month with the month before it, more of what Capsule keeps track of has moved the way you would want.</p>
       <ul class="month-list">
-        ${review.good.slice(0, 4).map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+        ${review.good.slice(0, 4).map((line) => `<li>${escapeHtml(line.text)}${line.means ? `<span class="month-means">${escapeHtml(line.means)}</span>` : ""}</li>`).join("")}
       </ul>
       <p class="muted">This is about your own entries and games, compared only with your own month before. It is not a health result, and Capsule cannot say what caused it.</p>
       <button class="btn btn-secondary" data-slot="close">Thank you</button>
@@ -189,6 +189,8 @@ async function buildWeeklyCard(mount, s) {
             <div class="week-move week-move-${m.direction}">
               <strong>${escapeHtml(m.label)}</strong>
               <span>${escapeHtml(m.text)}</span>
+              ${m.means ? `<span class="week-means">${escapeHtml(m.means)}</span>` : ""}
+              ${m.work ? `<span class="week-work">${escapeHtml(m.work)}</span>` : ""}
             </div>`).join("")}
         </div>
         <p class="muted week-footnote">Compared with the week before.</p>

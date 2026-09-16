@@ -1,4 +1,4 @@
-import { ICONS } from "./icons.js?v=6fe1a667df";
+import { ICONS } from "./icons.js?v=9bbaea5e28";
 
 export function toast(message, ms = 3200) {
   const root = document.getElementById("toast-root");

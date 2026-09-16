@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=6fe1a667df";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=6fe1a667df";
-import { analyzeText } from "../analysis.js?v=6fe1a667df";
-import { SpeechInput, speechSupported } from "../speech.js?v=6fe1a667df";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=6fe1a667df";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=6fe1a667df";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=6fe1a667df";
-import { getDailyPlan } from "../daily.js?v=6fe1a667df";
-import { nextStepBlock } from "../next-step.js?v=6fe1a667df";
-import { icon, ICONS } from "../icons.js?v=6fe1a667df";
+import { db, newId } from "../data.js?v=9bbaea5e28";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=9bbaea5e28";
+import { analyzeText } from "../analysis.js?v=9bbaea5e28";
+import { SpeechInput, speechSupported } from "../speech.js?v=9bbaea5e28";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=9bbaea5e28";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=9bbaea5e28";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=9bbaea5e28";
+import { getDailyPlan } from "../daily.js?v=9bbaea5e28";
+import { nextStepBlock } from "../next-step.js?v=9bbaea5e28";
+import { icon, ICONS } from "../icons.js?v=9bbaea5e28";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -108,6 +108,7 @@ function requiredCard(s, number, isNext, onStart) {
         <strong class="lead">${escapeHtml(s.title)}</strong>
       </div>
       <span class="muted">${escapeHtml(s.why)}</span>
+      ${helpsLine(s)}
       ${s.doneToday
         ? `<span class="today-progress">Done</span>`
         : `<button class="btn card-action ${isNext ? "btn-primary" : "btn-secondary"}">Start</button>`}
@@ -117,11 +118,26 @@ function requiredCard(s, number, isNext, onStart) {
   return card;
 }
 
+/**
+ * What this activity is practice at, on the card itself. When it is
+ * something the person has found harder lately, that is said too, softly
+ * and without any claim about why.
+ */
+function helpsLine(s) {
+  if (!s.helpsWith) return "";
+  return `
+    <p class="activity-helps">
+      <span class="helps-label">Helps with:</span> ${escapeHtml(s.helpsWith)}.
+      ${s.isWeakSpot ? `<span class="helps-focus">This has been a harder one for you lately, so it comes up more often.</span>` : ""}
+    </p>`;
+}
+
 function extraCard(s, onStart) {
   const card = el(`
     <div class="glass-card activity-card${s.doneToday ? " activity-done" : ""}">
       <strong class="lead">${escapeHtml(s.title)}</strong>
       <span class="muted">${escapeHtml(s.why)}</span>
+      ${helpsLine(s)}
       <button class="btn btn-secondary card-action">${s.doneToday ? "Do it again" : "Start"}</button>
     </div>`);
   card.querySelector("button").addEventListener("click", onStart);

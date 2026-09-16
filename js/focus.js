@@ -20,12 +20,12 @@
 // become too easy comes up less, and a kind not tried for a while gets a
 // turn. With no history yet, every kind gets an equal turn.
 
-import { windowSamples } from "./analysis.js?v=6fe1a667df";
-import { topicsPer100Words } from "./summary.js?v=6fe1a667df";
-import { comparableRecalls } from "./recall.js?v=6fe1a667df";
-import { dateKey } from "./daily.js?v=6fe1a667df";
-import { RHYTHMS } from "./rhythm.js?v=6fe1a667df";
-import { DESCRIPTION_PROMPTS } from "./activities-content.js?v=6fe1a667df";
+import { windowSamples } from "./analysis.js?v=9bbaea5e28";
+import { topicsPer100Words } from "./summary.js?v=9bbaea5e28";
+import { comparableRecalls } from "./recall.js?v=9bbaea5e28";
+import { dateKey } from "./daily.js?v=9bbaea5e28";
+import { RHYTHMS } from "./rhythm.js?v=9bbaea5e28";
+import { DESCRIPTION_PROMPTS } from "./activities-content.js?v=9bbaea5e28";
 
 /**
  * The areas an activity can give more practice in, and how well each kind
@@ -35,34 +35,77 @@ export const FOCUS_AREAS = {
   // Reaching a particular word: the points of the graph.
   naming: {
     label: "Finding the names of things",
+    helps: "reaching for the names of people, places and things",
     fits: { naming: 1, fluency: 0.5, bridge: 0.5 },
   },
   // How many different words get used, and how often the same ones come
   // back: the spread of the graph, and its repeated steps.
   variety: {
     label: "Using a wide range of words",
+    helps: "reaching for a wider range of words, instead of the same few",
     fits: { fluency: 1, switching: 0.8, scene: 0.5, open: 0.4, naming: 0.3 },
   },
   // Ideas tied to one another rather than listed: the graph's links back.
   linking: {
     label: "Linking one idea to the next",
+    helps: "tying one idea to the next, so a day holds together as a story",
     fits: { chain: 1, procedural: 1, scene: 0.8, "photo-story": 0.7, open: 0.6, reminiscence: 0.5, music: 0.4 },
   },
   // Crossing from one patch of meaning to another, and the distance
   // between two ideas: switching, and the path across the graph.
   crossing: {
     label: "Moving between different subjects",
+    helps: "moving from one subject to another and back again",
     fits: { switching: 1, bridge: 0.9, fluency: 0.3, procedural: 0.3 },
   },
   detail: {
     label: "Saying more about each thing",
+    helps: "saying more about each thing, so more of a day is kept",
     fits: { reminiscence: 0.9, "photo-story": 0.9, music: 0.8, open: 0.7, scene: 0.6, chain: 0.6, procedural: 0.5 },
   },
   memory: {
     label: "Holding on to new things",
+    helps: "holding on to something new for a few minutes, then bringing it back",
     fits: { "word-recall": 1, "photo-story": 0.6, music: 0.3, reminiscence: 0.3 },
   },
 };
+
+// Where a lean came from, in words a person would use. Shown so nobody has
+// to take Capsule's word for what it noticed.
+export const EVIDENCE_WORDS = {
+  "naming words": "how often your entries name people, places and things",
+  "general words": "how often your entries use words like it and they",
+  "entry length": "how much your entries hold",
+  "word graph: repeated steps": "how often the same words come round again",
+  "word graph: links back": "how much your words tie back to one another",
+  "word graph: links per word": "how much your words lead into one another",
+  "variety of words": "the range of words in your entries",
+  "moving between subjects": "how much your entries move from one thing to another",
+  "memory visits": "how much of a day comes back in your memory visits",
+  "naming scores": "your scores in the naming game",
+  "fluency scores": "your scores in how many can you name",
+  "switching scores": "your scores in two at a time",
+  "bridge scores": "your word bridges",
+  "chain scores": "your start to finish answers",
+  "word-recall scores": "your scores in the five-word memory game",
+  "description scores": "how much you say in answer to a question",
+  "photo-story scores": "how much you say about a photo",
+  "music scores": "how much you say about a song",
+};
+
+/** The area an activity gives the most practice in, whatever the person needs. */
+export function mainAreaOf(slot) {
+  let best = null;
+  let bestFit = 0;
+  for (const [key, area] of Object.entries(FOCUS_AREAS)) {
+    const fit = area.fits[slot] || 0;
+    if (fit > bestFit) { bestFit = fit; best = key; }
+  }
+  return best;
+}
+
+// A need at or above this is worth telling the person about by name.
+export const NOTABLE_NEED = 0.3;
 
 // Which slot of the plan an activity fills. Questions are split by what they
 // ask for: a step-by-step question is a different workout from a memory.

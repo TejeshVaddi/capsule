@@ -5,8 +5,9 @@
 //  - Notes state what changed, factually, whatever the direction.
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
-import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=6fe1a667df";
-import { comparableRecalls } from "./recall.js?v=6fe1a667df";
+import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=9bbaea5e28";
+import { comparableRecalls } from "./recall.js?v=9bbaea5e28";
+import { explain } from "./meaning.js?v=9bbaea5e28";
 
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },
@@ -180,6 +181,18 @@ export function generateTrendNotes(journalEntries, recallEntries) {
       steady: `The variety of words in your entries has stayed steady.`,
     },
     {
+      key: "graphLinksBack",
+      shorter: `Your words have been tying back to one another less than they used to.`,
+      longer: `Your words have been tying back to one another more than they used to.`,
+      steady: null,
+    },
+    {
+      key: "graphRepetition",
+      shorter: `You have been coming back to the same words less often within an entry.`,
+      longer: `You have been coming back to the same words more often within an entry.`,
+      steady: null,
+    },
+    {
       key: "disfluencyRate",
       shorter: `You've been pausing and repeating words less often than before.`,
       longer: `You've been pausing ("um", "uh") and repeating words more often than before.`,
@@ -187,24 +200,32 @@ export function generateTrendNotes(journalEntries, recallEntries) {
     },
   ];
 
+  // Each note carries what the change means for the entries themselves, and
+  // for a change that makes looking back harder, what Capsule does about it.
+  // See meaning.js.
+  const note = (key, text, direction) => {
+    if (!text) return;
+    notes.push({ key, text, direction, ...(explain(key, direction) || { tone: "steady", means: null, work: null }) });
+  };
+
   for (const obs of observations) {
     const series = metricSeriesFromEntries(journalEntries, obs.key);
     const cmp = halfComparison(series);
     if (!cmp) continue;
-    if (cmp.relChange <= -CHANGE_THRESHOLD && obs.shorter) notes.push(obs.shorter);
-    else if (cmp.relChange >= CHANGE_THRESHOLD && obs.longer) notes.push(obs.longer);
-    else if (obs.steady) notes.push(obs.steady);
+    if (cmp.relChange <= -CHANGE_THRESHOLD) note(obs.key, obs.shorter, "down");
+    else if (cmp.relChange >= CHANGE_THRESHOLD) note(obs.key, obs.longer, "up");
+    else note(obs.key, obs.steady, "steady");
   }
 
   const recallSeries = recallDetailSeries(recallEntries);
   const recallCmp = halfComparison(recallSeries, 3);
   if (recallCmp) {
     if (recallCmp.relChange <= -CHANGE_THRESHOLD) {
-      notes.push("Your recall descriptions have been including less detail than your earlier ones.");
+      note("recallDetail", "Your memory visits have been bringing back less detail than your earlier ones.", "down");
     } else if (recallCmp.relChange >= CHANGE_THRESHOLD) {
-      notes.push("Your recall descriptions have been including more detail than your earlier ones.");
+      note("recallDetail", "Your memory visits have been bringing back more detail than your earlier ones.", "up");
     } else {
-      notes.push("The detail in your recall descriptions has stayed steady.");
+      note("recallDetail", "The detail in your memory visits has stayed steady.", "steady");
     }
   }
 

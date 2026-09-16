@@ -12,10 +12,11 @@
 // Trends page still shows every measure in both directions, whatever the
 // note says, so nothing is hidden from anyone who looks.
 
-import { db } from "./data.js?v=6fe1a667df";
-import { windowSamples } from "./analysis.js?v=6fe1a667df";
-import { comparableRecalls } from "./recall.js?v=6fe1a667df";
-import { dateKey } from "./daily.js?v=6fe1a667df";
+import { db } from "./data.js?v=9bbaea5e28";
+import { windowSamples } from "./analysis.js?v=9bbaea5e28";
+import { comparableRecalls } from "./recall.js?v=9bbaea5e28";
+import { dateKey } from "./daily.js?v=9bbaea5e28";
+import { explain } from "./meaning.js?v=9bbaea5e28";
 
 export const MONTHLY_META = "monthlyShownFor";
 
@@ -26,6 +27,8 @@ const MONTH = 30 * DAY;
 const MIN_ENTRIES = 3;
 // How much a measure has to move before it counts as having moved at all.
 const MIN_CHANGE = 0.05;
+
+const DOWN_IS_GOOD = new Set(["pronounRate", "graphRepetition", "disfluencyRate"]);
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
 const nums = (a) => a.filter((v) => typeof v === "number" && !Number.isNaN(v));
@@ -66,33 +69,38 @@ export function monthlyReview(entries, activityLog = [], now = new Date()) {
   }
 
   const results = [];
-  const add = (direction, sentence) => { if (direction) results.push({ direction, sentence }); };
+  // Each one carries what it means, so a good month says why it is good.
+  const add = (direction, sentence, key = null) => {
+    if (!direction) return;
+    const meaning = key && direction === "up" ? explain(key, DOWN_IS_GOOD.has(key) ? "down" : "up") : null;
+    results.push({ direction, sentence, means: meaning?.means || null });
+  };
   const metric = (list, f) => list.map((e) => f(e.metrics));
 
   add(moved(metric(thisMonth, (m) => m.wordCount), metric(lastMonth, (m) => m.wordCount)),
-    "Your entries have been longer than the month before.");
+    "Your entries have been longer than the month before.", "wordCount");
   add(moved(metric(thisMonth, (m) => m.nounRate), metric(lastMonth, (m) => m.nounRate)),
-    "You have been naming things more often than the month before.");
+    "You have been naming things more often than the month before.", "nounRate");
   add(moved(metric(thisMonth, (m) => m.pronounRate), metric(lastMonth, (m) => m.pronounRate), "down"),
-    "You have leaned on words like it and they less than the month before.");
+    "You have leaned on words like it and they less than the month before.", "pronounRate");
   add(moved(metric(thisMonth, (m) => m.graph?.meanEdgeWeight), metric(lastMonth, (m) => m.graph?.meanEdgeWeight), "down"),
-    "You have come back to the same words less often than the month before.");
+    "You have come back to the same words less often than the month before.", "graphRepetition");
 
   // The word graph and the range of words, in same-length stretches of text.
   const nowText = windowSamples(thisMonth.map((e) => e.text));
   const beforeText = windowSamples(lastMonth.map((e) => e.text));
   add(moved(nowText.map((w) => w.linksBack), beforeText.map((w) => w.linksBack)),
-    "Your words have tied back to one another more than the month before.");
+    "Your words have tied back to one another more than the month before.", "graphLinksBack");
   add(moved(nowText.map((w) => w.linksPerWord), beforeText.map((w) => w.linksPerWord)),
     "Your words have led into one another more than the month before.");
   add(moved(nowText.map((w) => w.variety), beforeText.map((w) => w.variety)),
-    "You have used a wider range of words than the month before.");
+    "You have used a wider range of words than the month before.", "vocabRichness");
 
   // Memory visits, comparing only visits that had the same amount of help.
   const visits = comparableRecalls(entries.filter((e) => e.type === "recall" && e.recallComparison));
   add(moved(inWindow(visits, MONTH, 0).map((e) => e.recallComparison.overlapRatio),
             inWindow(visits, 2 * MONTH, MONTH).map((e) => e.recallComparison.overlapRatio)),
-    "More of each day has come back in your memory visits.");
+    "More of each day has come back in your memory visits.", "recallDetail");
 
   // The games, each against the same game a month earlier.
   const games = [
@@ -108,7 +116,7 @@ export function monthlyReview(entries, activityLog = [], now = new Date()) {
     const of = (from, to) => inWindow(activityLog.filter((r) => r.kind === kind), from, to).map((r) => score(r.detail || {}));
     const a = of(MONTH, 0);
     const b = of(2 * MONTH, MONTH);
-    if (nums(a).length >= 2 && nums(b).length >= 2) add(moved(a, b), sentence);
+    if (nums(a).length >= 2 && nums(b).length >= 2) add(moved(a, b), sentence, kind);
   }
 
   const up = results.filter((r) => r.direction === "up");
@@ -118,7 +126,7 @@ export function monthlyReview(entries, activityLog = [], now = new Date()) {
     ready: results.length >= 3,
     // Clearly more went the good way than the other, and at least a few did.
     positive: results.length >= 3 && up.length >= 3 && up.length > down.length + 1,
-    good: up.map((r) => r.sentence),
+    good: up.map((r) => ({ text: r.sentence, means: r.means })),
     moved: { up: up.length, down: down.length, steady: steady.length },
   };
 }

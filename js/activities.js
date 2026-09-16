@@ -15,7 +15,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=6fe1a667df";
+import { db, newId } from "./data.js?v=9bbaea5e28";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -28,11 +28,11 @@ import {
   SWITCH_PAIRS,
   CHAIN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=6fe1a667df";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=6fe1a667df";
-import { detectSignals, scoreForSignals } from "./signals.js?v=6fe1a667df";
-import { buildFocus, weightFor } from "./focus.js?v=6fe1a667df";
-import { currentRhythm } from "./rhythm.js?v=6fe1a667df";
+} from "./activities-content.js?v=9bbaea5e28";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=9bbaea5e28";
+import { detectSignals, scoreForSignals } from "./signals.js?v=9bbaea5e28";
+import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=9bbaea5e28";
+import { currentRhythm } from "./rhythm.js?v=9bbaea5e28";
 
 // Nothing the person has done comes back within this many days. An activity
 // with nothing fresh left is not offered until something is.
@@ -267,6 +267,13 @@ export async function suggestActivities(latestMetrics, recentEntries) {
     const { weight, area } = weightFor(s, focus);
     s.matchScore = weight;
     s.focusArea = area;
+    // What this activity is practice at, said plainly on its card, and
+    // whether that is one of the things this person has found harder
+    // lately. Both are shown so nothing about the choosing is hidden.
+    const main = mainAreaOf(slotOf(s));
+    s.helpsWith = main ? FOCUS_AREAS[main].helps : null;
+    s.helpsLabel = main ? FOCUS_AREAS[main].label : null;
+    s.isWeakSpot = Boolean(main && (focus.areas[main] || 0) >= NOTABLE_NEED);
     // A clear shift also carries the reason, stated as a change in the
     // person's own patterns (kept for the record; the list does not show it).
     if (ready && signals.length && s.real) {

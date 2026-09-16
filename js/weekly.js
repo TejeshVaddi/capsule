@@ -4,8 +4,9 @@
 // visits, plus snippets and photos), and how their metrics moved compared with
 // the week before. Movement is reported in whichever direction it went.
 
-import { db } from "./data.js?v=6fe1a667df";
-import { dateKey } from "./daily.js?v=6fe1a667df";
+import { db } from "./data.js?v=9bbaea5e28";
+import { dateKey } from "./daily.js?v=9bbaea5e28";
+import { explain } from "./meaning.js?v=9bbaea5e28";
 
 export function startOfWeek(d = new Date()) {
   const c = new Date(d);
@@ -40,23 +41,26 @@ export async function buildWeeklySummary(weekStart = startOfWeek()) {
 
   const metric = (list, f) => mean(list.filter((e) => e.metrics).map((e) => f(e.metrics)));
 
-  const compare = (label, now, before, higherWord, lowerWord) => {
+  // Each movement carries what it means, and for a change that makes
+  // looking back harder, what Capsule does about it. See meaning.js.
+  const compare = (key, label, now, before, higherWord, lowerWord) => {
     if (now === null) return null;
-    if (before === null) return { label, text: "This is your first week of this to compare against.", direction: "new" };
+    if (before === null) return { key, label, text: "This is your first week of this to compare against.", direction: "new" };
     const change = (now - before) / Math.max(Math.abs(before), 0.0001);
-    if (Math.abs(change) < 0.12) return { label, text: "About the same as last week.", direction: "steady" };
-    return { label, text: change > 0 ? higherWord : lowerWord, direction: change > 0 ? "up" : "down" };
+    const direction = Math.abs(change) < 0.12 ? "steady" : change > 0 ? "up" : "down";
+    const text = direction === "steady" ? "About the same as last week." : change > 0 ? higherWord : lowerWord;
+    return { key, label, text, direction, ...(explain(key, direction) || { tone: "steady", means: null, work: null }) };
   };
 
   const movements = [
-    compare("Entry length",
+    compare("wordCount", "Entry length",
       metric(journals, (m) => m.wordCount), metric(prevJournals, (m) => m.wordCount),
       "Longer than last week.", "Shorter than last week."),
-    compare("Naming words",
+    compare("nounRate", "Naming words",
       metric(journals, (m) => m.nounRate), metric(prevJournals, (m) => m.nounRate),
       "A larger share of specific naming words than last week.",
       "A smaller share of specific naming words than last week."),
-    compare("Hesitations",
+    compare("disfluencyRate", "Hesitations",
       metric(journals, (m) => m.disfluencyRate), metric(prevJournals, (m) => m.disfluencyRate),
       "More pauses and repeats than last week.", "Fewer pauses and repeats than last week."),
   ].filter(Boolean);
