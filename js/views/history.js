@@ -1,9 +1,9 @@
-import { db, isCloudMode } from "../data.js?v=3193749e7d";
-import { icon } from "../icons.js?v=3193749e7d";
-import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=3193749e7d";
-import { formatFriendlyDate } from "../recall.js?v=3193749e7d";
-import { escapeHtml, el, photoUrl, guideHtml } from "../ui.js?v=3193749e7d";
-import { buildExport } from "../export.js?v=3193749e7d";
+import { db, isCloudMode } from "../data.js?v=2fb457af22";
+import { icon } from "../icons.js?v=2fb457af22";
+import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=2fb457af22";
+import { formatFriendlyDate } from "../recall.js?v=2fb457af22";
+import { escapeHtml, el, photoUrl, guideHtml } from "../ui.js?v=2fb457af22";
+import { buildExport } from "../export.js?v=2fb457af22";
 
 export async function renderHistoryView(root) {
   root.innerHTML = "";

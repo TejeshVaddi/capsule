@@ -173,6 +173,21 @@ const MEANINGS = {
  * `direction` is the measure's own direction, not whether it is good news;
  * the table knows which way is which. Null when there is nothing to say.
  */
+/**
+ * Which focus area a measure belongs to, so a note only says Capsule will
+ * bring more of something when the plan is actually leaning that way. A
+ * promise the activities do not keep is worse than no promise. See focus.js.
+ */
+export const WORK_AREA = {
+  wordCount: "detail",
+  nounRate: "naming",
+  pronounRate: "naming",
+  vocabRichness: "variety",
+  graphLinksBack: "linking",
+  graphRepetition: "variety",
+  recallDetail: "memory",
+};
+
 export function explain(key, direction) {
   const entry = MEANINGS[key]?.[direction];
   if (!entry || (!entry.means && !entry.what)) return null;

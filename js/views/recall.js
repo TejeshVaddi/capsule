@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=3193749e7d";
-import { icon } from "../icons.js?v=3193749e7d";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=3193749e7d";
-import { SpeechInput, speechSupported } from "../speech.js?v=3193749e7d";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails, recalledInEntry, isDayEntry } from "../recall.js?v=3193749e7d";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=3193749e7d";
-import { nextStepBlock } from "../next-step.js?v=3193749e7d";
+import { db, newId } from "../data.js?v=2fb457af22";
+import { icon } from "../icons.js?v=2fb457af22";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=2fb457af22";
+import { SpeechInput, speechSupported } from "../speech.js?v=2fb457af22";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails, recalledInEntry, isDayEntry } from "../recall.js?v=2fb457af22";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=2fb457af22";
+import { nextStepBlock } from "../next-step.js?v=2fb457af22";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";
@@ -167,7 +167,7 @@ async function showComparison(container, original, recallEntry, navigate) {
           ${segment(onlyThen.length, "is-then")}${segment(shared.length, "is-shared")}${segment(onlyNow.length, "is-now")}
         </div>` : ""}
       ${group("Shared details", shared, "is-shared", "None of the same details came up this time.")}
-      ${shared.some((d) => d.fromNotes) ? `<p class="muted detail-key"><span class="detail-chip is-shared from-notes" aria-hidden="true">outlined</span> were in the notes you read.</p>` : ""}
+      ${shared.some((d) => d.fromNotes) ? `<p class="muted detail-key"><span class="detail-chip is-shared from-notes" aria-hidden="true">outlined</span> Details with an outline were in the notes you read.</p>` : ""}
       ${group("Only mentioned then", onlyThen, "is-then", "You mentioned everything from that day.")}
       ${group("Only mentioned now", onlyNow, "is-now", "Nothing new this time.")}
       <h4 class="recalled-title">That day, with what you brought back in blue</h4>

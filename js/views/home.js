@@ -1,11 +1,13 @@
-import { db } from "../data.js?v=3193749e7d";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=3193749e7d";
-import { currentRhythm } from "../rhythm.js?v=3193749e7d";
-import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=3193749e7d";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=3193749e7d";
-import { celebrateStreak } from "../celebrate.js?v=3193749e7d";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=3193749e7d";
-import { icon } from "../icons.js?v=3193749e7d";
+import { db } from "../data.js?v=2fb457af22";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=2fb457af22";
+import { currentRhythm } from "../rhythm.js?v=2fb457af22";
+import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=2fb457af22";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=2fb457af22";
+import { celebrateStreak } from "../celebrate.js?v=2fb457af22";
+import { buildFocus } from "../focus.js?v=2fb457af22";
+import { WORK_AREA } from "../meaning.js?v=2fb457af22";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=2fb457af22";
+import { icon } from "../icons.js?v=2fb457af22";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;
@@ -129,6 +131,13 @@ async function mountWeekly(mount, navigate) {
   const s = await buildWeeklySummary(prevWeek);
   if (!s.journalCount && !s.activityCount) return;
 
+  // What Capsule says it will bring more of has to be what the activities
+  // actually lean towards, so the promise is checked against the same focus
+  // the Trends plan is built from. See focus.js.
+  const entries = await db.allEntries().catch(() => []);
+  const focus = buildFocus(entries, await db.allActivityLog().catch(() => []), { rhythm: await currentRhythm(entries) });
+  const leaningOn = new Set(focus.top.slice(0, 2));
+
   // Shown in full once per week, on the first visit after the week closes.
   // After that it collapses to a line they can reopen, so it stays reachable
   // without becoming permanent furniture on the home screen.
@@ -196,7 +205,7 @@ async function buildWeeklyCard(mount, s) {
                     ${m.whatIs ? `<p><span class="explain-tag">What it is</span>${escapeHtml(m.whatIs)}</p>` : ""}
                     ${m.means ? `<p><span class="explain-tag">What the change means</span>${escapeHtml(m.means)}</p>` : ""}
                     ${m.helps ? `<p><span class="explain-tag">Why it is worth it</span>${escapeHtml(m.helps)}</p>` : ""}
-                    ${m.work ? `<p class="trend-work">${escapeHtml(m.work)}</p>` : ""}
+                    ${m.work && leaningOn.has(WORK_AREA[m.key]) ? `<p class="trend-work">${escapeHtml(m.work)}</p>` : ""}
                   </div>
                 </details>` : ""}
             </div>`).join("")}

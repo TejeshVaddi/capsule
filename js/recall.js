@@ -1,11 +1,11 @@
-import { db } from "./data.js?v=3193749e7d";
-import { MUSIC_ERAS } from "./activities-content.js?v=3193749e7d";
-import { summarizeDay, bulletCountFor } from "./summary.js?v=3193749e7d";
+import { db } from "./data.js?v=2fb457af22";
+import { MUSIC_ERAS } from "./activities-content.js?v=2fb457af22";
+import { summarizeDay, bulletCountFor } from "./summary.js?v=2fb457af22";
 import {
   KIN, PLACE_WORDS, VAGUE, LEAD_IN, MOMENT_BREAK, TIME_WORDS, DANGLING, SOFTENERS, SIDE_CLAUSE,
   OPENERS, NEGATIVE, PIECE_BREAK, toSecondPerson, tidy, asNote, termsOf, subjectIfAlone,
   lastPersonIn, bare, stem, rarityAmong, weightOf,
-} from "./text.js?v=3193749e7d";
+} from "./text.js?v=2fb457af22";
 
 
 const MIN_AGE_DAYS = 2; // an entry must be at least this old before it can be resurfaced

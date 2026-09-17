@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=3193749e7d";
-import { icon } from "../icons.js?v=3193749e7d";
+import { db } from "../data.js?v=2fb457af22";
+import { icon } from "../icons.js?v=2fb457af22";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -8,11 +8,11 @@ import {
   destroyCharts,
   generateTrendNotes,
   seriesTrend,
-} from "../charts.js?v=3193749e7d";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=3193749e7d";
-import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=3193749e7d";
-import { currentRhythm } from "../rhythm.js?v=3193749e7d";
-import { closingLine, TONE_WORDS, CHART_GUIDES, chartDirection } from "../meaning.js?v=3193749e7d";
+} from "../charts.js?v=2fb457af22";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=2fb457af22";
+import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=2fb457af22";
+import { currentRhythm } from "../rhythm.js?v=2fb457af22";
+import { closingLine, TONE_WORDS, CHART_GUIDES, chartDirection, WORK_AREA } from "../meaning.js?v=2fb457af22";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 
@@ -52,7 +52,11 @@ export async function renderTrendsView(root) {
     </div>
   `);
   root.appendChild(panel);
-  panel.querySelector('[data-slot="plan"]').appendChild(planCard(all, await db.allActivityLog().catch(() => []), await currentRhythm(all)));
+  // One focus, used for both the plan and the notes, so what a note says
+  // Capsule will do is what the plan below it actually does.
+  const focus = buildFocus(all, await db.allActivityLog().catch(() => []), { rhythm: await currentRhythm(all) });
+  panel.querySelector('[data-slot="plan"]').appendChild(planCard(focus, all));
+  const leaningOn = new Set(focus.top.slice(0, 2));
 
   const notesWrap = panel.querySelector('[data-slot="notes"]');
   if (notes.length) {
@@ -74,7 +78,7 @@ export async function renderTrendsView(root) {
                   ${n.whatIs ? `<p><span class="explain-tag">What it is</span>${escapeHtml(n.whatIs)}</p>` : ""}
                   ${n.means ? `<p><span class="explain-tag">What the change means</span>${escapeHtml(n.means)}</p>` : ""}
                   ${n.helps ? `<p><span class="explain-tag">Why it is worth it</span>${escapeHtml(n.helps)}</p>` : ""}
-                  ${n.work ? `<p class="trend-work">${escapeHtml(n.work)}</p>` : ""}
+                  ${n.work && leaningOn.has(WORK_AREA[n.key]) ? `<p class="trend-work">${escapeHtml(n.work)}</p>` : ""}
                 </div>
               </details>` : ""}
           </div>`).join("")}
@@ -153,8 +157,7 @@ function chartExplainer(key, series, minPoints = 4) {
     </details>`;
 }
 
-function planCard(entries, activityLog, rhythm) {
-  const focus = buildFocus(entries, activityLog, { rhythm });
+function planCard(focus, entries) {
   // Photo stories need a photo; without one they are never offered.
   const hasPhoto = entries.some((e) => e.type === "journal" && e.photoIds?.length);
   const slots = Object.keys(SLOT_NAMES).filter((slot) => slot !== "photo-story" || hasPhoto);
