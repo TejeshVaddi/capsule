@@ -1,13 +1,49 @@
-import { db } from "./data.js?v=2c10b0dede";
-import { summarizeDay, bulletCountFor } from "./summary.js?v=2c10b0dede";
+import { db } from "./data.js?v=3193749e7d";
+import { MUSIC_ERAS } from "./activities-content.js?v=3193749e7d";
+import { summarizeDay, bulletCountFor } from "./summary.js?v=3193749e7d";
 import {
   KIN, PLACE_WORDS, VAGUE, LEAD_IN, MOMENT_BREAK, TIME_WORDS, DANGLING, SOFTENERS, SIDE_CLAUSE,
   OPENERS, NEGATIVE, PIECE_BREAK, toSecondPerson, tidy, asNote, termsOf, subjectIfAlone,
   lastPersonIn, bare, stem, rarityAmong, weightOf,
-} from "./text.js?v=2c10b0dede";
+} from "./text.js?v=3193749e7d";
 
 
 const MIN_AGE_DAYS = 2; // an entry must be at least this old before it can be resurfaced
+
+/**
+ * Whether an entry is an account of a day, rather than an answer saved from
+ * an activity.
+ *
+ * A memory visit asks "what do you remember about this day?". Pointing that
+ * at "Billie Jean: we danced to it at the church hall" asks something else
+ * entirely, and one that cannot really be answered: it was never a day, it
+ * was a song, a film or a meal described on request. Those entries still
+ * belong in the journal and in the export; they are simply not days to
+ * revisit.
+ *
+ * Entries written before this was marked are recognised by their shape: an
+ * activity answer opens with one of Capsule's own music cues followed by a
+ * colon, and nothing else does.
+ */
+export function isDayEntry(entry) {
+  if (!entry || entry.type !== "journal") return false;
+  if (entry.source && entry.source !== "day") return false;
+  return !looksLikeMusicAnswer(entry.text);
+}
+
+let musicCues = null;
+function looksLikeMusicAnswer(text) {
+  const head = String(text || "").split(":")[0].trim();
+  if (!head || head.length > 60) return false;
+  if (!musicCues) {
+    musicCues = new Set();
+    for (const era of MUSIC_ERAS) {
+      for (const song of era.songs || []) musicCues.add(`${song.title} by ${song.artist}`.toLowerCase());
+      for (const scene of era.scenes || []) musicCues.add(scene.toLowerCase());
+    }
+  }
+  return musicCues.has(head.toLowerCase());
+}
 
 /**
  * Chooses an old journal entry to resurface for recall. Prefers the entry
@@ -15,7 +51,7 @@ const MIN_AGE_DAYS = 2; // an entry must be at least this old before it can be r
  */
 export async function pickEntryForRecall() {
   const all = await db.allEntries();
-  const journals = all.filter((e) => e.type === "journal");
+  const journals = all.filter(isDayEntry);
   const recalls = all.filter((e) => e.type === "recall");
 
   const now = Date.now();

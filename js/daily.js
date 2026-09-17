@@ -15,8 +15,9 @@
 // days for a weekly user would show a broken streak forever, which is the
 // opposite of what a streak is for. See rhythm.js.
 
-import { db } from "./data.js?v=2c10b0dede";
-import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=2c10b0dede";
+import { db } from "./data.js?v=3193749e7d";
+import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=3193749e7d";
+import { isDayEntry } from "./recall.js?v=3193749e7d";
 
 export const GRACE_PER_WEEK = 1;
 
@@ -61,9 +62,10 @@ export async function getDailyPlan() {
   );
   const todaysActivities = log.filter((r) => dateKey(new Date(r.date)) === today);
 
-  // Recall needs something at least 3 days old to point at.
+  // Recall needs a day at least 3 days old to point at. An answer saved
+  // from an activity is not a day; recall.js decides which is which.
   const recallCandidates = entries.filter(
-    (e) => e.type === "journal" && daysBetween(dateKey(new Date(e.date)), today) >= 3
+    (e) => isDayEntry(e) && daysBetween(dateKey(new Date(e.date)), today) >= 3
   );
   const recallAvailable = recallCandidates.length > 0;
 

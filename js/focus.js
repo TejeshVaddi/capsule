@@ -20,12 +20,12 @@
 // become too easy comes up less, and a kind not tried for a while gets a
 // turn. With no history yet, every kind gets an equal turn.
 
-import { windowSamples } from "./analysis.js?v=2c10b0dede";
-import { topicsPer100Words } from "./summary.js?v=2c10b0dede";
-import { comparableRecalls } from "./recall.js?v=2c10b0dede";
-import { dateKey } from "./daily.js?v=2c10b0dede";
-import { RHYTHMS } from "./rhythm.js?v=2c10b0dede";
-import { DESCRIPTION_PROMPTS } from "./activities-content.js?v=2c10b0dede";
+import { windowSamples } from "./analysis.js?v=3193749e7d";
+import { topicsPer100Words } from "./summary.js?v=3193749e7d";
+import { comparableRecalls } from "./recall.js?v=3193749e7d";
+import { dateKey } from "./daily.js?v=3193749e7d";
+import { RHYTHMS } from "./rhythm.js?v=3193749e7d";
+import { DESCRIPTION_PROMPTS } from "./activities-content.js?v=3193749e7d";
 
 /**
  * The areas an activity can give more practice in, and how well each kind

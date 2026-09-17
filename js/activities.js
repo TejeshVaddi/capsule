@@ -15,7 +15,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=2c10b0dede";
+import { db, newId } from "./data.js?v=3193749e7d";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -28,11 +28,12 @@ import {
   SWITCH_PAIRS,
   CHAIN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=2c10b0dede";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=2c10b0dede";
-import { detectSignals, scoreForSignals } from "./signals.js?v=2c10b0dede";
-import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=2c10b0dede";
-import { currentRhythm } from "./rhythm.js?v=2c10b0dede";
+} from "./activities-content.js?v=3193749e7d";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=3193749e7d";
+import { detectSignals, scoreForSignals } from "./signals.js?v=3193749e7d";
+import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=3193749e7d";
+import { currentRhythm } from "./rhythm.js?v=3193749e7d";
+import { isDayEntry } from "./recall.js?v=3193749e7d";
 
 // Nothing the person has done comes back within this many days. An activity
 // with nothing fresh left is not offered until something is.
@@ -358,7 +359,7 @@ async function requiredForToday(suggestions, today) {
 async function findEntryWithPhoto(entries, seen = []) {
   const used = new Set(seen);
   const candidates = [...entries]
-    .filter((e) => e.type === "journal" && !used.has(`photo:${e.id}`))
+    .filter((e) => isDayEntry(e) && !used.has(`photo:${e.id}`))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   for (const entry of candidates.slice(0, 40)) {
     try {

@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=2c10b0dede";
-import { icon } from "../icons.js?v=2c10b0dede";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=2c10b0dede";
-import { SpeechInput, speechSupported } from "../speech.js?v=2c10b0dede";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails, recalledInEntry } from "../recall.js?v=2c10b0dede";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=2c10b0dede";
-import { nextStepBlock } from "../next-step.js?v=2c10b0dede";
+import { db, newId } from "../data.js?v=3193749e7d";
+import { icon } from "../icons.js?v=3193749e7d";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=3193749e7d";
+import { SpeechInput, speechSupported } from "../speech.js?v=3193749e7d";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails, recalledInEntry, isDayEntry } from "../recall.js?v=3193749e7d";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=3193749e7d";
+import { nextStepBlock } from "../next-step.js?v=3193749e7d";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";
@@ -32,7 +32,7 @@ export async function renderRecallView(root, { navigate }) {
   const everything = await db.allEntries();
   const level = hintLevelFor(everything);
   // The person's other days, so the notes pick what was unusual about this one.
-  const otherDays = everything.filter((e) => e.type === "journal" && e.id !== target.id).map((e) => e.text);
+  const otherDays = everything.filter((e) => isDayEntry(e) && e.id !== target.id).map((e) => e.text);
   const { glimpses, hidden } = recallHints(target.text, level, otherDays);
   const notes = glimpses.length === 1 ? "the note" : `the ${glimpses.length} notes`;
   const guide = !glimpses.length

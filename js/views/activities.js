@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=2c10b0dede";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=2c10b0dede";
-import { analyzeText } from "../analysis.js?v=2c10b0dede";
-import { SpeechInput, speechSupported } from "../speech.js?v=2c10b0dede";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=2c10b0dede";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=2c10b0dede";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=2c10b0dede";
-import { getDailyPlan } from "../daily.js?v=2c10b0dede";
-import { nextStepBlock } from "../next-step.js?v=2c10b0dede";
-import { icon, ICONS } from "../icons.js?v=2c10b0dede";
+import { db, newId } from "../data.js?v=3193749e7d";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=3193749e7d";
+import { analyzeText } from "../analysis.js?v=3193749e7d";
+import { SpeechInput, speechSupported } from "../speech.js?v=3193749e7d";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=3193749e7d";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=3193749e7d";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=3193749e7d";
+import { getDailyPlan } from "../daily.js?v=3193749e7d";
+import { nextStepBlock } from "../next-step.js?v=3193749e7d";
+import { icon, ICONS } from "../icons.js?v=3193749e7d";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -1048,6 +1048,10 @@ function musicMomentsActivity(stage, suggestion, ctx) {
             text: `${chosenCue}: ${text}`,
             metrics: m,
             photoIds: [],
+            // Kept out of memory visits: this is an answer about a song, not
+            // an account of the day. See the day-entry rule in recall.js.
+            source: "activity",
+            activityKind: "music",
           });
           btn.innerHTML = `${icon("check")} Added to your journal`;
         } catch (err) {
