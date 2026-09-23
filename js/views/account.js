@@ -1,13 +1,13 @@
-import { cloudConfigured } from "../config.js?v=2fb457af22";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=2fb457af22";
-import { refreshDataMode, localEntryCount, db } from "../data.js?v=2fb457af22";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=2fb457af22";
-import { icon } from "../icons.js?v=2fb457af22";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=2fb457af22";
-import { startWalkthrough } from "../walkthrough.js?v=2fb457af22";
-import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=2fb457af22";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=2fb457af22";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=2fb457af22";
+import { cloudConfigured } from "../config.js?v=27669d1445";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=27669d1445";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=27669d1445";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=27669d1445";
+import { icon } from "../icons.js?v=27669d1445";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=27669d1445";
+import { startWalkthrough } from "../walkthrough.js?v=27669d1445";
+import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=27669d1445";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=27669d1445";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=27669d1445";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -160,12 +160,12 @@ function appendTourCard(root, navigate) {
   const card = el(`
     <div class="glass-card space-above">
       <h3>Show me around again</h3>
-      <p class="muted">A short tour of what each part of Capsule does.</p>
+      <p class="muted">A reminder of what Capsule is for and what a visit involves.</p>
       <button class="btn btn-secondary" data-slot="tour">Start the tour</button>
     </div>
   `);
   card.querySelector('[data-slot="tour"]').addEventListener("click", () => {
-    startWalkthrough({ navigate });
+    startWalkthrough();
   });
   root.appendChild(card);
 }
@@ -374,7 +374,7 @@ function renderSignIn(root, navigate) {
   const panel = el(`
     <div class="glass-panel narrow-panel">
       <h2>Sign in to Capsule</h2>
-      ${guideHtml("You do not have to sign in. If you want to, type your email address, tick the box, and tap Email me a code. Then type the 6 numbers from the email.")}
+      ${guideHtml("You do not have to sign in. If you want to, type your email address, tick the box, and tap Email me a code. Then type the numbers from the email.")}
 
       <div data-step="email">
         <label class="field-label" for="signin-email">Your email address</label>
@@ -392,9 +392,12 @@ function renderSignIn(root, navigate) {
       </div>
 
       <div data-step="code" hidden>
-        <p class="sub-label">We emailed a 6-digit code to <span data-slot="sent-to"></span>.</p>
+        <p class="sub-label">We emailed a code to <span data-slot="sent-to"></span>.</p>
         <label class="field-label" for="signin-code">Enter the code</label>
-        <input id="signin-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" data-slot="code"
+        <!-- Supabase's code length is a project setting (6 to 10). The box
+             takes the longest it can send: a box too short to hold the code
+             makes signing in impossible, with nothing on screen to say why. -->
+        <input id="signin-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" data-slot="code"
                placeholder="123456" />
         <button class="btn btn-primary btn-large space-above" data-slot="verify">${icon("check")} Sign in</button>
         <button class="btn btn-secondary btn-large space-above-sm" data-slot="back">Use a different email</button>
@@ -467,7 +470,7 @@ function renderSignIn(root, navigate) {
     const token = codeInput.value.trim();
     const btn = e.currentTarget;
     if (token.length < 6) {
-      noteAbove(btn, "Please type the 6-digit code from your email.");
+      noteAbove(btn, "Please type the code from your email.");
       return;
     }
     clearNoteAbove(btn);

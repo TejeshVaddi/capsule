@@ -66,8 +66,26 @@ Views never branch on this. They import `db` from `js/data.js`, which routes to 
 1. Create a free project at [supabase.com](https://supabase.com).
 2. **SQL Editor → New query** → paste all of `supabase-schema.sql` → Run. This creates the tables, turns on row-level security, and creates the private `photos` bucket.
 3. **Project Settings → API** → copy the *Project URL* and the *anon public* key into `js/config.js`.
-4. **Authentication → Providers → Email**: make sure Email is enabled. To get 6-digit codes rather than magic links, set the "Magic Link" email template body to include `{{ .Token }}`.
-5. Reload. The Account tab now offers sign-in.
+4. **Authentication → Providers → Email**: make sure Email is enabled.
+5. **Authentication → Emails**: set **both** templates below to send the 6-digit code. This is not optional, and missing the second one is the usual mistake: Supabase sends **Confirm signup** to a brand-new address and **Magic Link** to one that has signed in before, so leaving *Confirm signup* on its default means every new person gets a link to click while every returning person gets a code, and the app asks both of them for 6 numbers.
+
+   Set the body of **Confirm signup** *and* **Magic Link** to:
+
+   ```html
+   <h2>Your Capsule sign-in code</h2>
+   <p>Type these 6 numbers into Capsule:</p>
+   <p style="font-size:28px;font-weight:700;letter-spacing:4px">{{ .Token }}</p>
+   <p>The code lasts one hour. If you did not ask for it, you can ignore this email.</p>
+   ```
+
+   Leave `{{ .ConfirmationURL }}` out entirely. A template holding both sends a code and a link in the same email, and the person will click the link.
+
+   Set each template's **subject** to something like `Your Capsule sign-in code`. The default subject still says "link" and is the first thing the person reads.
+
+   Then check **Authentication → Providers → Email → Email OTP Length**. Supabase allows 6 to 10 and the project may not be on 6. Six is the right length here: it is the shortest offered, it matches `autocomplete="one-time-code"` on phones, and it is the least to hold in your head while moving between two apps.
+6. Reload. The Account tab now offers sign-in.
+
+Test it with an address that has **never** signed in, not just one that has. The two paths use different templates, so a working sign-in proves nothing about sign-up.
 
 The anon key is meant to be public, it grants no data access on its own. Every row is gated by the RLS policies in the schema, which restrict reads and writes to `auth.uid() = user_id`. Photos are in a **private** bucket with policies keyed to a per-user folder, so one user cannot enumerate or fetch another's images.
 

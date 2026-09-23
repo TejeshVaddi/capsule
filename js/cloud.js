@@ -2,7 +2,7 @@
 // can route to either implementation. All rows are protected server-side
 // by row-level security (each user reads/writes only their own data).
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY, cloudConfigured } from "./config.js?v=2fb457af22";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, cloudConfigured } from "./config.js?v=27669d1445";
 
 let client = null;
 
@@ -33,7 +33,7 @@ export async function currentUser() {
 }
 
 /**
- * Emails the person a 6-digit sign-in code (also creates the account on
+ * Emails the person a numeric sign-in code (also creates the account on
  * first use). `metadata` records which privacy policy version they accepted,
  * stored on the auth user so the record survives on the server, not just
  * on the device they signed up from.
