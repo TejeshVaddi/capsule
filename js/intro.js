@@ -26,8 +26,12 @@ const EDGES = [
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Plays the opening. Resolves when finished or skipped. */
-export function playIntro({ streak = 0, atRisk = false, unit = "day", units = "days" } = {}) {
+/**
+ * Plays the opening. Resolves when finished or skipped.
+ * `welcome` is the very first run: the mark assembles under a greeting
+ * instead of a streak, because there is no streak yet to show.
+ */
+export function playIntro({ streak = 0, atRisk = false, unit = "day", units = "days", welcome = false } = {}) {
   return new Promise((resolve) => {
     const el = document.createElement("div");
     el.className = "intro-screen";
@@ -42,8 +46,8 @@ export function playIntro({ streak = 0, atRisk = false, unit = "day", units = "d
             ${NODES.map((n, i) => `<circle class="intro-node" style="--i:${i}" cx="${n.x}" cy="${n.y}" r="${n.r}"/>`).join("")}
           </g>
         </svg>
-        <p class="intro-word">Capsule</p>
-        <div class="intro-streak">
+        <p class="intro-word${welcome ? " intro-word-long" : ""}">${welcome ? "Welcome to Capsule" : "Capsule"}</p>
+        <div class="intro-streak"${welcome ? " hidden" : ""}>
           ${streak > 0
             ? `<span class="intro-streak-num">${streak}</span><span class="intro-streak-label">${streak === 1 ? unit : units} in a row${atRisk ? ", keep it going today" : ""}</span>`
             : `<span class="intro-streak-label">Let's begin today</span>`}

@@ -1,25 +1,25 @@
-import { db, refreshDataMode } from "./data.js?v=2fb457af22";
-import { onAuthChange } from "./cloud.js?v=2fb457af22";
-import { cloudConfigured } from "./config.js?v=2fb457af22";
-import { revokePhotoUrls } from "./ui.js?v=2fb457af22";
-import { ICONS, LOGO_SVG } from "./icons.js?v=2fb457af22";
-import { renderHomeView } from "./views/home.js?v=2fb457af22";
-import { renderJournalView } from "./views/journal.js?v=2fb457af22";
-import { playIntro } from "./intro.js?v=2fb457af22";
-import { getStreak } from "./daily.js?v=2fb457af22";
-import { currentRhythm } from "./rhythm.js?v=2fb457af22";
-import { renderRecallView } from "./views/recall.js?v=2fb457af22";
-import { renderActivitiesView } from "./views/activities.js?v=2fb457af22";
-import { renderTrendsView } from "./views/trends.js?v=2fb457af22";
-import { renderHistoryView } from "./views/history.js?v=2fb457af22";
-import { renderAccountView, openDeleteFlow } from "./views/account.js?v=2fb457af22";
-import { renderFooter } from "./footer.js?v=2fb457af22";
-import { isCloudMode } from "./data.js?v=2fb457af22";
-import { destroyCharts } from "./charts.js?v=2fb457af22";
-import { shouldShowWalkthrough, startWalkthrough } from "./walkthrough.js?v=2fb457af22";
-import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=2fb457af22";
-import { openTerms, TERMS_VERSION } from "./terms.js?v=2fb457af22";
-import { migrateMetrics } from "./migrate.js?v=2fb457af22";
+import { db, refreshDataMode } from "./data.js?v=27669d1445";
+import { onAuthChange } from "./cloud.js?v=27669d1445";
+import { cloudConfigured } from "./config.js?v=27669d1445";
+import { revokePhotoUrls } from "./ui.js?v=27669d1445";
+import { ICONS, LOGO_SVG } from "./icons.js?v=27669d1445";
+import { renderHomeView } from "./views/home.js?v=27669d1445";
+import { renderJournalView } from "./views/journal.js?v=27669d1445";
+import { playIntro } from "./intro.js?v=27669d1445";
+import { getStreak } from "./daily.js?v=27669d1445";
+import { currentRhythm } from "./rhythm.js?v=27669d1445";
+import { renderRecallView } from "./views/recall.js?v=27669d1445";
+import { renderActivitiesView } from "./views/activities.js?v=27669d1445";
+import { renderTrendsView } from "./views/trends.js?v=27669d1445";
+import { renderHistoryView } from "./views/history.js?v=27669d1445";
+import { renderAccountView, openDeleteFlow } from "./views/account.js?v=27669d1445";
+import { renderFooter } from "./footer.js?v=27669d1445";
+import { isCloudMode } from "./data.js?v=27669d1445";
+import { destroyCharts } from "./charts.js?v=27669d1445";
+import { shouldShowWalkthrough, startWalkthrough, startGuidedSession } from "./walkthrough.js?v=27669d1445";
+import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=27669d1445";
+import { openTerms, TERMS_VERSION } from "./terms.js?v=27669d1445";
+import { migrateMetrics } from "./migrate.js?v=27669d1445";
 
 const VIEWS = {
   home: renderHomeView,
@@ -184,16 +184,24 @@ ackContinue.addEventListener("click", async () => {
   overlay.hidden = true;
   app.hidden = false;
   // On a fresh cloud-enabled install, start at sign-in; otherwise the journal.
-  await navigate(cloudConfigured() ? "account" : "home");
-  await maybeRunWalkthrough();
+  if (!(await maybeRunWalkthrough())) await navigate(cloudConfigured() ? "account" : "home");
 });
 
-/** Shows the tour to anyone who has not seen it yet on this device. */
+/**
+ * Shows the tour to anyone who has not seen it yet on this device, and hands
+ * the app over with the ordinary opening once it is done, so the first run
+ * ends where every later one begins. Returns whether it ran.
+ */
 async function maybeRunWalkthrough() {
-  if (await shouldShowWalkthrough()) {
-    await startWalkthrough({ navigate });
-    await navigate("journal");
-  }
+  if (!(await shouldShowWalkthrough())) return false;
+  // What Capsule is for, then the ordinary opening to hand the app over,
+  // then the first day done for real with the tutorial alongside.
+  await startWalkthrough();
+  await playIntro();
+  await navigate("journal");
+  await startGuidedSession({ navigate });
+  await navigate("home");
+  return true;
 }
 
 document.getElementById("disclaimer-reopen").addEventListener("click", () => {
@@ -265,6 +273,13 @@ async function boot() {
     await navigate("home");
     await maybeRunWalkthrough();
   } else {
+    // The very first run: the mark assembles under a greeting, the home
+    // screen is revealed behind it, and the welcome panel opens over it, so
+    // the app is visible from the start rather than hidden behind a form.
+    app.hidden = false;
+    const opening = playIntro({ welcome: true });
+    await navigate("home");
+    await opening;
     overlay.hidden = false;
   }
 }

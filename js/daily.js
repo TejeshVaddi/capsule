@@ -15,9 +15,9 @@
 // days for a weekly user would show a broken streak forever, which is the
 // opposite of what a streak is for. See rhythm.js.
 
-import { db } from "./data.js?v=2fb457af22";
-import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=2fb457af22";
-import { isDayEntry } from "./recall.js?v=2fb457af22";
+import { db } from "./data.js?v=27669d1445";
+import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=27669d1445";
+import { isDayEntry } from "./recall.js?v=27669d1445";
 
 export const GRACE_PER_WEEK = 1;
 

@@ -21,7 +21,7 @@
 import {
   LEAD_IN, TIME_WORDS, DANGLING, SOFTENERS, PIECE_BREAK, MOMENT_BREAK,
   toSecondPerson, tidy, asNote, termsOf, subjectIfAlone, bare, stem, rarityAmong, weightOf,
-} from "./text.js?v=2fb457af22";
+} from "./text.js?v=27669d1445";
 
 // A bullet is a whole thought, not a fragment: long enough to be recognised,
 // short enough to read at a glance.

@@ -757,7 +757,127 @@ textarea:focus, input[type="text"]:focus {
 .delete-done-mark { color: #2e6b3f; margin-bottom: 6px; }
 .delete-done-mark svg { width: 48px; height: 48px; }
 
-/* ---------- Walkthrough ---------- */
+/* ---------- Walkthrough and first-run tutorial ---------- */
+
+.tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  transition: opacity .26s ease;
+}
+.tour-layer.tour-out { opacity: 0; }
+
+/* The welcome cards: read-only, so the screen behind is dimmed and still. */
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(33, 26, 46, 0.68);
+}
+.tour-panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 24px));
+  text-align: center;
+  /* Opaque like any panel over a dimmed screen: the page behind must not
+     show through the words. The .overlay rule does not reach this one. */
+  background: rgba(243, 239, 251, 0.98);
+  animation: fadeUp .3s ease;
+}
+.tour-panel h2 { margin: 0 0 4px; }
+.tour-panel .walkthrough-dots { margin: 18px 0 4px; }
+
+/* The tutorial: the app underneath stays live and usable, because the
+   person is meant to actually do each step. Only the bar takes taps. */
+.tour-live { pointer-events: none; }
+.tour-live .coach-bar { pointer-events: auto; }
+
+/* The control to use, lifted off the page by light rather than by dimming
+   everything else. Dimming a screen you are asking someone to work in
+   makes the thing they need harder to see, not easier. */
+.tour-spot {
+  position: fixed;
+  border-radius: 18px;
+  border: 3px solid #4483B0;
+  box-shadow: 0 0 0 6px rgba(68, 131, 176, 0.18), 0 10px 26px rgba(33, 26, 46, 0.14);
+  background: rgba(68, 131, 176, 0.06);
+  transition: left .28s ease, top .28s ease, width .28s ease, height .28s ease;
+  animation: tourPulse 2.2s ease-in-out infinite;
+}
+@keyframes tourPulse {
+  0%, 100% { box-shadow: 0 0 0 6px rgba(68, 131, 176, 0.18), 0 10px 26px rgba(33, 26, 46, 0.14); }
+  50% { box-shadow: 0 0 0 12px rgba(68, 131, 176, 0.07), 0 10px 26px rgba(33, 26, 46, 0.14); }
+}
+
+.coach-bar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: auto;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 14px 8px;
+  /* Fully opaque, not the usual near-opaque panel: this one sits over live
+     page content rather than a dimmed screen, and even a little show-through
+     puts two sets of words in the same place. */
+  background: #F3EFFB;
+  box-shadow: 0 -2px 30px rgba(33, 26, 46, 0.18);
+  animation: fadeUp .3s ease;
+  transition: bottom .3s ease, top .3s ease;
+}
+/* Room at the foot of the page for the bar to float over, so the last
+   button on a page is never trapped underneath it. */
+body.coaching:not(.coaching-top) .view-root {
+  padding-bottom: calc(var(--coach-h, 220px) + 120px);
+}
+.coach-bar.coach-bar-top {
+  bottom: auto;
+  top: calc(72px + env(safe-area-inset-top));
+}
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.coach-head strong { font-size: 1.05rem; line-height: 1.25; color: var(--purple); }
+.coach-icon {
+  flex: 0 0 auto;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(74, 46, 92, 0.1);
+  color: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.coach-icon svg { width: 19px; height: 19px; }
+.coach-step {
+  margin-left: auto;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #6b5d7d;
+  white-space: nowrap;
+}
+.coach-body { font-size: 1rem; line-height: 1.45; margin: 0 0 3px; }
+.coach-wait { font-size: .88rem; margin: 0; }
+.coach-skip {
+  margin-top: 4px;
+  font-size: .88rem;
+}
+.coach-bar.coach-cheer {
+  border: 2px solid rgba(46, 107, 63, 0.35);
+}
+.coach-bar.coach-cheer .coach-head strong { color: #2e6b3f; }
+.coach-bar.coach-cheer .coach-icon { background: rgba(46, 107, 63, 0.15); color: #2e6b3f; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot, .coach-bar { transition: none; animation: none; }
+  .tour-panel { animation: none; }
+}
+
 .walkthrough-panel {
   max-width: 520px;
   width: 100%;
@@ -1041,6 +1161,7 @@ a { color: var(--blue); }
 .intro-node { opacity: 0; animation: pop .35s ease forwards; animation-delay: calc(.25s + var(--i) * .13s); transform-origin: center; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes pop { from { opacity:0; transform: scale(.2);} to { opacity:1; transform: scale(1);} }
+.intro-word-long { font-size: 1.5rem !important; }
 .intro-word { font-size: 1.9rem; font-weight: 800; color: var(--purple); margin: 6px 0 14px; opacity: 0; animation: fadeUp .5s ease 1.1s forwards; }
 .intro-streak { opacity: 0; animation: fadeUp .5s ease 1.5s forwards; }
 .intro-streak-num { display:block; font-size: 3rem; font-weight: 800; color: var(--purple); line-height:1; font-variant-numeric: tabular-nums; }
@@ -1197,6 +1318,7 @@ button, a, label, [role="button"] {
 /* The page underneath stays put while a panel is open, so a swipe scrolls
    the panel rather than the screen behind it. */
 body:has(.overlay:not([hidden])),
+body:has(.tour-layer.tour-modal),
 body:has(.celebrate-screen),
 body:has(.intro-screen) {
   overflow: hidden;
