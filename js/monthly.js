@@ -12,11 +12,11 @@
 // Trends page still shows every measure in both directions, whatever the
 // note says, so nothing is hidden from anyone who looks.
 
-import { db } from "./data.js?v=27669d1445";
-import { windowSamples } from "./analysis.js?v=27669d1445";
-import { comparableRecalls } from "./recall.js?v=27669d1445";
-import { dateKey } from "./daily.js?v=27669d1445";
-import { explain } from "./meaning.js?v=27669d1445";
+import { db } from "./data.js?v=15b8be78ba";
+import { windowSamples } from "./analysis.js?v=15b8be78ba";
+import { comparableRecalls } from "./recall.js?v=15b8be78ba";
+import { dateKey } from "./daily.js?v=15b8be78ba";
+import { explain } from "./meaning.js?v=15b8be78ba";
 
 export const MONTHLY_META = "monthlyShownFor";
 

@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=27669d1445";
-import { analyzeText } from "../analysis.js?v=27669d1445";
-import { SpeechInput, speechSupported } from "../speech.js?v=27669d1445";
-import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=27669d1445";
-import { nextStepBlock } from "../next-step.js?v=27669d1445";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=27669d1445";
-import { icon } from "../icons.js?v=27669d1445";
+import { db, newId } from "../data.js?v=15b8be78ba";
+import { analyzeText } from "../analysis.js?v=15b8be78ba";
+import { SpeechInput, speechSupported } from "../speech.js?v=15b8be78ba";
+import { renderWordGraphSVG, wordGraphLegendHTML } from "../graph.js?v=15b8be78ba";
+import { nextStepBlock } from "../next-step.js?v=15b8be78ba";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=15b8be78ba";
+import { icon } from "../icons.js?v=15b8be78ba";
 
 export async function renderJournalView(root, { navigate }) {
   const today = new Date();

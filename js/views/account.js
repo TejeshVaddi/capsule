@@ -1,13 +1,13 @@
-import { cloudConfigured } from "../config.js?v=27669d1445";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=27669d1445";
-import { refreshDataMode, localEntryCount, db } from "../data.js?v=27669d1445";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=27669d1445";
-import { icon } from "../icons.js?v=27669d1445";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=27669d1445";
-import { startWalkthrough } from "../walkthrough.js?v=27669d1445";
-import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=27669d1445";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=27669d1445";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=27669d1445";
+import { cloudConfigured } from "../config.js?v=15b8be78ba";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=15b8be78ba";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=15b8be78ba";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=15b8be78ba";
+import { icon } from "../icons.js?v=15b8be78ba";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=15b8be78ba";
+import { startWalkthrough } from "../walkthrough.js?v=15b8be78ba";
+import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=15b8be78ba";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=15b8be78ba";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=15b8be78ba";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -396,9 +396,12 @@ function renderSignIn(root, navigate) {
         <label class="field-label" for="signin-code">Enter the code</label>
         <!-- Supabase's code length is a project setting (6 to 10). The box
              takes the longest it can send: a box too short to hold the code
-             makes signing in impossible, with nothing on screen to say why. -->
+             makes signing in impossible, with nothing on screen to say why.
+             The placeholder trails off for the same reason: six digits and a
+             full stop would read as "six goes here" and leave someone with a
+             longer code sure they had the wrong email. -->
         <input id="signin-code" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" data-slot="code"
-               placeholder="123456" />
+               placeholder="123456…" />
         <button class="btn btn-primary btn-large space-above" data-slot="verify">${icon("check")} Sign in</button>
         <button class="btn btn-secondary btn-large space-above-sm" data-slot="back">Use a different email</button>
       </div>
