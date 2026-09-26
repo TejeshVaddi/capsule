@@ -15,13 +15,13 @@
 // days for a weekly user would show a broken streak forever, which is the
 // opposite of what a streak is for. See rhythm.js.
 
-import { db } from "./data.js?v=15b8be78ba";
-import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=15b8be78ba";
-import { isDayEntry } from "./recall.js?v=15b8be78ba";
+import { db } from "./data.js?v=90f9b75ca3";
+import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=90f9b75ca3";
+import { isDayEntry } from "./recall.js?v=90f9b75ca3";
 
 export const GRACE_PER_WEEK = 1;
 
-// Where today's two required activities are remembered (see activities.js).
+// Where today's required activities are remembered (see activities.js).
 export const REQUIRED_META = "requiredActivities";
 
 export function dateKey(d = new Date()) {
@@ -69,13 +69,16 @@ export async function getDailyPlan() {
   );
   const recallAvailable = recallCandidates.length > 0;
 
-  // The activities step is done when today's two required activities are,
-  // not when any two things were done. Extras never count toward it.
+  // The activities step is done when today's required activities are, not
+  // when any two things were done. Extras never count toward it.
   const todaysPair = await db.getMeta(REQUIRED_META).catch(() => null);
   const requiredKeys = todaysPair?.date === today ? todaysPair.keys || [] : [];
   const doneKeys = new Set(todaysActivities.map((r) => r.detail?.contentKey));
   const requiredDone = requiredKeys.filter((k) => doneKeys.has(k)).length;
-  const ACTIVITY_TARGET = 2;
+  // How many a session asks for follows the rhythm: see rhythm.js. Until
+  // today's set has been chosen, the rhythm's own number is what to expect.
+  const rhythm = await currentRhythm(entries);
+  const ACTIVITY_TARGET = requiredKeys.length || rhythm.activities;
 
   const tasks = [
     {
@@ -88,7 +91,7 @@ export async function getDailyPlan() {
     },
     {
       key: "activities",
-      title: "Do today's 2 activities",
+      title: `Do today's ${ACTIVITY_TARGET} activities`,
       detail: "Two short games or questions. They change each time.",
       view: "activities",
       done: requiredKeys.length > 0 && requiredDone >= requiredKeys.length,
@@ -111,7 +114,7 @@ export async function getDailyPlan() {
   const allDone = required.every((t) => t.done);
   const nextTask = required.find((t) => !t.done) || null;
 
-  return { today, tasks, allDone, nextTask, recallAvailable, doneCount: required.filter(t => t.done).length, totalCount: required.length };
+  return { today, tasks, allDone, nextTask, recallAvailable, activityTarget: ACTIVITY_TARGET, doneCount: required.filter(t => t.done).length, totalCount: required.length };
 }
 
 /* ---------------- Streak ---------------- */

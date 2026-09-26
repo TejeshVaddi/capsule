@@ -19,9 +19,9 @@
 // done, and it cannot drift out of step with the rest of the app. The
 // screen stays live underneath, because the point is that they do it.
 
-import { db } from "./data.js?v=15b8be78ba";
-import { ICONS } from "./icons.js?v=15b8be78ba";
-import { getDailyPlan } from "./daily.js?v=15b8be78ba";
+import { db } from "./data.js?v=90f9b75ca3";
+import { ICONS } from "./icons.js?v=90f9b75ca3";
+import { getDailyPlan } from "./daily.js?v=90f9b75ca3";
 
 const SEEN_KEY = "walkthroughSeen";
 
@@ -36,7 +36,7 @@ const CARDS = [
   {
     icon: "check",
     title: "Three things, and they are short",
-    body: "Each time you open Capsule: tell it about your day, do 2 short activities, and after a while, look back at an earlier day. Home keeps the list and ticks it off as you go.",
+    body: "Each time you open Capsule: tell it about your day, do a few short activities, and after a while, look back at an earlier day. Home keeps the list and ticks it off as you go.",
   },
   {
     icon: "device",
@@ -159,11 +159,11 @@ const STAGES = [
     key: "activities",
     view: "activities",
     icon: "star",
-    title: "Now the 2 activities",
+    title: "Now the activities",
     body: "Tap Start under number 1. Capsule picks them for you.",
-    waiting: "Number 2 follows straight after the first.",
+    waiting: "The next one follows straight after each.",
     spot: ".activity-next .card-action, .activity-card .card-action",
-    doneWord: "Both activities done.",
+    doneWord: "All the activities done.",
   },
   {
     key: "recall",
@@ -229,7 +229,11 @@ export function startGuidedSession({ navigate } = {}) {
 
     function show(s, list, plan) {
       iconEl.innerHTML = ICONS[s.icon] || "";
-      titleEl.textContent = s.title;
+      // How many activities a session asks for follows the rhythm, so the
+      // number comes from the plan rather than being written into the copy.
+      titleEl.textContent = s.key === "activities" && plan.activityTarget
+        ? `Now the ${plan.activityTarget} activities`
+        : s.title;
       bodyEl.textContent = s.body;
       countEl.textContent = `Step ${list.indexOf(s) + 1} of ${list.length}`;
       bar.classList.remove("coach-cheer");

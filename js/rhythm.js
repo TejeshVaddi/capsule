@@ -7,7 +7,7 @@
 // the streak, the turn-taking between activities, and the wording all follow
 // it. Nothing asks for more often than their own rhythm.
 
-import { db } from "./data.js?v=15b8be78ba";
+import { db } from "./data.js?v=90f9b75ca3";
 
 // Kept here rather than imported from daily.js: daily.js reads the rhythm,
 // and a module cannot wait on one that is waiting on it.
@@ -36,6 +36,9 @@ export const RHYTHMS = {
     stepAsideDays: 1.5,
     // Not done for this long counts as fresh again.
     freshAfterDays: 7,
+    // How many activities a session asks for. Someone here most days is
+    // asked for less at a time, because it comes round again tomorrow.
+    activities: 3,
   },
   weekly: {
     key: "weekly",
@@ -45,6 +48,9 @@ export const RHYTHMS = {
     units: "weeks",
     stepAsideDays: 9,
     freshAfterDays: 35,
+    // One more for a weekly visit: it is the only session that week, so the
+    // same month's practice has to fit into far fewer sittings.
+    activities: 4,
   },
 };
 

@@ -2,16 +2,17 @@
 // that goes straight there. Nobody should have to work out where to go after
 // finishing something, or hunt through the tabs for it.
 //
-// The order comes from the daily plan (journal, the two activities, then a
+// The order comes from the daily plan (journal, the activities, then a
 // memory visit when there is one). When everything is done, the button goes
 // Home, which marks the finished day.
 
-import { getDailyPlan } from "./daily.js?v=15b8be78ba";
-import { el, escapeHtml, guideHtml } from "./ui.js?v=15b8be78ba";
+import { getDailyPlan } from "./daily.js?v=90f9b75ca3";
+import { el, escapeHtml, guideHtml } from "./ui.js?v=90f9b75ca3";
 
+// Activities is missing on purpose: how many there are follows the rhythm,
+// and the plan's own title already says the number.
 const BUTTON = {
   journal: "Tell Capsule about today",
-  activities: "Go to today's 2 activities",
   recall: "Visit an earlier day",
 };
 

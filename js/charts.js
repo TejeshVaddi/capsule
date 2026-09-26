@@ -5,9 +5,9 @@
 //  - Notes state what changed, factually, whatever the direction.
 //  - No diagnosis, no disease benchmarks, no promises that anything will improve.
 
-import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=15b8be78ba";
-import { comparableRecalls } from "./recall.js?v=15b8be78ba";
-import { explain } from "./meaning.js?v=15b8be78ba";
+import { VOCAB_POOL_SIZE, pooledVocabSeries, pooledGraphSeries } from "./analysis.js?v=90f9b75ca3";
+import { comparableRecalls } from "./recall.js?v=90f9b75ca3";
+import { explain } from "./meaning.js?v=90f9b75ca3";
 
 export const METRIC_DEFS = [
   { key: "wordCount", label: "Entry length (words)", researchBacked: true, format: (v) => Math.round(v) },

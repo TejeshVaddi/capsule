@@ -15,7 +15,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=15b8be78ba";
+import { db, newId } from "./data.js?v=90f9b75ca3";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -28,12 +28,12 @@ import {
   SWITCH_PAIRS,
   CHAIN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=15b8be78ba";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=15b8be78ba";
-import { detectSignals, scoreForSignals } from "./signals.js?v=15b8be78ba";
-import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=15b8be78ba";
-import { currentRhythm } from "./rhythm.js?v=15b8be78ba";
-import { isDayEntry } from "./recall.js?v=15b8be78ba";
+} from "./activities-content.js?v=90f9b75ca3";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=90f9b75ca3";
+import { detectSignals, scoreForSignals } from "./signals.js?v=90f9b75ca3";
+import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=90f9b75ca3";
+import { currentRhythm } from "./rhythm.js?v=90f9b75ca3";
+import { isDayEntry } from "./recall.js?v=90f9b75ca3";
 
 // Nothing the person has done comes back within this many days. An activity
 // with nothing fresh left is not offered until something is.
@@ -58,8 +58,10 @@ async function recentKeys() {
   }
 }
 
-// Today's two required activities come from different families, so a day is
-// never two word games or two questions.
+// Today's required activities spread across the families, so a session is
+// never all word games or all questions. There are three families and a
+// session asks for three or four, so one family comes round twice; which
+// one is whichever the person has gone longest without.
 const FAMILY = { naming: "words", fluency: "words", switching: "words", bridge: "words", "word-recall": "memory", description: "talk", "photo-story": "talk", music: "talk", chain: "talk" };
 
 export async function suggestActivities(latestMetrics, recentEntries) {
@@ -303,10 +305,10 @@ export async function suggestActivities(latestMetrics, recentEntries) {
       s.signalKey = s.pendingReason.key;
     });
 
-  // Today's two required activities: the best matched, from two different
-  // families, rotating by day when nothing is tailored. Chosen once and then
-  // kept for the day, so finishing one never moves another into its place.
-  const requiredKeys = await requiredForToday(suggestions, today);
+  // Today's required activities: the best matched, spread across families,
+  // rotating by day when nothing is tailored. Chosen once and then kept for
+  // the day, so finishing one never moves another into its place.
+  const requiredKeys = await requiredForToday(suggestions, today, rhythm.activities);
   suggestions.forEach((s) => {
     const at = requiredKeys.indexOf(s.contentKey);
     s.required = at !== -1;
@@ -323,14 +325,16 @@ export async function suggestActivities(latestMetrics, recentEntries) {
   return suggestions;
 }
 
-async function requiredForToday(suggestions, today) {
+async function requiredForToday(suggestions, today, want = 3) {
   const saved = await db.getMeta(REQUIRED_META).catch(() => null);
   const available = new Set(suggestions.map((s) => s.contentKey));
-  if (saved?.date === today && saved.keys?.length === 2 && saved.keys.every((k) => available.has(k))) {
+  // A set already chosen today is kept whatever the number is now: someone
+  // part-way through a session should not have the list change under them.
+  if (saved?.date === today && saved.keys?.length && saved.keys.every((k) => available.has(k))) {
     return saved.keys;
   }
 
-  if (suggestions.length < 2) return suggestions.map((s) => s.contentKey);
+  if (suggestions.length <= want) return suggestions.map((s) => s.contentKey);
 
   // The kind of activity done longest ago goes first, so the days rotate
   // through all of them instead of landing on the same kind by chance.
@@ -348,9 +352,21 @@ async function requiredForToday(suggestions, today) {
     .map((s, i) => ({ s, turn: (i - rotate + suggestions.length) % suggestions.length }))
     .sort((a, b) => b.s.matchScore - a.s.matchScore || since(a.s) - since(b.s) || a.turn - b.turn)
     .map(({ s }) => s);
-  const first = ranked[0];
-  const second = ranked.find((s) => s !== first && FAMILY[s.kind] !== FAMILY[first.kind]) || ranked[1];
-  const keys = [first.contentKey, second.contentKey];
+  // Best first, then keep reaching for a family not already in the set.
+  // Once every family is in, the next pick is simply the next best left.
+  const picked = [];
+  const families = new Set();
+  while (picked.length < want) {
+    const fresh = ranked.find((s) => !picked.includes(s) && !families.has(FAMILY[s.kind]));
+    const next = fresh || ranked.find((s) => !picked.includes(s));
+    if (!next) break;
+    picked.push(next);
+    // Every family used already: start the cycle again from this one, so a
+    // fourth pick still avoids repeating whichever family came third.
+    if (!fresh) families.clear();
+    families.add(FAMILY[next.kind]);
+  }
+  const keys = picked.map((s) => s.contentKey);
   await db.setMeta(REQUIRED_META, { date: today, keys }).catch(() => {});
   return keys;
 }

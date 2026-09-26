@@ -1,5 +1,5 @@
-import { db } from "../data.js?v=15b8be78ba";
-import { icon } from "../icons.js?v=15b8be78ba";
+import { db } from "../data.js?v=90f9b75ca3";
+import { icon } from "../icons.js?v=90f9b75ca3";
 import {
   METRIC_DEFS,
   metricSeriesFromEntries,
@@ -8,11 +8,11 @@ import {
   destroyCharts,
   generateTrendNotes,
   seriesTrend,
-} from "../charts.js?v=15b8be78ba";
-import { escapeHtml, el, guideHtml } from "../ui.js?v=15b8be78ba";
-import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=15b8be78ba";
-import { currentRhythm } from "../rhythm.js?v=15b8be78ba";
-import { closingLine, TONE_WORDS, CHART_GUIDES, chartDirection, WORK_AREA } from "../meaning.js?v=15b8be78ba";
+} from "../charts.js?v=90f9b75ca3";
+import { escapeHtml, el, guideHtml } from "../ui.js?v=90f9b75ca3";
+import { buildFocus, weightFor, FOCUS_AREAS, SLOT_NAMES, EVIDENCE_WORDS } from "../focus.js?v=90f9b75ca3";
+import { currentRhythm } from "../rhythm.js?v=90f9b75ca3";
+import { closingLine, TONE_WORDS, CHART_GUIDES, chartDirection, WORK_AREA } from "../meaning.js?v=90f9b75ca3";
 
 const CHART_COLORS = ["#4A2E5C", "#4483B0", "#7B3FA0", "#4E6E7E", "#B25BB0", "#5E2542", "#8DB3BE", "#4A2E5C", "#4483B0"];
 

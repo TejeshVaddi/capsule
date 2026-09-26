@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=15b8be78ba";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=15b8be78ba";
-import { analyzeText } from "../analysis.js?v=15b8be78ba";
-import { SpeechInput, speechSupported } from "../speech.js?v=15b8be78ba";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=15b8be78ba";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=15b8be78ba";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=15b8be78ba";
-import { getDailyPlan } from "../daily.js?v=15b8be78ba";
-import { nextStepBlock } from "../next-step.js?v=15b8be78ba";
-import { icon, ICONS } from "../icons.js?v=15b8be78ba";
+import { db, newId } from "../data.js?v=90f9b75ca3";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=90f9b75ca3";
+import { analyzeText } from "../analysis.js?v=90f9b75ca3";
+import { SpeechInput, speechSupported } from "../speech.js?v=90f9b75ca3";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=90f9b75ca3";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=90f9b75ca3";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=90f9b75ca3";
+import { getDailyPlan } from "../daily.js?v=90f9b75ca3";
+import { nextStepBlock } from "../next-step.js?v=90f9b75ca3";
+import { icon, ICONS } from "../icons.js?v=90f9b75ca3";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -46,18 +46,18 @@ export async function renderActivitiesView(root, { navigate } = {}) {
     const doneNumber = nextNumber === 1 ? 2 : 1;
     page.appendChild(el(`
       <div class="glass-panel">
-        <h2>Today's 2 activities</h2>
+        <h2>Today's ${required.length} activities</h2>
         ${guideHtml(doneCount === 0
-          ? "Do these 2 activities. Start with number 1. Tap the Start button under it."
+          ? `Do these ${required.length} activities. Start with number 1. Tap the Start button under it.`
           : `Number ${doneNumber} is done. Now do number ${nextNumber}. Tap the Start button under it.`)}
       </div>`));
     required.forEach((s, i) => page.appendChild(requiredCard(s, i + 1, s === next, () => run(s))));
   } else {
-    // Both done: say so first, then offer the extras as extras.
+    // All done: say so first, then offer the extras as extras.
     page.appendChild(el(`
       <div class="glass-panel done-panel">
         <h2>${icon("check")} You're done for today</h2>
-        ${guideHtml("You finished both of today's activities. You can stop here. The extra activities below are only if you want more.")}
+        ${guideHtml(`You finished all ${required.length} of today's activities. You can stop here. The extra activities below are only if you want more.`)}
         <ul class="done-list">
           ${required.map((s) => `<li>${icon("check")} ${escapeHtml(s.title)}</li>`).join("")}
         </ul>
@@ -66,7 +66,7 @@ export async function renderActivitiesView(root, { navigate } = {}) {
     if (navigate) {
       const plan = await getDailyPlan();
       if (plan.nextTask) {
-        page.firstElementChild.appendChild(await nextStepBlock(navigate, "Both of today's activities are done."));
+        page.firstElementChild.appendChild(await nextStepBlock(navigate, `All ${required.length} of today's activities are done.`));
       }
     }
 
@@ -198,7 +198,7 @@ async function showNext(container, suggestion, ctx) {
     holder.appendChild(button(`Start activity ${number}`, () => ctx.run(nextOne)));
     return;
   }
-  holder.replaceWith(await nextStepBlock(ctx.navigate, "You finished both of today's activities."));
+  holder.replaceWith(await nextStepBlock(ctx.navigate, `You finished all ${ctx.required.length} of today's activities.`));
 }
 
 /* ---------- Shared: a small speech button that fills a text input ---------- */
