@@ -10,6 +10,11 @@
 //   - at most one message per person per day
 //   - never mentions metrics, trends, or anything about their health,
 //     because an email subject line is not a private place
+//
+// A care centre gets the same message turned around: a list of which
+// residents still have their list to do. It names them and says nothing
+// else about them, for the same reason: an inbox is not a private place,
+// and "has not journaled today" is not a fact about anybody's health.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -79,27 +84,54 @@ Deno.serve(async (req) => {
     dayStart.setUTCHours(dayStart.getUTCHours() - 26); // generous lower bound
     const todayKey = local.date;
 
-    const { count: entryCount } = await admin
-      .from("entries").select("id", { count: "exact", head: true })
-      .eq("user_id", p.user_id).gte("date", dayStart.toISOString());
-    const { count: actCount } = await admin
-      .from("activity_log").select("id", { count: "exact", head: true })
-      .eq("user_id", p.user_id).gte("date", dayStart.toISOString());
+    // A care centre gets a different email: not "you have not finished" but
+    // a list of who has not. Which residents exist is the account's own
+    // record, so an empty list simply means this is a personal account.
+    const { data: residents } = await admin
+      .from("profiles").select("id, name")
+      .eq("user_id", p.user_id).order("name", { ascending: true });
 
-    if ((entryCount ?? 0) > 0 && (actCount ?? 0) >= 2) { skipped++; continue; }
+    let subject = "Your Capsule for today";
+    let text = "";
+
+    if ((residents ?? []).length) {
+      // Finished is a row written by the app, so somebody who has not opened
+      // Capsule at all today has no row and is named, which is the whole
+      // point of the message.
+      const { data: done } = await admin
+        .from("daily_completion").select("profile_id")
+        .eq("user_id", p.user_id).eq("day", todayKey);
+      const finished = new Set((done ?? []).map((d) => d.profile_id));
+      const outstanding = (residents ?? []).filter((r) => !finished.has(r.id));
+
+      if (!outstanding.length) { skipped++; continue; }
+
+      subject = `Capsule: ${outstanding.length} still to do today`;
+      text =
+        `These residents have not finished their Capsule today:\n\n` +
+        outstanding.map((r) => `  - ${r.name}`).join("\n") +
+        `\n\nThere is still time. Open Capsule, tap a name, and tap Launch Capsule.\n\n` +
+        `If you would rather not get these, you can turn reminders off on the Account screen.`;
+    } else {
+      const { count: entryCount } = await admin
+        .from("entries").select("id", { count: "exact", head: true })
+        .eq("user_id", p.user_id).is("profile_id", null).gte("date", dayStart.toISOString());
+      const { count: actCount } = await admin
+        .from("activity_log").select("id", { count: "exact", head: true })
+        .eq("user_id", p.user_id).is("profile_id", null).gte("date", dayStart.toISOString());
+
+      if ((entryCount ?? 0) > 0 && (actCount ?? 0) >= 2) { skipped++; continue; }
+
+      text =
+        "There is still time to add today to your Capsule.\n\n" +
+        "Tell it about your day, try an activity or two, and your streak carries on.\n\n" +
+        "If you would rather not get these, you can turn reminders off on the Account screen.";
+    }
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: FROM,
-        to: p.email,
-        subject: "Your Capsule for today",
-        text:
-          "There is still time to add today to your Capsule.\n\n" +
-          "Tell it about your day, try an activity or two, and your streak carries on.\n\n" +
-          "If you would rather not get these, you can turn reminders off on the Account screen.",
-      }),
+      body: JSON.stringify({ from: FROM, to: p.email, subject, text }),
     });
 
     if (res.ok) {

@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/style.css?v=90f9b75ca3" />
+<link rel="stylesheet" href="css/style.css?v=9d6a2c4f69" />
 </head>
 <body>
 
@@ -80,6 +80,11 @@
   <main id="view-root" class="view-root"></main>
 
   <nav class="tab-bar" id="tab-bar">
+    <!-- Only shown to a care centre, and only while no resident is open. -->
+    <button class="tab-btn tab-centre" data-view="residents" data-icon="user" aria-label="Residents" hidden>
+      <span class="tab-icon" aria-hidden="true"></span>
+      <span class="tab-label">Residents</span>
+    </button>
     <button class="tab-btn" data-view="home" data-icon="home" aria-label="Home">
       <span class="tab-icon" aria-hidden="true"></span>
       <span class="tab-label">Home</span>
@@ -119,6 +124,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <!-- App -->
-<script type="module" src="js/app.js?v=90f9b75ca3"></script>
+<script type="module" src="js/app.js?v=9d6a2c4f69"></script>
 </body>
 </html>

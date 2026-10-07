@@ -116,3 +116,93 @@ create policy "users manage own reminder prefs"
 -- night. Captured from the browser when reminders are switched on.
 alter table public.reminder_prefs
   add column if not exists timezone text not null default 'UTC';
+
+-- ---------------------------------------------------------------------------
+-- Care centre accounts: one sign-in, many people.
+--
+-- A centre signs up once and keeps a resident's Capsule for each person it
+-- looks after. Everything a resident writes carries their profile id, and
+-- every read is filtered to it, so nothing of one resident's can be served
+-- under another's name. Personal accounts write no profile id at all, which
+-- is why every column added here is nullable: an existing journal needs no
+-- migration and keeps working untouched.
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.profiles (
+  id uuid primary key,
+  user_id uuid not null references auth.users (id) on delete cascade default auth.uid(),
+  name text not null,
+  dob date,
+  photo_id text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "users manage own profiles" on public.profiles;
+create policy "users manage own profiles"
+  on public.profiles for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create index if not exists profiles_user_name on public.profiles (user_id, name);
+
+-- What staff may see about a resident without that resident being there.
+-- Null reads as the narrow setting, so a row written before this existed
+-- does not quietly show more than it should. See js/profiles.js.
+alter table public.profiles add column if not exists staff_access text;
+
+-- Which resident each row belongs to. Null means the account holder's own
+-- journal, which is what a personal account has and all it ever has.
+alter table public.entries add column if not exists profile_id uuid;
+alter table public.activity_log add column if not exists profile_id uuid;
+
+create index if not exists entries_user_profile on public.entries (user_id, profile_id, date);
+create index if not exists activity_user_profile on public.activity_log (user_id, profile_id, date);
+
+-- Per-person state that is not an entry: the streak, which activities were
+-- chosen today, whether the week has been shown. Kept here rather than only
+-- on the device so a resident's streak survives the centre picking up a
+-- different tablet. One row per person per key.
+create table if not exists public.profile_state (
+  user_id uuid not null references auth.users (id) on delete cascade default auth.uid(),
+  profile_id uuid,
+  key text not null,
+  value jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, profile_id, key)
+);
+
+alter table public.profile_state enable row level security;
+
+drop policy if exists "users manage own profile state" on public.profile_state;
+create policy "users manage own profile state"
+  on public.profile_state for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Who has finished their list, and on which day.
+--
+-- Written by the app when a person completes everything. The evening
+-- reminder needs the opposite question, "who has not", and the people it
+-- most needs to name are exactly the ones who have written nothing at all
+-- today. Asking for the absence of a row answers that; working it out from
+-- entries and activities would mean keeping a second copy of the rules in
+-- daily.js, server side, in SQL, where it would quietly drift.
+create table if not exists public.daily_completion (
+  user_id uuid not null references auth.users (id) on delete cascade default auth.uid(),
+  profile_id uuid,
+  day date not null,
+  completed_at timestamptz not null default now(),
+  primary key (user_id, profile_id, day)
+);
+
+alter table public.daily_completion enable row level security;
+
+drop policy if exists "users manage own completion" on public.daily_completion;
+create policy "users manage own completion"
+  on public.daily_completion for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create index if not exists completion_user_day on public.daily_completion (user_id, day);

@@ -9,8 +9,8 @@
 // Every step reports its own status so the UI can tell the truth about
 // what actually happened rather than showing a blanket "done".
 
-import { getClient, currentUser, signOut } from "./cloud.js?v=90f9b75ca3";
-import { db as localDb, closeDb } from "./db.js?v=90f9b75ca3";
+import { getClient, currentUser, signOut } from "./cloud.js?v=9d6a2c4f69";
+import { db as localDb, closeDb } from "./db.js?v=9d6a2c4f69";
 
 export const STEPS = [
   { key: "photos", label: "Removing photos" },

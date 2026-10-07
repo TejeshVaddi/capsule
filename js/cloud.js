@@ -2,7 +2,7 @@
 // can route to either implementation. All rows are protected server-side
 // by row-level security (each user reads/writes only their own data).
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY, cloudConfigured } from "./config.js?v=90f9b75ca3";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, cloudConfigured } from "./config.js?v=9d6a2c4f69";
 
 let client = null;
 
@@ -79,6 +79,18 @@ function rowToEntry(row) {
     metrics: row.metrics || null,
     recallComparison: row.recall_comparison || undefined,
     photoIds: row.photo_ids || [],
+    profileId: row.profile_id || undefined,
+  };
+}
+
+function rowToProfile(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    dob: row.dob || "",
+    photoId: row.photo_id || null,
+    staffAccess: row.staff_access || undefined,
+    createdAt: row.created_at,
   };
 }
 
@@ -93,6 +105,7 @@ function entryToRow(entry, userId) {
     metrics: entry.metrics || null,
     recall_comparison: entry.recallComparison || null,
     photo_ids: entry.photoIds || [],
+    profile_id: entry.profileId || null,
   };
 }
 
@@ -203,6 +216,7 @@ export const cloudDb = {
       date: record.date,
       kind: record.kind,
       detail: record.detail || {},
+      profile_id: record.profileId || null,
     });
     if (error) throw error;
   },
@@ -211,6 +225,83 @@ export const cloudDb = {
     const c = getClient();
     const { data, error } = await c.from("activity_log").select("*").order("date", { ascending: false });
     if (error) throw error;
-    return data || [];
+    return (data || []).map((r) => ({ ...r, profileId: r.profile_id || undefined }));
+  },
+
+  /* ---------- Care centre: the people in this account ---------- */
+
+  async allProfiles() {
+    const c = getClient();
+    const { data, error } = await c.from("profiles").select("*").order("name", { ascending: true });
+    if (error) throw error;
+    return (data || []).map(rowToProfile);
+  },
+
+  async getProfile(id) {
+    const c = getClient();
+    const { data, error } = await c.from("profiles").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    return data ? rowToProfile(data) : undefined;
+  },
+
+  async putProfile(profile) {
+    const c = getClient();
+    const user = await currentUser();
+    const { error } = await c.from("profiles").upsert({
+      id: profile.id,
+      user_id: user.id,
+      name: profile.name,
+      dob: profile.dob || null,
+      photo_id: profile.photoId || null,
+      staff_access: profile.staffAccess || null,
+      created_at: profile.createdAt,
+    });
+    if (error) throw error;
+  },
+
+  async deleteProfile(id) {
+    const c = getClient();
+    // The rows that belong to them go first: nothing of a resident who has
+    // left should outlive the record saying who they were.
+    await c.from("entries").delete().eq("profile_id", id);
+    await c.from("activity_log").delete().eq("profile_id", id);
+    await c.from("profile_state").delete().eq("profile_id", id);
+    await c.from("daily_completion").delete().eq("profile_id", id);
+    const { error } = await c.from("profiles").delete().eq("id", id);
+    if (error) throw error;
+  },
+
+  /** Per-person state: the streak and the rest. Null profile is the owner. */
+  async getProfileState(profileId, key) {
+    const c = getClient();
+    const q = c.from("profile_state").select("value").eq("key", key);
+    const { data, error } = await (profileId ? q.eq("profile_id", profileId) : q.is("profile_id", null)).maybeSingle();
+    if (error) throw error;
+    return data ? data.value : undefined;
+  },
+
+  async setProfileState(profileId, key, value) {
+    const c = getClient();
+    const user = await currentUser();
+    const { error } = await c.from("profile_state").upsert({
+      user_id: user.id,
+      profile_id: profileId || null,
+      key,
+      value: value === undefined ? null : value,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+  },
+
+  /** Says this person finished their list today, for the evening reminder. */
+  async markDayComplete(profileId, day) {
+    const c = getClient();
+    const user = await currentUser();
+    const { error } = await c.from("daily_completion").upsert({
+      user_id: user.id,
+      profile_id: profileId || null,
+      day,
+    });
+    if (error) throw error;
   },
 };

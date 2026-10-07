@@ -89,6 +89,36 @@ Test it with an address that has **never** signed in, not just one that has. The
 
 The anon key is meant to be public, it grants no data access on its own. Every row is gated by the RLS policies in the schema, which restrict reads and writes to `auth.uid() = user_id`. Photos are in a **private** bucket with policies keyed to a per-user folder, so one user cannot enumerate or fetch another's images.
 
+### Care centre accounts
+
+One sign-in, many people. After a first sign-in the Account page asks whether
+Capsule is for one person or for a centre; a centre gets two tabs, Residents
+and Account, and each resident has their own Capsule behind the Residents
+list: their own entries, activities, streak, trends and first-run tutorial.
+
+How they are kept apart: everything written while a resident is open carries
+their `profile_id`, and every read is filtered to it. The filtering happens
+once, in `js/data.js`, which every view already went through, which is why
+the journal, activities, trends and streak needed no changes. A personal
+account writes no `profile_id` at all, so an existing journal needs no
+migration and can never surface under a resident's name.
+
+Re-run `supabase-schema.sql` after upgrading: it adds the `profiles`,
+`profile_state` and `daily_completion` tables and the nullable `profile_id`
+columns. Every statement is still idempotent, so running the whole file again
+is safe.
+
+The evening reminder sends a centre a different message: a list of which
+residents have not finished today, rather than "you have not finished". It
+reads `daily_completion`, which the app writes when somebody completes their
+list, so a resident who has not opened Capsule at all has no row and is
+named, which is the point of the message.
+
+**Before a real centre uses this**, the Privacy Policy and Terms need to
+cover it. They currently promise entries are visible "to you only", which is
+not the whole truth once a centre holds residents' journals, and the person
+whose words those are is the resident rather than the account holder.
+
 ### Verifying RLS yourself
 
 Anything committed here is world-readable once the site is public, so the anon key is only safe while RLS is genuinely on. Confirm it in **SQL Editor** at any time. This lists every table in the public schema and whether row-level security is enabled, so a table added later that missed its policy shows up immediately:

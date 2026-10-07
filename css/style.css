@@ -757,6 +757,195 @@ textarea:focus, input[type="text"]:focus {
 .delete-done-mark { color: #2e6b3f; margin-bottom: 6px; }
 .delete-done-mark svg { width: 48px; height: 48px; }
 
+/* ---------- Residents (care centre accounts) ---------- */
+
+.resident-search {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0 14px;
+}
+/* A search box, rounded the whole way, so it reads as the same family of
+   shapes as the panels and the round button beside it. The base input rule
+   only covers type="text", which is why this one needs its own. */
+.resident-search input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1.05rem;
+  height: 52px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 2px solid rgba(74, 46, 92, 0.16);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--dark-text);
+  box-shadow: inset 0 1px 2px rgba(33, 26, 46, 0.05);
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.resident-search input[type="search"]::placeholder { color: #7a6e8c; }
+.resident-search input[type="search"]:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 4px rgba(68, 131, 176, 0.16);
+}
+/* Safari draws its own cancel button, which sits oddly in a pill. */
+.resident-search input[type="search"]::-webkit-search-decoration,
+.resident-search input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.resident-add {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  font-size: 1.9rem;
+  line-height: 1;
+  border-radius: 50%;
+  box-shadow: var(--shadow-soft);
+  transition: transform .18s ease;
+}
+.resident-add:hover { transform: scale(1.06); }
+.resident-add:active { transform: scale(0.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  .resident-search input[type="search"], .resident-add { transition: none; }
+  .resident-add:hover, .resident-add:active { transform: none; }
+}
+
+.resident-list { display: flex; flex-direction: column; gap: 10px; }
+
+.resident-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(74, 46, 92, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.55);
+  text-align: left;
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.resident-row:hover { background: rgba(255, 255, 255, 0.8); transform: translateY(-1px); }
+.resident-row:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+/* Someone whose list is not finished yet: the one thing staff look for. */
+.resident-row.resident-pending { border-color: rgba(68, 131, 176, 0.5); }
+
+.resident-name { flex: 1 1 auto; font-size: 1.15rem; font-weight: 600; color: var(--purple); }
+
+/* A photograph in a circle, or their initials until there is one. */
+.resident-face {
+  flex: 0 0 auto;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(74, 46, 92, 0.12);
+  color: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  overflow: hidden;
+}
+.resident-face img { width: 100%; height: 100%; object-fit: cover; }
+.resident-face-lg { width: 86px; height: 86px; font-size: 1.7rem; }
+
+/* The streak sits inside a star, so a glance down the list reads as a run
+   of days kept rather than a column of numbers. */
+.resident-streak {
+  flex: 0 0 auto;
+  position: relative;
+  width: 46px; height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* icon() wraps the mark in a span, so the size and the fill have to reach
+   the svg itself; its own fill="none" is a presentation attribute, which
+   any CSS rule outranks. */
+.resident-star { width: 46px; height: 46px; display: block; }
+.resident-star svg { width: 46px; height: 46px; fill: #FAF6B0; stroke: #C9B6E8; stroke-width: 1.5; }
+.resident-streak-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--purple);
+  font-variant-numeric: tabular-nums;
+}
+
+.resident-head { display: flex; align-items: center; gap: 16px; margin: 6px 0 16px; }
+.resident-id h2 { margin: 0 0 2px; }
+.resident-photo-row { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+
+.launch-btn { width: 100%; }
+.back-arrow { transform: rotate(180deg); }
+
+.resident-summary { margin-top: 18px; }
+.resident-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.resident-stats div {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 18px;
+  padding: 10px 6px;
+}
+.resident-stats strong { display: block; font-size: 1.5rem; color: var(--purple); line-height: 1.1; }
+.resident-stats span { font-size: .82rem; color: #5d5270; }
+.resident-done { color: #2e6b3f; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+
+/* The one question after a first sign-in. */
+.kind-choice { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.kind-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease;
+  border: 2px solid transparent;
+}
+.kind-card:hover { transform: translateY(-2px); border-color: var(--blue); }
+.kind-card:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.kind-card .lead { display: flex; align-items: center; gap: 8px; }
+.kind-note { font-size: .88rem; opacity: .85; }
+
+/* Choosing what staff may see about one resident. Two cards rather than a
+   dropdown: the difference between them is the point, so both are readable
+   at once instead of one being hidden behind a menu. */
+.access-choice { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.access-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color .15s ease, background .15s ease;
+}
+.access-card strong { color: var(--purple); }
+.access-card.access-on { border-color: var(--blue); background: rgba(68, 131, 176, 0.09); }
+.access-card:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) { .access-card { transition: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .resident-row, .kind-card { transition: none; }
+}
+
 /* ---------- Walkthrough and first-run tutorial ---------- */
 
 .tour-layer {

@@ -1,13 +1,14 @@
-import { db } from "../data.js?v=90f9b75ca3";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=90f9b75ca3";
-import { currentRhythm } from "../rhythm.js?v=90f9b75ca3";
-import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=90f9b75ca3";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=90f9b75ca3";
-import { celebrateStreak } from "../celebrate.js?v=90f9b75ca3";
-import { buildFocus } from "../focus.js?v=90f9b75ca3";
-import { WORK_AREA } from "../meaning.js?v=90f9b75ca3";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=90f9b75ca3";
-import { icon } from "../icons.js?v=90f9b75ca3";
+import { db } from "../data.js?v=9d6a2c4f69";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=9d6a2c4f69";
+import { currentRhythm } from "../rhythm.js?v=9d6a2c4f69";
+import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=9d6a2c4f69";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=9d6a2c4f69";
+import { celebrateStreak } from "../celebrate.js?v=9d6a2c4f69";
+import { isCentre, closeProfile, activeProfileId } from "../profiles.js?v=9d6a2c4f69";
+import { buildFocus } from "../focus.js?v=9d6a2c4f69";
+import { WORK_AREA } from "../meaning.js?v=9d6a2c4f69";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=9d6a2c4f69";
+import { icon } from "../icons.js?v=9d6a2c4f69";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;
@@ -75,6 +76,13 @@ export async function renderHomeView(root, { navigate }) {
     const count = await completeToday();
     await markCelebrated();
     await celebrateStreak(count, rhythm.unit);
+    // In a care centre the screen goes back to the house once a resident
+    // has finished: the next person should not find the last one's Capsule
+    // still open, and nobody should have to know how to close it.
+    if (activeProfileId() && (await isCentre())) {
+      closeProfile();
+      return navigate("residents");
+    }
     return navigate("home");
   }
 

@@ -19,9 +19,9 @@
 // done, and it cannot drift out of step with the rest of the app. The
 // screen stays live underneath, because the point is that they do it.
 
-import { db } from "./data.js?v=90f9b75ca3";
-import { ICONS } from "./icons.js?v=90f9b75ca3";
-import { getDailyPlan } from "./daily.js?v=90f9b75ca3";
+import { db } from "./data.js?v=9d6a2c4f69";
+import { ICONS } from "./icons.js?v=9d6a2c4f69";
+import { getDailyPlan } from "./daily.js?v=9d6a2c4f69";
 
 const SEEN_KEY = "walkthroughSeen";
 

@@ -6,8 +6,8 @@
 // memory visit when there is one). When everything is done, the button goes
 // Home, which marks the finished day.
 
-import { getDailyPlan } from "./daily.js?v=90f9b75ca3";
-import { el, escapeHtml, guideHtml } from "./ui.js?v=90f9b75ca3";
+import { getDailyPlan } from "./daily.js?v=9d6a2c4f69";
+import { el, escapeHtml, guideHtml } from "./ui.js?v=9d6a2c4f69";
 
 // Activities is missing on purpose: how many there are follows the rhythm,
 // and the plan's own title already says the number.

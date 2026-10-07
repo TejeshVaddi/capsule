@@ -1,27 +1,30 @@
-import { db, refreshDataMode } from "./data.js?v=90f9b75ca3";
-import { onAuthChange } from "./cloud.js?v=90f9b75ca3";
-import { cloudConfigured } from "./config.js?v=90f9b75ca3";
-import { revokePhotoUrls } from "./ui.js?v=90f9b75ca3";
-import { ICONS, LOGO_SVG } from "./icons.js?v=90f9b75ca3";
-import { renderHomeView } from "./views/home.js?v=90f9b75ca3";
-import { renderJournalView } from "./views/journal.js?v=90f9b75ca3";
-import { playIntro } from "./intro.js?v=90f9b75ca3";
-import { getStreak } from "./daily.js?v=90f9b75ca3";
-import { currentRhythm } from "./rhythm.js?v=90f9b75ca3";
-import { renderRecallView } from "./views/recall.js?v=90f9b75ca3";
-import { renderActivitiesView } from "./views/activities.js?v=90f9b75ca3";
-import { renderTrendsView } from "./views/trends.js?v=90f9b75ca3";
-import { renderHistoryView } from "./views/history.js?v=90f9b75ca3";
-import { renderAccountView, openDeleteFlow } from "./views/account.js?v=90f9b75ca3";
-import { renderFooter } from "./footer.js?v=90f9b75ca3";
-import { isCloudMode } from "./data.js?v=90f9b75ca3";
-import { destroyCharts } from "./charts.js?v=90f9b75ca3";
-import { shouldShowWalkthrough, startWalkthrough, startGuidedSession } from "./walkthrough.js?v=90f9b75ca3";
-import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=90f9b75ca3";
-import { openTerms, TERMS_VERSION } from "./terms.js?v=90f9b75ca3";
-import { migrateMetrics } from "./migrate.js?v=90f9b75ca3";
+import { db, refreshDataMode } from "./data.js?v=9d6a2c4f69";
+import { onAuthChange } from "./cloud.js?v=9d6a2c4f69";
+import { cloudConfigured } from "./config.js?v=9d6a2c4f69";
+import { revokePhotoUrls } from "./ui.js?v=9d6a2c4f69";
+import { ICONS, LOGO_SVG } from "./icons.js?v=9d6a2c4f69";
+import { renderHomeView } from "./views/home.js?v=9d6a2c4f69";
+import { renderJournalView } from "./views/journal.js?v=9d6a2c4f69";
+import { playIntro } from "./intro.js?v=9d6a2c4f69";
+import { getStreak } from "./daily.js?v=9d6a2c4f69";
+import { currentRhythm } from "./rhythm.js?v=9d6a2c4f69";
+import { renderRecallView } from "./views/recall.js?v=9d6a2c4f69";
+import { renderActivitiesView } from "./views/activities.js?v=9d6a2c4f69";
+import { renderTrendsView } from "./views/trends.js?v=9d6a2c4f69";
+import { renderHistoryView } from "./views/history.js?v=9d6a2c4f69";
+import { renderAccountView, openDeleteFlow } from "./views/account.js?v=9d6a2c4f69";
+import { renderFooter } from "./footer.js?v=9d6a2c4f69";
+import { isCloudMode } from "./data.js?v=9d6a2c4f69";
+import { destroyCharts } from "./charts.js?v=9d6a2c4f69";
+import { shouldShowWalkthrough, startWalkthrough, startGuidedSession } from "./walkthrough.js?v=9d6a2c4f69";
+import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=9d6a2c4f69";
+import { openTerms, TERMS_VERSION } from "./terms.js?v=9d6a2c4f69";
+import { migrateMetrics } from "./migrate.js?v=9d6a2c4f69";
+import { renderResidentsView } from "./views/residents.js?v=9d6a2c4f69";
+import { isCentre, activeProfileId, getProfile, firstNameOf } from "./profiles.js?v=9d6a2c4f69";
 
 const VIEWS = {
+  residents: renderResidentsView,
   home: renderHomeView,
   journal: renderJournalView,
   recall: renderRecallView,
@@ -42,8 +45,41 @@ for (const btn of tabBar.querySelectorAll(".tab-btn")) {
   if (name && ICONS[name]) btn.querySelector(".tab-icon").innerHTML = ICONS[name];
 }
 
-async function navigate(viewName) {
-  if (!VIEWS[viewName]) viewName = "home";
+/**
+ * Which tabs this screen should have. A care centre with nobody open is
+ * looking after a house, not keeping a journal, so it gets the list of
+ * residents and the account and nothing else. Opening a resident hands the
+ * whole app over to them, tabs and all.
+ */
+async function applyShell() {
+  const centre = await isCentre();
+  const open = activeProfileId();
+  const listing = centre && !open;
+  document.body.classList.toggle("centre-mode", centre);
+  document.body.classList.toggle("centre-listing", listing);
+  for (const btn of tabBar.querySelectorAll(".tab-btn")) {
+    const view = btn.dataset.view;
+    const show = listing ? view === "residents" || view === "account" : view !== "residents";
+    btn.hidden = !show;
+  }
+  queueFit();
+  return { centre, listing };
+}
+
+async function navigate(viewName, { launched = false } = {}) {
+  const { listing } = await applyShell();
+  // A centre screen with nobody open has nowhere else to be.
+  if (listing && viewName !== "residents" && viewName !== "account") viewName = "residents";
+  if (!VIEWS[viewName]) viewName = listing ? "residents" : "home";
+
+  // Opening a resident greets them by name, the way their own Capsule would.
+  if (launched) {
+    const who = await getProfile(activeProfileId());
+    await playIntro({ welcome: true, greeting: who ? `Welcome ${firstNameOf(who)}` : null });
+    // Their own first visit, not the centre's: a resident who has never
+    // used Capsule is led through their first day like anybody else.
+    if (await maybeRunWalkthrough()) return;
+  }
 
   destroyCharts();
   revokePhotoUrls();
@@ -193,6 +229,12 @@ ackContinue.addEventListener("click", async () => {
  * ends where every later one begins. Returns whether it ran.
  */
 async function maybeRunWalkthrough() {
+  // A care centre's own screen never gets it. The welcome and the tutorial
+  // are addressed to the person whose journal it is ("tell Capsule about
+  // your day"), which is nobody while a member of staff is looking at a
+  // list of residents. Each resident meets it on their own first visit,
+  // because having seen it is kept per person. See profiles.js.
+  if ((await isCentre()) && !activeProfileId()) return false;
   if (!(await shouldShowWalkthrough())) return false;
   // What Capsule is for, then the ordinary opening to hand the app over,
   // then the first day done for real with the tutorial alongside.
@@ -266,11 +308,18 @@ async function boot() {
 
   if (acknowledged) {
     app.hidden = false;
-    // The opening sequence plays before the first paint of the home screen.
-    const rhythm = await currentRhythm(await db.allEntries().catch(() => []));
-    const streak = await getStreak(rhythm).catch(() => ({ count: 0 }));
-    await playIntro({ streak: streak.count || 0, atRisk: streak.atRisk, unit: rhythm.unit, units: rhythm.units });
-    await navigate("home");
+    // The opening sequence plays before the first paint of the home screen,
+    // but it belongs to whoever is journaling: a streak and "let's start
+    // today" mean nothing on a care centre's own screen, where the answer
+    // to whose streak it is would be nobody's. Staff go straight to the
+    // list; a resident gets their own opening when they are launched.
+    const staffScreen = (await isCentre()) && !activeProfileId();
+    if (!staffScreen) {
+      const rhythm = await currentRhythm(await db.allEntries().catch(() => []));
+      const streak = await getStreak(rhythm).catch(() => ({ count: 0 }));
+      await playIntro({ streak: streak.count || 0, atRisk: streak.atRisk, unit: rhythm.unit, units: rhythm.units });
+    }
+    await navigate(staffScreen ? "residents" : "home");
     await maybeRunWalkthrough();
   } else {
     // The very first run: the mark assembles under a greeting, the home

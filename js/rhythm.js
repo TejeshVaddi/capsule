@@ -7,7 +7,7 @@
 // the streak, the turn-taking between activities, and the wording all follow
 // it. Nothing asks for more often than their own rhythm.
 
-import { db } from "./data.js?v=90f9b75ca3";
+import { db } from "./data.js?v=9d6a2c4f69";
 
 // Kept here rather than imported from daily.js: daily.js reads the rhythm,
 // and a module cannot wait on one that is waiting on it.
@@ -89,8 +89,8 @@ export function rhythmFrom(entries, setting = "auto") {
 }
 
 /** The rhythm, including the person's own setting. */
-export async function currentRhythm(entries) {
-  const setting = (await db.getMeta(RHYTHM_META).catch(() => null)) || "auto";
+export async function currentRhythm(entries, profileId) {
+  const setting = (await db.getMeta(RHYTHM_META, profileId).catch(() => null)) || "auto";
   return rhythmFrom(entries, setting);
 }
 

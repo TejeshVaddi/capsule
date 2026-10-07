@@ -15,9 +15,9 @@
 // days for a weekly user would show a broken streak forever, which is the
 // opposite of what a streak is for. See rhythm.js.
 
-import { db } from "./data.js?v=90f9b75ca3";
-import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=90f9b75ca3";
-import { isDayEntry } from "./recall.js?v=90f9b75ca3";
+import { db } from "./data.js?v=9d6a2c4f69";
+import { currentRhythm, periodKey, periodsBetween } from "./rhythm.js?v=9d6a2c4f69";
+import { isDayEntry } from "./recall.js?v=9d6a2c4f69";
 
 export const GRACE_PER_WEEK = 1;
 
@@ -49,10 +49,10 @@ export function daySeed(key = dateKey()) {
  * Recall is only asked for once there is an entry old enough to be worth
  * revisiting, so nobody is ever asked to remember yesterday.
  */
-export async function getDailyPlan() {
+export async function getDailyPlan(profileId) {
   const today = dateKey();
-  const entries = await db.allEntries();
-  const log = await db.allActivityLog().catch(() => []);
+  const entries = await db.allEntries(profileId);
+  const log = await db.allActivityLog(profileId).catch(() => []);
 
   const todaysJournal = entries.find(
     (e) => e.type === "journal" && dateKey(new Date(e.date)) === today
@@ -71,13 +71,13 @@ export async function getDailyPlan() {
 
   // The activities step is done when today's required activities are, not
   // when any two things were done. Extras never count toward it.
-  const todaysPair = await db.getMeta(REQUIRED_META).catch(() => null);
+  const todaysPair = await db.getMeta(REQUIRED_META, profileId).catch(() => null);
   const requiredKeys = todaysPair?.date === today ? todaysPair.keys || [] : [];
   const doneKeys = new Set(todaysActivities.map((r) => r.detail?.contentKey));
   const requiredDone = requiredKeys.filter((k) => doneKeys.has(k)).length;
   // How many a session asks for follows the rhythm: see rhythm.js. Until
   // today's set has been chosen, the rhythm's own number is what to expect.
-  const rhythm = await currentRhythm(entries);
+  const rhythm = await currentRhythm(entries, profileId);
   const ACTIVITY_TARGET = requiredKeys.length || rhythm.activities;
 
   const tasks = [
@@ -119,8 +119,8 @@ export async function getDailyPlan() {
 
 /* ---------------- Streak ---------------- */
 
-async function readStreak() {
-  return (await db.getMeta("streak")) || { count: 0, lastCompleted: null, unit: "day", graceUsed: [] };
+async function readStreak(profileId) {
+  return (await db.getMeta("streak", profileId)) || { count: 0, lastCompleted: null, unit: "day", graceUsed: [] };
 }
 
 const GRACE_WINDOW = 7; // periods
@@ -130,9 +130,9 @@ const GRACE_WINDOW = 7; // periods
  * seven. `rhythm` decides what a period is; without one it is read from the
  * person's own entries.
  */
-export async function getStreak(rhythm = null) {
-  const r = rhythm || (await currentRhythm(await db.allEntries().catch(() => [])));
-  const s = await readStreak();
+export async function getStreak(rhythm = null, profileId) {
+  const r = rhythm || (await currentRhythm(await db.allEntries(profileId).catch(() => []), profileId));
+  const s = await readStreak(profileId);
   const unit = r.unit;
   if (!s.lastCompleted) return { count: 0, lastCompleted: null, atRisk: false, unit };
 
@@ -175,6 +175,10 @@ export async function completeToday(rhythm = null) {
   } else count = 1;
 
   await db.setMeta("streak", { count, lastCompleted: now, unit: r.unit, graceUsed });
+  // Recorded against the account as well, because the evening reminder has
+  // to ask who has *not* finished, and the people it most needs to name are
+  // the ones who have written nothing at all today. See supabase-schema.sql.
+  await db.markDayComplete(dateKey()).catch(() => {});
   return count;
 }
 

@@ -1,13 +1,14 @@
-import { cloudConfigured } from "../config.js?v=90f9b75ca3";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=90f9b75ca3";
-import { refreshDataMode, localEntryCount, db } from "../data.js?v=90f9b75ca3";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=90f9b75ca3";
-import { icon } from "../icons.js?v=90f9b75ca3";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=90f9b75ca3";
-import { startWalkthrough } from "../walkthrough.js?v=90f9b75ca3";
-import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=90f9b75ca3";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=90f9b75ca3";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=90f9b75ca3";
+import { cloudConfigured } from "../config.js?v=9d6a2c4f69";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=9d6a2c4f69";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=9d6a2c4f69";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=9d6a2c4f69";
+import { icon } from "../icons.js?v=9d6a2c4f69";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=9d6a2c4f69";
+import { startWalkthrough } from "../walkthrough.js?v=9d6a2c4f69";
+import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=9d6a2c4f69";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=9d6a2c4f69";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=9d6a2c4f69";
+import { getAccountType, setAccountType, isCentre } from "../profiles.js?v=9d6a2c4f69";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
@@ -28,13 +29,19 @@ export async function renderAccountView(root, { navigate }) {
 
   const user = await currentUser();
   if (user) {
-    renderSignedIn(root, user, navigate);
+    await renderSignedIn(root, user, navigate);
   } else {
     renderSignIn(root, navigate);
   }
 }
 
-function renderSignedIn(root, user, navigate) {
+async function renderSignedIn(root, user, navigate) {
+  // Which kind of account this is has to be settled before anything else:
+  // a care centre's screen is a different app from a person's.
+  if (!(await getAccountType())) {
+    return renderAccountKind(root, user, navigate);
+  }
+  const centre = await isCentre();
   const panel = el(`
     <div class="stack">
       <div class="glass-panel">
@@ -57,9 +64,43 @@ function renderSignedIn(root, user, navigate) {
   });
 
   appendReminderCard(root);
-  appendRhythmCard(root);
+  // How often you use Capsule is a personal setting: in a centre each
+  // resident has their own rhythm, read from their own entries.
+  if (!centre) appendRhythmCard(root);
   appendTourCard(root, navigate);
   appendCloudDangerZone(root, navigate);
+}
+
+/**
+ * The one question asked after a first sign-in. Everything downstream
+ * follows from it, so it is asked plainly, once, and can be changed later.
+ */
+function renderAccountKind(root, user, navigate) {
+  const panel = el(`
+    <div class="glass-panel narrow-panel">
+      <h2>How will Capsule be used?</h2>
+      ${guideHtml("Choose the one that fits. You can change this later on this page.")}
+      <p class="muted">Signed in as <strong>${escapeHtml(user.email)}</strong>.</p>
+      <div class="kind-choice">
+        <button class="glass-card kind-card" type="button" data-kind="personal">
+          <strong class="lead">${icon("user")} For myself</strong>
+          <span class="muted">One journal, one streak, one set of activities. Capsule works exactly as it does now.</span>
+        </button>
+        <button class="glass-card kind-card" type="button" data-kind="centre">
+          <strong class="lead">${icon("home")} For a care centre</strong>
+          <span class="muted">Add the people you look after, each with their own Capsule, their own streak and their own activities, all under this one account.</span>
+          <span class="muted kind-note">Staff who can sign in can read what a resident writes, so each person needs to have agreed. See the Privacy Policy.</span>
+        </button>
+      </div>
+    </div>`);
+  root.appendChild(panel);
+  for (const btn of panel.querySelectorAll(".kind-card")) {
+    btn.addEventListener("click", async () => {
+      await setAccountType(btn.dataset.kind);
+      toast(btn.dataset.kind === "centre" ? "Set up for a care centre." : "Set up for your own journal.");
+      navigate(btn.dataset.kind === "centre" ? "residents" : "account");
+    });
+  }
 }
 
 /* ---------- Evening reminder ---------- */

@@ -7,10 +7,10 @@
 //
 // House style note: no em dashes anywhere in user-facing text.
 
-import { openLegalModal, sectionsToHTML } from "./legal.js?v=90f9b75ca3";
+import { openLegalModal, sectionsToHTML } from "./legal.js?v=9d6a2c4f69";
 
-export const POLICY_VERSION = "2026-08-20";
-export const POLICY_UPDATED = "20 August 2026";
+export const POLICY_VERSION = "2026-10-07";
+export const POLICY_UPDATED = "7 October 2026";
 
 // Shown in both the privacy policy and the terms. Must stay an address that
 // is actually monitored: it is the only route a user has to reach anyone.
@@ -49,8 +49,22 @@ const SECTIONS = [
   {
     heading: "Who can see your information",
     paragraphs: [
-      "<strong>Only you.</strong> Every entry, photo, and measurement is tied to your account and protected so that nobody else, including other Capsule users, can read, download, or access it. This is enforced at the database level, not just in the app's design.",
-      "If a caregiver or family-sharing feature is added in future, we will ask for your explicit permission before anyone else can see your entries.",
+      "<strong>Only the account it belongs to.</strong> Every entry, photo, and measurement is tied to one account and protected so that no other account, including other Capsule users, can read, download, or access it. This is enforced at the database level, not just in the app's design.",
+      "If you use Capsule for your own journal, that account is yours, and nobody else can see any of it.",
+      "If a care centre set up the account, read the next section, because the answer there is different and you should know exactly what it is.",
+    ],
+  },
+  {
+    heading: "If a care centre set up the account",
+    important: true,
+    paragraphs: [
+      "Capsule can be used by a care home, day centre, or similar service, which signs in once and keeps a separate Capsule for each resident. If that is how you are using Capsule, this section applies to you.",
+      "<strong>Staff at that centre can see what a resident writes.</strong> Anyone who can sign in to the centre's account can open any resident's Capsule and read their entries, see their photos, and see the measurements and trends taken from their words. Residents are kept entirely separate from one another, and no other centre and no other account can reach them, but within that one account the material is visible to whoever holds the sign-in.",
+      "<strong>The centre, not Capsule, is responsible for asking the resident.</strong> A journal is a personal thing, and the words in it belong to the person who said them, not to the service looking after them. A centre using Capsule is agreeing that it has the resident's agreement, or the agreement of whoever is lawfully entitled to decide for them, and that the resident has been told in a way they can understand what is recorded and who can read it.",
+      "<strong>Each resident can be set so that staff see less.</strong> Every resident has a setting for what staff can see without them there. It starts at the narrow one: whether they have finished today, and how long their run is, and nothing more. A centre can widen it to include how that person's own measures are moving, for a resident who has agreed to that. Opening somebody's Capsule still shows their whole journal, whatever the setting says, because that is what opening it is for.",
+      "<strong>A resident can ask for their Capsule at any time.</strong> They can ask to see it, to have a copy of it, or to have it removed. The Download my data button produces the whole journal as a single file, and removing a resident from the Residents list permanently deletes their entries, photos, activities, and streak.",
+      "<strong>The evening reminder names residents.</strong> If the centre turns reminders on, the message sent to the account email lists which residents have not finished that day. It says nothing else about them: no entries, no measurements, nothing about their health. It is still a list of names leaving the app, so a centre should only turn it on if that is appropriate where it is sent.",
+      "Nothing about centre use changes what Capsule itself does with the material. We do not read it, sell it, share it between centres, use it to train any model, or use it to assess anybody.",
     ],
   },
   {
@@ -78,6 +92,7 @@ const SECTIONS = [
     after: [
       "Deletion is permanent and cannot be undone. If any step does not complete, the app tells you exactly which part failed rather than claiming your data is gone when it is not.",
       "If you use Capsule without an account, the same option clears everything stored on your device.",
+      "On a care centre account, removing a resident from the Residents list permanently deletes that resident's entries, photos, activities, and streak, and deleting the account removes every resident in it.",
     ],
   },
   {

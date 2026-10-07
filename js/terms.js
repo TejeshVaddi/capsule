@@ -7,11 +7,11 @@
 //
 // House style: no em dashes in user-facing text.
 
-import { openLegalModal, sectionsToHTML } from "./legal.js?v=90f9b75ca3";
-import { CONTACT_EMAIL } from "./privacy.js?v=90f9b75ca3";
+import { openLegalModal, sectionsToHTML } from "./legal.js?v=9d6a2c4f69";
+import { CONTACT_EMAIL } from "./privacy.js?v=9d6a2c4f69";
 
-export const TERMS_VERSION = "2026-08-20";
-export const TERMS_UPDATED = "20 August 2026";
+export const TERMS_VERSION = "2026-10-07";
+export const TERMS_UPDATED = "7 October 2026";
 
 const SECTIONS = [
   {
@@ -32,15 +32,32 @@ const SECTIONS = [
     heading: "Using Capsule",
     paragraphs: ["You may use Capsule if you are 18 or older, or if a responsible adult is helping you use it. When you use it, we ask that you:"],
     list: [
-      "Use it for your own journaling, or to support someone who has asked for your help.",
+      "Use it for your own journaling, or to support someone who has asked for your help, or, as a care service, for residents who have agreed to it.",
       "Do not upload anything unlawful, or anything about another person who would not want it recorded.",
       "Do not try to break, overload, or gain unauthorised access to the service or to anyone else's account.",
+    ],
+  },
+  {
+    heading: "Using Capsule in a care centre",
+    important: true,
+    paragraphs: [
+      "A care home, day centre, or similar service can sign in once and keep a separate Capsule for each resident. Doing that puts other people's words in your hands, so these conditions come with it. By setting a Capsule account up as a centre, you agree to all of them.",
+    ],
+    list: [
+      "<strong>You have each resident's agreement.</strong> Before adding someone, you have their agreement, or the agreement of whoever is lawfully entitled to decide for them. You have explained, in a way that person can understand, what Capsule records and that staff with the sign-in can read it.",
+      "<strong>You keep the sign-in secure.</strong> Anyone who can read the account's email can sign in and open every resident in it. Treat that email account as you would the key to a records cabinet.",
+      "<strong>You do not use Capsule to assess anyone.</strong> Not to screen, score, diagnose, triage, or decide anything about a person's care, placement, or treatment. Capsule describes a person's own past entries and nothing more. Using it as evidence about somebody's condition is a misuse of it.",
+      "<strong>You widen a resident's setting only with their agreement.</strong> Each resident has a setting for what staff can see without them there, and it starts narrow. Widening it to show how their own measures are moving is a decision about that person, taken with them, not a default to turn on for the house.",
+      "<strong>You remove a resident's record when you should.</strong> When they leave, when they ask, or when whoever decides for them asks. Removing them from the Residents list deletes their entries, photos, activities, and streak permanently.",
+      "<strong>You give a resident their own words when they ask for them.</strong> The Download my data button produces the whole journal as one file that opens in any browser.",
+      "<strong>You, not we, hold the relationship with the resident.</strong> Capsule provides the software. The duty of care, and any obligation you have under the law where you operate, including rules about health or care records, rests with your service. Please take your own advice on what those obligations are before using Capsule with real residents.",
     ],
   },
   {
     heading: "Your entries belong to you",
     paragraphs: [
       "You keep ownership of everything you write and every photo you upload. We do not claim any rights over your entries, we do not sell them, and we do not use them to train any model.",
+      "On a care centre account, the entries belong to the resident who wrote them, not to the centre that holds the account. The centre keeps them on that person's behalf.",
       "We store your content only so the app can show it back to you and track your own patterns over time, as described in the privacy policy.",
     ],
   },

@@ -1,5 +1,5 @@
 const DB_NAME = "capsule-db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise = null;
 
@@ -30,6 +30,14 @@ function openDb() {
       if (!db.objectStoreNames.contains("activityLog")) {
         const activities = db.createObjectStore("activityLog", { keyPath: "id" });
         activities.createIndex("byDate", "date");
+      }
+
+      // The people a care centre keeps in one account. Empty for personal
+      // use, where the account holder is the only person and their entries
+      // carry no profile at all. See profiles.js.
+      if (!db.objectStoreNames.contains("profiles")) {
+        const profiles = db.createObjectStore("profiles", { keyPath: "id" });
+        profiles.createIndex("byName", "name");
       }
     };
 
@@ -90,6 +98,10 @@ export const db = {
     return tx("photos", "readwrite", (store) => reqToPromise(store.put(photo)));
   },
 
+  async getPhoto(id) {
+    return tx("photos", "readonly", (store) => reqToPromise(store.get(id)));
+  },
+
   async getPhotosForEntry(entryId) {
     return tx("photos", "readonly", (store) => {
       const idx = store.index("byEntry");
@@ -101,8 +113,29 @@ export const db = {
     return tx("photos", "readwrite", (store) => reqToPromise(store.delete(id)));
   },
 
+  async putProfile(profile) {
+    return tx("profiles", "readwrite", (store) => reqToPromise(store.put(profile)));
+  },
+
+  async getProfile(id) {
+    return tx("profiles", "readonly", (store) => reqToPromise(store.get(id)));
+  },
+
+  async allProfiles() {
+    const result = await tx("profiles", "readonly", (store) => reqToPromise(store.getAll()));
+    return result || [];
+  },
+
+  async deleteProfile(id) {
+    return tx("profiles", "readwrite", (store) => reqToPromise(store.delete(id)));
+  },
+
   async setMeta(key, value) {
     return tx("meta", "readwrite", (store) => reqToPromise(store.put({ key, value })));
+  },
+
+  async deleteMeta(key) {
+    return tx("meta", "readwrite", (store) => reqToPromise(store.delete(key)));
   },
 
   async getMeta(key) {
@@ -112,6 +145,10 @@ export const db = {
 
   async logActivity(record) {
     return tx("activityLog", "readwrite", (store) => reqToPromise(store.put(record)));
+  },
+
+  async deleteActivity(id) {
+    return tx("activityLog", "readwrite", (store) => reqToPromise(store.delete(id)));
   },
 
   async allActivityLog() {
