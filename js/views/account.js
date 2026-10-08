@@ -1,17 +1,27 @@
-import { cloudConfigured } from "../config.js?v=9d6a2c4f69";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=9d6a2c4f69";
-import { refreshDataMode, localEntryCount, db } from "../data.js?v=9d6a2c4f69";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=9d6a2c4f69";
-import { icon } from "../icons.js?v=9d6a2c4f69";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=9d6a2c4f69";
-import { startWalkthrough } from "../walkthrough.js?v=9d6a2c4f69";
-import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=9d6a2c4f69";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=9d6a2c4f69";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=9d6a2c4f69";
-import { getAccountType, setAccountType, isCentre } from "../profiles.js?v=9d6a2c4f69";
+import { cloudConfigured } from "../config.js?v=c44468da07";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=c44468da07";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=c44468da07";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c44468da07";
+import { icon } from "../icons.js?v=c44468da07";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=c44468da07";
+import { startWalkthrough } from "../walkthrough.js?v=c44468da07";
+import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=c44468da07";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=c44468da07";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=c44468da07";
+import { getAccountType, setAccountType, isCentre, activeProfileId, getProfile, ageFrom, dateOfBirth } from "../profiles.js?v=c44468da07";
+import { db as localDb } from "../db.js?v=c44468da07";
+import { photoUrl } from "../ui.js?v=c44468da07";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";
+
+  // A resident's Capsule is theirs, so this tab is about them: who Capsule
+  // has them down as, and nothing else. The account behind it belongs to
+  // the centre, and a resident has no business being shown its sign-in, its
+  // email address, or a button that would delete everybody.
+  if ((await isCentre()) && activeProfileId()) {
+    return renderResidentCard(root, await getProfile(activeProfileId()));
+  }
 
   if (!cloudConfigured()) {
     root.appendChild(el(`
@@ -33,6 +43,45 @@ export async function renderAccountView(root, { navigate }) {
   } else {
     renderSignIn(root, navigate);
   }
+}
+
+/** Only what was filled in about this person: their name, their day of
+    birth, their photograph. Nothing is added and nothing is worked out. */
+async function renderResidentCard(root, profile) {
+  if (!profile) {
+    root.appendChild(el(`<div class="glass-panel"><h2>Your details</h2><p class="muted">Nothing is on file yet.</p></div>`));
+    return;
+  }
+  const age = ageFrom(profile.dob);
+  const born = dateOfBirth(profile.dob);
+  const panel = el(`
+    <div class="glass-panel">
+      <h2>Your details</h2>
+      ${guideHtml("This is what Capsule has you down as. If anything is wrong, tell whoever helps you and they can change it.")}
+      <div class="resident-head">
+        <span class="resident-face resident-face-lg" data-slot="face" aria-hidden="true">${escapeHtml(initials(profile.name))}</span>
+        <div class="resident-id">
+          <h3>${escapeHtml(profile.name)}</h3>
+          ${born ? `<p class="muted">Born ${escapeHtml(born.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }))}${age !== null ? `, age ${age}` : ""}</p>` : `<p class="muted">No date of birth on file.</p>`}
+        </div>
+      </div>
+    </div>`);
+  root.appendChild(panel);
+
+  const face = panel.querySelector('[data-slot="face"]');
+  if (profile.photoId) {
+    const photo = await localDb.getPhoto(profile.photoId).catch(() => null);
+    if (photo?.blob) {
+      face.innerHTML = `<img src="${photoUrl(photo.blob)}" alt="" />`;
+      face.classList.add("has-photo");
+    }
+  }
+}
+
+function initials(name) {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
 
 async function renderSignedIn(root, user, navigate) {

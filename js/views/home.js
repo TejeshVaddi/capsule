@@ -1,14 +1,14 @@
-import { db } from "../data.js?v=9d6a2c4f69";
-import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=9d6a2c4f69";
-import { currentRhythm } from "../rhythm.js?v=9d6a2c4f69";
-import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=9d6a2c4f69";
-import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=9d6a2c4f69";
-import { celebrateStreak } from "../celebrate.js?v=9d6a2c4f69";
-import { isCentre, closeProfile, activeProfileId } from "../profiles.js?v=9d6a2c4f69";
-import { buildFocus } from "../focus.js?v=9d6a2c4f69";
-import { WORK_AREA } from "../meaning.js?v=9d6a2c4f69";
-import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=9d6a2c4f69";
-import { icon } from "../icons.js?v=9d6a2c4f69";
+import { db } from "../data.js?v=c44468da07";
+import { getDailyPlan, getStreak, completeToday, celebratedToday, markCelebrated } from "../daily.js?v=c44468da07";
+import { currentRhythm } from "../rhythm.js?v=c44468da07";
+import { shouldShowMonthly, markMonthlyShown } from "../monthly.js?v=c44468da07";
+import { buildWeeklySummary, shouldShowWeekly, markWeeklyShown, startOfWeek } from "../weekly.js?v=c44468da07";
+import { celebrateStreak } from "../celebrate.js?v=c44468da07";
+import { isCentre, closeProfile, activeProfileId } from "../profiles.js?v=c44468da07";
+import { buildFocus } from "../focus.js?v=c44468da07";
+import { WORK_AREA } from "../meaning.js?v=c44468da07";
+import { el, escapeHtml, photoUrl, guideHtml } from "../ui.js?v=c44468da07";
+import { icon } from "../icons.js?v=c44468da07";
 
 // Fewer than this and the picture grid is left out entirely.
 const MIN_WEEK_PHOTOS = 3;

@@ -12,18 +12,18 @@
 // and nothing of what they actually said. Their words are for them, and for
 // whoever they choose to show them to.
 
-import { db } from "../data.js?v=9d6a2c4f69";
-import { el, escapeHtml, guideHtml, toast, photoUrl } from "../ui.js?v=9d6a2c4f69";
-import { icon } from "../icons.js?v=9d6a2c4f69";
+import { db } from "../data.js?v=c44468da07";
+import { el, escapeHtml, guideHtml, toast, photoUrl } from "../ui.js?v=c44468da07";
+import { icon } from "../icons.js?v=c44468da07";
 import {
   listProfiles, getProfile, saveProfile, deleteProfile,
   openProfile, firstNameOf, ageFrom, dateOfBirth, STAFF_ACCESS, staffAccessOf,
-} from "../profiles.js?v=9d6a2c4f69";
-import { db as localDb, newId } from "../db.js?v=9d6a2c4f69";
-import { getStreak, getDailyPlan } from "../daily.js?v=9d6a2c4f69";
-import { currentRhythm } from "../rhythm.js?v=9d6a2c4f69";
-import { generateTrendNotes } from "../charts.js?v=9d6a2c4f69";
-import { TONE_WORDS } from "../meaning.js?v=9d6a2c4f69";
+} from "../profiles.js?v=c44468da07";
+import { db as localDb, newId } from "../db.js?v=c44468da07";
+import { getStreak, getDailyPlan } from "../daily.js?v=c44468da07";
+import { currentRhythm } from "../rhythm.js?v=c44468da07";
+import { generateTrendNotes } from "../charts.js?v=c44468da07";
+import { TONE_WORDS } from "../meaning.js?v=c44468da07";
 
 /**
  * The streak and what is left today, for one resident. Every read says
@@ -199,19 +199,26 @@ async function openResident(root, id, navigate) {
       ? `<p class="muted space-above-sm">${icon("device")} How ${escapeHtml(firstNameOf(profile))}'s patterns are moving is kept for ${escapeHtml(firstNameOf(profile))}. You can change that under Edit details if they have agreed to it.</p>`
       : notes.length
         ? `<h3 class="space-above-sm">How their own patterns have moved</h3>
-           <!-- Left in the second person on purpose. These are the lines
-                ${firstNameOf(profile)} reads on her own Trends page, and
-                rewriting them into the third person here would make a
-                record about a person out of something written to one. -->
+           <!-- Spelled out rather than tucked into a dropdown. A member of
+                staff reading this has not spent weeks with the measures and
+                should not have to guess what one means, so each change says
+                what it is, what it affects, and why it is worth attention.
+                The sentences themselves stay in the second person: they are
+                what ${firstNameOf(profile)} reads on their own Trends page,
+                and turning a line written to somebody into a line about
+                them is the thing this app is meant not to do. -->
            <p class="muted">Word for word, these are the lines ${escapeHtml(firstNameOf(profile))} sees on their own Trends page.</p>
            <div class="stack stack-tight">
              ${notes.slice(0, 4).map((n) => `
                <div class="trend-note trend-${escapeHtml(n.tone || "steady")}">
                  <span class="trend-verdict">${escapeHtml(TONE_WORDS[n.tone] || TONE_WORDS.steady)}</span>
                  <p class="trend-what">${escapeHtml(n.text)}</p>
+                 ${n.whatIs ? `<p class="resident-part"><span class="explain-tag">What it is</span>${escapeHtml(n.whatIs)}</p>` : ""}
+                 ${n.means ? `<p class="resident-part"><span class="explain-tag">What it affects</span>${escapeHtml(n.means)}</p>` : ""}
+                 ${n.helps ? `<p class="resident-part"><span class="explain-tag">Why it matters</span>${escapeHtml(n.helps)}</p>` : ""}
                </div>`).join("")}
            </div>
-           <p class="muted chart-note">Compared only with this person's own earlier weeks, never with anyone else. Nothing here diagnoses anything.</p>`
+           <p class="muted chart-note">Compared only with this person's own earlier weeks, never with anyone else. Nothing here diagnoses anything, and none of it is a reason to change anybody's care.</p>`
         : `<p class="muted space-above-sm">Their patterns appear here after a few entries spread over time.</p>`}
     <p class="muted chart-note">Opening someone's Capsule shows their whole journal, whatever this is set to. That is what it is for, so do it with them rather than instead of them.</p>`;
 }

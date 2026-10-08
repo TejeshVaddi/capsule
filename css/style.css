@@ -884,6 +884,25 @@ textarea:focus, input[type="text"]:focus {
 }
 
 .resident-head { display: flex; align-items: center; gap: 16px; margin: 6px 0 16px; }
+
+/* The way back to the house from inside a resident's Capsule. In the
+   header rather than at the foot of a page, because it has to be findable
+   from whichever screen the tablet was left on. */
+.exit-resident {
+  margin-left: auto;
+  margin-right: 10px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: .95rem;
+  border-width: 2px;
+}
+.exit-who { font-weight: 700; }
+.exit-word { opacity: .75; }
+@media (max-width: 420px) {
+  .exit-resident { padding: 7px 12px; font-size: .88rem; }
+}
 .resident-id h2 { margin: 0 0 2px; }
 .resident-photo-row { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
 
@@ -926,6 +945,9 @@ textarea:focus, input[type="text"]:focus {
 /* Choosing what staff may see about one resident. Two cards rather than a
    dropdown: the difference between them is the point, so both are readable
    at once instead of one being hidden behind a menu. */
+.resident-part { margin: 8px 0 0; font-size: .97rem; line-height: 1.5; }
+.resident-part .explain-tag { display: block; margin-bottom: 1px; }
+
 .access-choice { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .access-card {
   display: flex;

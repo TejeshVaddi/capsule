@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/style.css?v=9d6a2c4f69" />
+<link rel="stylesheet" href="css/style.css?v=c44468da07" />
 </head>
 <body>
 
@@ -74,6 +74,12 @@
       <span class="brand-mark" id="brand-mark" aria-hidden="true"></span>
       <span class="brand-name">Capsule</span>
     </div>
+    <!-- Only on a care centre account, and only while a resident is open:
+         the way back to the house without finishing their day for them. -->
+    <button id="exit-resident" class="btn btn-secondary exit-resident" type="button" hidden>
+      <span class="exit-who" id="exit-who"></span>
+      <span class="exit-word">Finish</span>
+    </button>
     <button id="disclaimer-reopen" class="btn-icon" title="About Capsule / disclaimer" aria-label="About Capsule">?</button>
   </header>
 
@@ -124,6 +130,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <!-- App -->
-<script type="module" src="js/app.js?v=9d6a2c4f69"></script>
+<script type="module" src="js/app.js?v=c44468da07"></script>
 </body>
 </html>

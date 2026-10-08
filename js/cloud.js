@@ -2,7 +2,7 @@
 // can route to either implementation. All rows are protected server-side
 // by row-level security (each user reads/writes only their own data).
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY, cloudConfigured } from "./config.js?v=9d6a2c4f69";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, cloudConfigured } from "./config.js?v=c44468da07";
 
 let client = null;
 

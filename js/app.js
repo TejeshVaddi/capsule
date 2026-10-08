@@ -1,27 +1,27 @@
-import { db, refreshDataMode } from "./data.js?v=9d6a2c4f69";
-import { onAuthChange } from "./cloud.js?v=9d6a2c4f69";
-import { cloudConfigured } from "./config.js?v=9d6a2c4f69";
-import { revokePhotoUrls } from "./ui.js?v=9d6a2c4f69";
-import { ICONS, LOGO_SVG } from "./icons.js?v=9d6a2c4f69";
-import { renderHomeView } from "./views/home.js?v=9d6a2c4f69";
-import { renderJournalView } from "./views/journal.js?v=9d6a2c4f69";
-import { playIntro } from "./intro.js?v=9d6a2c4f69";
-import { getStreak } from "./daily.js?v=9d6a2c4f69";
-import { currentRhythm } from "./rhythm.js?v=9d6a2c4f69";
-import { renderRecallView } from "./views/recall.js?v=9d6a2c4f69";
-import { renderActivitiesView } from "./views/activities.js?v=9d6a2c4f69";
-import { renderTrendsView } from "./views/trends.js?v=9d6a2c4f69";
-import { renderHistoryView } from "./views/history.js?v=9d6a2c4f69";
-import { renderAccountView, openDeleteFlow } from "./views/account.js?v=9d6a2c4f69";
-import { renderFooter } from "./footer.js?v=9d6a2c4f69";
-import { isCloudMode } from "./data.js?v=9d6a2c4f69";
-import { destroyCharts } from "./charts.js?v=9d6a2c4f69";
-import { shouldShowWalkthrough, startWalkthrough, startGuidedSession } from "./walkthrough.js?v=9d6a2c4f69";
-import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=9d6a2c4f69";
-import { openTerms, TERMS_VERSION } from "./terms.js?v=9d6a2c4f69";
-import { migrateMetrics } from "./migrate.js?v=9d6a2c4f69";
-import { renderResidentsView } from "./views/residents.js?v=9d6a2c4f69";
-import { isCentre, activeProfileId, getProfile, firstNameOf } from "./profiles.js?v=9d6a2c4f69";
+import { db, refreshDataMode } from "./data.js?v=c44468da07";
+import { onAuthChange } from "./cloud.js?v=c44468da07";
+import { cloudConfigured } from "./config.js?v=c44468da07";
+import { revokePhotoUrls } from "./ui.js?v=c44468da07";
+import { ICONS, LOGO_SVG } from "./icons.js?v=c44468da07";
+import { renderHomeView } from "./views/home.js?v=c44468da07";
+import { renderJournalView } from "./views/journal.js?v=c44468da07";
+import { playIntro } from "./intro.js?v=c44468da07";
+import { getStreak } from "./daily.js?v=c44468da07";
+import { currentRhythm } from "./rhythm.js?v=c44468da07";
+import { renderRecallView } from "./views/recall.js?v=c44468da07";
+import { renderActivitiesView } from "./views/activities.js?v=c44468da07";
+import { renderTrendsView } from "./views/trends.js?v=c44468da07";
+import { renderHistoryView } from "./views/history.js?v=c44468da07";
+import { renderAccountView, openDeleteFlow } from "./views/account.js?v=c44468da07";
+import { renderFooter } from "./footer.js?v=c44468da07";
+import { isCloudMode } from "./data.js?v=c44468da07";
+import { destroyCharts } from "./charts.js?v=c44468da07";
+import { shouldShowWalkthrough, startWalkthrough, startGuidedSession } from "./walkthrough.js?v=c44468da07";
+import { openPrivacyPolicy, POLICY_VERSION } from "./privacy.js?v=c44468da07";
+import { openTerms, TERMS_VERSION } from "./terms.js?v=c44468da07";
+import { migrateMetrics } from "./migrate.js?v=c44468da07";
+import { renderResidentsView } from "./views/residents.js?v=c44468da07";
+import { isCentre, activeProfileId, getProfile, firstNameOf, closeProfile } from "./profiles.js?v=c44468da07";
 
 const VIEWS = {
   residents: renderResidentsView,
@@ -57,6 +57,20 @@ async function applyShell() {
   const listing = centre && !open;
   document.body.classList.toggle("centre-mode", centre);
   document.body.classList.toggle("centre-listing", listing);
+
+  // A resident can be handed back without finishing their list. Somebody
+  // may be tired, or interrupted, or simply the wrong person for the
+  // tablet right now, and the only way out used to be to complete the day.
+  const exitBtn = document.getElementById("exit-resident");
+  if (exitBtn) {
+    const inResident = centre && Boolean(open);
+    exitBtn.hidden = !inResident;
+    if (inResident) {
+      const who = await getProfile(open);
+      document.getElementById("exit-who").textContent = who ? firstNameOf(who) : "";
+      exitBtn.setAttribute("aria-label", who ? `Finish with ${who.name} and go back to the residents` : "Go back to the residents");
+    }
+  }
   for (const btn of tabBar.querySelectorAll(".tab-btn")) {
     const view = btn.dataset.view;
     const show = listing ? view === "residents" || view === "account" : view !== "residents";
@@ -245,6 +259,11 @@ async function maybeRunWalkthrough() {
   await navigate("home");
   return true;
 }
+
+document.getElementById("exit-resident")?.addEventListener("click", async () => {
+  closeProfile();
+  await navigate("residents");
+});
 
 document.getElementById("disclaimer-reopen").addEventListener("click", () => {
   ackCheckbox.checked = true;
