@@ -12,18 +12,18 @@
 // and nothing of what they actually said. Their words are for them, and for
 // whoever they choose to show them to.
 
-import { db } from "../data.js?v=c44468da07";
-import { el, escapeHtml, guideHtml, toast, photoUrl } from "../ui.js?v=c44468da07";
-import { icon } from "../icons.js?v=c44468da07";
+import { db } from "../data.js?v=447265a290";
+import { el, escapeHtml, guideHtml, toast, photoUrl } from "../ui.js?v=447265a290";
+import { icon } from "../icons.js?v=447265a290";
 import {
   listProfiles, getProfile, saveProfile, deleteProfile,
   openProfile, firstNameOf, ageFrom, dateOfBirth, STAFF_ACCESS, staffAccessOf,
-} from "../profiles.js?v=c44468da07";
-import { db as localDb, newId } from "../db.js?v=c44468da07";
-import { getStreak, getDailyPlan } from "../daily.js?v=c44468da07";
-import { currentRhythm } from "../rhythm.js?v=c44468da07";
-import { generateTrendNotes } from "../charts.js?v=c44468da07";
-import { TONE_WORDS } from "../meaning.js?v=c44468da07";
+} from "../profiles.js?v=447265a290";
+import { db as localDb, newId } from "../db.js?v=447265a290";
+import { getStreak, getDailyPlan } from "../daily.js?v=447265a290";
+import { currentRhythm } from "../rhythm.js?v=447265a290";
+import { generateTrendNotes } from "../charts.js?v=447265a290";
+import { TONE_WORDS } from "../meaning.js?v=447265a290";
 
 /**
  * The streak and what is left today, for one resident. Every read says

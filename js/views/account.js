@@ -1,16 +1,16 @@
-import { cloudConfigured } from "../config.js?v=c44468da07";
-import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=c44468da07";
-import { refreshDataMode, localEntryCount, db } from "../data.js?v=c44468da07";
-import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c44468da07";
-import { icon } from "../icons.js?v=c44468da07";
-import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=c44468da07";
-import { startWalkthrough } from "../walkthrough.js?v=c44468da07";
-import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=c44468da07";
-import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=c44468da07";
-import { openTerms, TERMS_VERSION } from "../terms.js?v=c44468da07";
-import { getAccountType, setAccountType, isCentre, activeProfileId, getProfile, ageFrom, dateOfBirth } from "../profiles.js?v=c44468da07";
-import { db as localDb } from "../db.js?v=c44468da07";
-import { photoUrl } from "../ui.js?v=c44468da07";
+import { cloudConfigured } from "../config.js?v=447265a290";
+import { currentUser, sendSignInCode, verifySignInCode, signOut, getReminderPref, setReminderPref } from "../cloud.js?v=447265a290";
+import { refreshDataMode, localEntryCount, db } from "../data.js?v=447265a290";
+import { toast, escapeHtml, el, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=447265a290";
+import { icon } from "../icons.js?v=447265a290";
+import { deleteCloudAccount, wipeLocalData, STEPS } from "../deletion.js?v=447265a290";
+import { startWalkthrough } from "../walkthrough.js?v=447265a290";
+import { getRhythmSetting, setRhythmSetting, rhythmFrom } from "../rhythm.js?v=447265a290";
+import { openPrivacyPolicy, POLICY_VERSION } from "../privacy.js?v=447265a290";
+import { openTerms, TERMS_VERSION } from "../terms.js?v=447265a290";
+import { getAccountType, setAccountType, isCentre, activeProfileId, getProfile, ageFrom, dateOfBirth } from "../profiles.js?v=447265a290";
+import { db as localDb } from "../db.js?v=447265a290";
+import { photoUrl } from "../ui.js?v=447265a290";
 
 export async function renderAccountView(root, { navigate }) {
   root.innerHTML = "";

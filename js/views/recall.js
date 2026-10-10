@@ -1,10 +1,10 @@
-import { db, newId } from "../data.js?v=c44468da07";
-import { icon } from "../icons.js?v=c44468da07";
-import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=c44468da07";
-import { SpeechInput, speechSupported } from "../speech.js?v=c44468da07";
-import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails, recalledInEntry, isDayEntry } from "../recall.js?v=c44468da07";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=c44468da07";
-import { nextStepBlock } from "../next-step.js?v=c44468da07";
+import { db, newId } from "../data.js?v=447265a290";
+import { icon } from "../icons.js?v=447265a290";
+import { compareRecallToOriginal, analyzeText } from "../analysis.js?v=447265a290";
+import { SpeechInput, speechSupported } from "../speech.js?v=447265a290";
+import { pickEntryForRecall, formatFriendlyDate, daysBetween, recallHints, hintLevelFor, compareDetails, recalledInEntry, isDayEntry } from "../recall.js?v=447265a290";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=447265a290";
+import { nextStepBlock } from "../next-step.js?v=447265a290";
 
 export async function renderRecallView(root, { navigate }) {
   root.innerHTML = "";

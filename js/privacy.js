@@ -7,7 +7,7 @@
 //
 // House style note: no em dashes anywhere in user-facing text.
 
-import { openLegalModal, sectionsToHTML } from "./legal.js?v=c44468da07";
+import { openLegalModal, sectionsToHTML } from "./legal.js?v=447265a290";
 
 export const POLICY_VERSION = "2026-10-07";
 export const POLICY_UPDATED = "7 October 2026";
