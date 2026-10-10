@@ -20,10 +20,10 @@
 // account this is) always stays local and shared. Meta about a person (the
 // streak, today's chosen activities) is namespaced per resident.
 
-import { db as localDb, newId } from "./db.js?v=447265a290";
-import { cloudDb, getSession } from "./cloud.js?v=447265a290";
-import { cloudConfigured } from "./config.js?v=447265a290";
-import { activeProfileId, scopedMetaKey, PERSON_META } from "./profiles.js?v=447265a290";
+import { db as localDb, newId } from "./db.js?v=32a5c25292";
+import { cloudDb, getSession } from "./cloud.js?v=32a5c25292";
+import { cloudConfigured } from "./config.js?v=32a5c25292";
+import { activeProfileId, scopedMetaKey, PERSON_META } from "./profiles.js?v=32a5c25292";
 
 export { newId };
 

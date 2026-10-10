@@ -15,7 +15,7 @@
 // changes at midnight. Ordering is influenced by detectSignals(), which
 // compares recent entries to earlier ones.
 
-import { db, newId } from "./data.js?v=447265a290";
+import { db, newId } from "./data.js?v=32a5c25292";
 import {
   NAMING_SETS,
   FLUENCY_CATEGORIES,
@@ -28,12 +28,12 @@ import {
   SWITCH_PAIRS,
   CHAIN_PROMPTS,
   pickFresh,
-} from "./activities-content.js?v=447265a290";
-import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=447265a290";
-import { detectSignals, scoreForSignals } from "./signals.js?v=447265a290";
-import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=447265a290";
-import { currentRhythm } from "./rhythm.js?v=447265a290";
-import { isDayEntry } from "./recall.js?v=447265a290";
+} from "./activities-content.js?v=32a5c25292";
+import { daySeed, dateKey, REQUIRED_META } from "./daily.js?v=32a5c25292";
+import { detectSignals, scoreForSignals } from "./signals.js?v=32a5c25292";
+import { buildFocus, weightFor, mainAreaOf, slotOf, FOCUS_AREAS, NOTABLE_NEED } from "./focus.js?v=32a5c25292";
+import { currentRhythm } from "./rhythm.js?v=32a5c25292";
+import { isDayEntry } from "./recall.js?v=32a5c25292";
 
 // Nothing the person has done comes back within this many days. An activity
 // with nothing fresh left is not offered until something is.

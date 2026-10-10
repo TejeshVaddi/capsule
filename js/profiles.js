@@ -21,9 +21,9 @@
 // resident for the same reason. Keys about the device or the account, like
 // having read the disclaimer, stay shared.
 
-import { db as localDb, newId } from "./db.js?v=447265a290";
-import { cloudDb, getSession } from "./cloud.js?v=447265a290";
-import { cloudConfigured } from "./config.js?v=447265a290";
+import { db as localDb, newId } from "./db.js?v=32a5c25292";
+import { cloudDb, getSession } from "./cloud.js?v=32a5c25292";
+import { cloudConfigured } from "./config.js?v=32a5c25292";
 
 /**
  * Where the people live. Signed in, they belong to the account, so a centre

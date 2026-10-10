@@ -9,16 +9,16 @@
 //  - A timed step ends on its own. It never also has a stop or skip button,
 //    so there is never a choice between waiting and pressing.
 
-import { db, newId } from "../data.js?v=447265a290";
-import { suggestActivities, logActivityCompletion } from "../activities.js?v=447265a290";
-import { analyzeText } from "../analysis.js?v=447265a290";
-import { SpeechInput, speechSupported } from "../speech.js?v=447265a290";
-import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=447265a290";
-import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=447265a290";
-import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=447265a290";
-import { getDailyPlan } from "../daily.js?v=447265a290";
-import { nextStepBlock } from "../next-step.js?v=447265a290";
-import { icon, ICONS } from "../icons.js?v=447265a290";
+import { db, newId } from "../data.js?v=32a5c25292";
+import { suggestActivities, logActivityCompletion } from "../activities.js?v=32a5c25292";
+import { analyzeText } from "../analysis.js?v=32a5c25292";
+import { SpeechInput, speechSupported } from "../speech.js?v=32a5c25292";
+import { INTERFERENCE_TASKS, MUSIC_PROMPTS, CHAIN_STEPS } from "../activities-content.js?v=32a5c25292";
+import { checkFluencyAnswer, FLUENCY_ONE, FLUENCY_EXAMPLE } from "../fluency-words.js?v=32a5c25292";
+import { toast, escapeHtml, el, createSpeechComposer, photoUrl, guideHtml, noteAbove, clearNoteAbove } from "../ui.js?v=32a5c25292";
+import { getDailyPlan } from "../daily.js?v=32a5c25292";
+import { nextStepBlock } from "../next-step.js?v=32a5c25292";
+import { icon, ICONS } from "../icons.js?v=32a5c25292";
 
 export async function renderActivitiesView(root, { navigate } = {}) {
   root.innerHTML = "";
@@ -244,7 +244,7 @@ function namingGame(stage, suggestion, ctx) {
         <h3>Naming game: ${escapeHtml(suggestion.data.theme)}</h3>
         <span class="pill" data-slot="progress"></span>
       </div>
-      ${guideHtml("Read the clue. Say or type the word it means. Then tap Check. If you are stuck, tap Show me.")}
+      ${guideHtml("Read the clue below. It describes one thing, and your job is the word for it. Say it or type it, then tap Check. If the word will not come, tap Show me and Capsule will tell you before moving on. Getting stuck is ordinary and it costs you nothing.")}
       <p class="clue" data-slot="clue"></p>
       <div class="answer-row">
         <input type="text" data-slot="answer" placeholder="Say or type the word" autocomplete="off" />
@@ -343,11 +343,11 @@ function fluencyGame(stage, suggestion, ctx) {
     <div class="glass-panel">
       <h3>${escapeHtml(suggestion.data.prompt)}</h3>
       <div data-slot="pre">
-        ${guideHtml(`You will have 1 minute. Name as many ${category} as you can. Tap Begin when you are ready.`)}
+        ${guideHtml(`You will have 1 minute to name as many ${category} as you can. Say them one at a time, in any order that comes to you. Do not worry about repeating yourself, because Capsule will tell you if you have already said one. Tap Begin when you are ready.`)}
         <button class="btn btn-primary btn-large" data-slot="begin">Begin</button>
       </div>
       <div data-slot="live" hidden>
-        ${guideHtml(`Say or type one of them, then tap Add. Keep going until the time runs out. It stops by itself.`)}
+        ${guideHtml(`Say or type one, then tap Add. Only words that really are ${category} are counted, so if one does not fit Capsule will say so and you can try again. If it thinks you meant something close, it will ask you first rather than guessing. Keep going until the time runs out. It stops by itself.`)}
         <div class="fluency-timer" data-slot="timer" role="timer" aria-live="off">1:00</div>
         <div class="answer-row has-add">
           <input type="text" data-slot="entry" placeholder="Say or type one" autocomplete="off" />
@@ -483,7 +483,7 @@ function bridgeGame(stage, suggestion, ctx) {
   const card = el(`
     <div class="glass-panel">
       <h3>Word bridges</h3>
-      ${guideHtml(`Start at ${from}. Get to ${to}. Say the words in between, one at a time, and how each one leads to the next. There is no right answer. Then tap I'm finished.`)}
+      ${guideHtml(`Start at ${from} and finish at ${to}. Say the words in between, one at a time, and how each one leads on to the next. If it were rain and umbrella, you might say rain, then wet, then coat, then umbrella. Any way across is a good way, and a long way round is just as welcome as a short one. When you have arrived, tap I'm finished.`)}
       <div class="bridge-ends">
         <span class="pill pill-blue">${escapeHtml(from)}</span>
         <span class="bridge-arrow" aria-hidden="true">${icon("arrowRight")}</span>
@@ -550,11 +550,11 @@ function switchingGame(stage, suggestion, ctx) {
     <div class="glass-panel">
       <h3>Two at a time</h3>
       <div data-slot="pre">
-        ${guideHtml(`You will have 1 minute. Say ${names.a}, then ${names.b}, then ${names.a} again, taking turns. Tap Begin when you are ready.`)}
+        ${guideHtml(`You will have 1 minute. Say ${names.a}, then ${names.b}, then ${names.a} again, turn and turn about. It goes one, then the other, then back again, for as long as you can keep it up. The swapping between the two is the whole point of it, so there is no need to rush. If you lose your place, the line on screen always says which one comes next. Tap Begin when you are ready.`)}
         <button class="btn btn-primary btn-large" data-slot="begin">Begin</button>
       </div>
       <div data-slot="live" hidden>
-        ${guideHtml("Say or type one, then tap Add. The line below says which one comes next. It stops by itself.")}
+        ${guideHtml("Say or type one, then tap Add. The line underneath always says which of the two comes next, so you never have to hold it in your head. If a word does not belong to either one, Capsule will say so and you can try another. Keep going until the time runs out. It stops by itself.")}
         <div class="fluency-timer" data-slot="timer" role="timer" aria-live="off">1:00</div>
         <p class="lead" data-slot="turn"></p>
         <div class="answer-row has-add">
@@ -669,7 +669,7 @@ function chainActivity(stage, suggestion, ctx) {
   const card = el(`
     <div class="glass-panel">
       <h3>Start to finish</h3>
-      ${guideHtml("Tell it in order, in your own words. The four words below are there to lean on. Say as much as you like, then tap I'm finished.")}
+      ${guideHtml("Tell it in order, from the very beginning through to the end, in your own words. Say what you do first, then what comes next, as though you were telling somebody who had never done it before. The four words underneath are there to lean on if you want them, and you can ignore them entirely. There is no right answer and nothing to get wrong. When you reach the end, tap I'm finished.")}
       <p class="prompt">${escapeHtml(suggestion.data.prompt)}</p>
       <div class="chip-row">
         ${CHAIN_STEPS.map((w) => `<span class="pill pill-yellow">${escapeHtml(w)}...</span>`).join("")}
@@ -728,7 +728,7 @@ function wordRecallGame(stage, suggestion, ctx) {
   function study() {
     card.innerHTML = `
       <h3>Five-word memory game</h3>
-      ${guideHtml("Read these 5 words. Try to remember them. When you are ready, tap I've read them.", "Step 1 of 3")}
+      ${guideHtml("Read these 5 words and try to hold on to them. Say them out loud if that helps, or go over them a few times. There is no rush at all, so take as long as you like. In a moment Capsule will ask you about something else, and then it will ask you for these again. When you are ready, tap I've read them.", "Step 1 of 3")}
       <div class="chip-row">
         ${words.map((w) => `<span class="pill pill-yellow word-chip">${escapeHtml(w)}</span>`).join("")}
       </div>
